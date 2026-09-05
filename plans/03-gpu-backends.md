@@ -250,49 +250,155 @@ SPHEREPACK/pyspharm for GL/CC atmospheric operations
 
 ---
 
-## 8. xarray convenience versus tensor-native APIs
+## 8. Public accelerator API and I/O boundary
 
-The current package is xarray-first. A naive accelerator path:
+Use separate interfaces for scientific file/metadata workflows and
+accelerator-native differentiable computation.
 
-```text
-xarray/NumPy CPU
-    -> device transfer
-    -> one GPU transform
-    -> transfer back to CPU
+### 8.1 Existing xarray API remains the scientific I/O interface
+
+Keep the existing xarray API as the normal atmospheric-science interface:
+
+```python
+field.sg.filter("T42")
+ds.sg.kinematics()
 ```
 
-may be slower than DUCC and cannot preserve differentiation across the NumPy
-boundary.
+xarray remains responsible for:
 
-Prototype both execution models before fixing the public accelerator API.
+```text
+NetCDF / Zarr / GRIB decoding through installed engines
+named dimensions and coordinates
+CF metadata
+variable discovery
+time/calendar representation
+scientific output assembly
+```
 
-### Model A: xarray convenience execution
+The default xarray path remains DUCC0 unless a later measured convenience mode
+justifies explicit accelerator execution.
 
-An xarray object enters on CPU, the numerical payload is transferred to an
-alternate backend, and the result returns as xarray data.
+Do not make torch-harmonics or S2FFT responsible for file I/O or CF semantics.
 
-This is useful only if measured workloads justify the transfer overhead.
+### 8.2 Tensor-native APIs are the primary accelerator interfaces
 
-### Model B: tensor-native differentiable execution
-
-A likely shape is:
+The primary Phase-3 accelerator APIs should be tensor/array native:
 
 ```python
 import spharmgrid.torch as sgt
 import spharmgrid.jax as sgj
 
-filtered = sgt.filter(tensor, grid=grid, spectral="T42")
+filtered = sgt.filter(x, grid=grid, spectral="T42")
 vo, div = sgt.kinematics(u, v, grid=grid)
 
-filtered = sgj.filter(array, grid=grid, spectral="T42")
+filtered = sgj.filter(x, grid=grid, spectral="T42")
+vo, div = sgj.kinematics(u, v, grid=grid)
 ```
 
-The exact namespace is not fixed by this plan.
+Use native containers:
 
-Do not expose a public `backend=` selector until the real adapters and workload
-measurements make the API choice clear.
+```text
+spharmgrid.torch   torch.Tensor
+spharmgrid.jax     jax.Array
+```
 
-Never auto-select a GPU backend merely because a GPU is present.
+Do not wrap Torch/JAX tensors in xarray merely to call the transform kernel.
+The differentiable path must remain inside the native framework.
+
+Use the spharmgrid grid description rather than exposing backend-specific grid
+strings in the scientific API:
+
+```python
+grid = sg.gaussian_grid(128, 256)
+sgt.filter(x, grid=grid, spectral="T42")
+sgj.filter(x, grid=grid, spectral="T42")
+```
+
+Each adapter translates that grid into its backend's own sampling terminology
+and validates capability/bandwidth.
+
+### 8.3 Tensor dimension convention
+
+For rectangular tensor-native operations, use the last two dimensions as the
+horizontal dimensions and treat all preceding dimensions as independent
+leading/batch dimensions:
+
+```text
+(nlat, nlon)
+(time, nlat, nlon)
+(batch, channel, nlat, nlon)
+(member, level, time, nlat, nlon)
+```
+
+Do not reproduce xarray's named-dimension machinery in the tensor API unless a
+real use case requires it.
+
+Phase 4 may use a one-dimensional trailing pixel/cell dimension for packed
+HEALPix or reduced-Gaussian arrays where appropriate.
+
+### 8.4 Explicit xarray <-> accelerator boundary
+
+For accelerator workflows, conversion between scientific containers and device
+arrays should be explicit at the data-loader or application boundary, not on
+every SHT call.
+
+Conceptually:
+
+```text
+NetCDF / Zarr / GRIB
+        |
+      xarray
+        |
+ host NumPy payload
+        |
+ torch.Tensor / jax.Array
+        |
+ repeated GPU/TPU model or SHT work
+```
+
+For PyTorch this may use `torch.as_tensor(...)`/device transfer. For JAX this
+may use `jax.device_put(...)`. Convert back to xarray only when a labeled
+scientific result or file output is required.
+
+Do not add file-reading/writing methods to `spharmgrid.torch` or
+`spharmgrid.jax`.
+
+Small helpers such as `from_xarray()`/`to_xarray()` may be considered later if
+real usage shows that they remove repeated boilerplate without hiding expensive
+device transfers. They are not required for the initial accelerator API.
+
+### 8.5 JAX/xarray interoperability is an optional higher-level path
+
+Google DeepMind's `xarray_jax` demonstrates that xarray objects containing JAX
+arrays can be registered as JAX PyTrees and used with `jit`, `grad`, `vmap`, and
+sharding while retaining labels/coordinates.
+
+This is useful precedent, but spharmgrid should not require `xarray_jax` merely
+to expose S2FFT. The initial JAX kernel API should remain `jax.Array` native.
+
+After the raw JAX API is correct and differentiable, evaluate optional
+`xarray_jax` interoperability as a convenience layer. If adopted, keep it an
+optional dependency and verify that spharmgrid operations remain JIT/grad-safe.
+Do not assume ordinary xarray operations or the existing DUCC `apply_ufunc`
+path are automatically safe for JAX transformations.
+
+There is no need to force the PyTorch and JAX convenience layers to be
+identical if their host framework ecosystems differ.
+
+### 8.6 Optional xarray accelerator convenience may come later
+
+A future explicit call such as:
+
+```python
+field.sg.filter("T42", backend="torch")
+```
+
+could be useful for a user who wants an xarray result and accepts host/device
+transfer. It is not the primary accelerator API and should not be added until
+benchmarks demonstrate a useful workload.
+
+If added, document it as an xarray convenience path rather than a differentiable
+model API. Never auto-select an accelerator because hardware is present.
 
 ---
 
@@ -339,7 +445,7 @@ error measurements.
 
 ## 11. Performance acceptance
 
-Benchmark both convenience and tensor-native workflows.
+Benchmark both xarray/file-boundary and tensor-native workflows.
 
 Include at least:
 
@@ -377,19 +483,65 @@ Conceptually:
 [project.optional-dependencies]
 torch = ["torch-harmonics>=..."]
 jax = ["s2fft>=...", "jax>=..."]
+jax-xarray = ["xarray-jax>=..."]  # only if the optional integration is adopted
 ```
 
-Determine exact supported versions during implementation.
+Determine exact supported versions during implementation. Do not add the
+`jax-xarray` extra unless that integration is actually implemented and tested.
 
-Do not make Torch, JAX, CUDA, torch-harmonics, or S2FFT part of the base install.
-Normal CPU CI must remain independent of accelerator availability.
+Do not make Torch, JAX, CUDA, torch-harmonics, S2FFT, or xarray-jax part of the
+base install. Normal CPU CI must remain independent of accelerator availability.
 
 Use small CPU adapter/import tests where possible. Add GPU CI only when a
 reliable runner is available.
 
 ---
 
-## 13. Phase-4 handoff
+## 13. Relevant weather-model precedent
+
+Use current weather-model implementations as architectural evidence, not as APIs
+to copy blindly.
+
+### NVIDIA
+
+`torch-harmonics` was created to enable Spherical Fourier Neural Operators and
+is used as a PyTorch-native differentiable SHT layer. The transform API operates
+on batched tensors and is composable as `torch.nn.Module` objects. FourCastNet2
+uses the SFNO architecture; scientific file ingestion/serving is separate from
+the model's tensor computation.
+
+This supports keeping `spharmgrid.torch` tensor-native rather than making xarray
+the transform container.
+
+### Google DeepMind
+
+NeuralGCM/Dinosaur uses a JAX-native spectral dynamical core with its own
+spherical-harmonic implementation. The core SHT operates on `jax.Array`, with
+explicit nodal/modal representations and accelerator-oriented JAX execution.
+NeuralGCM separately provides xarray conversion utilities at its scientific API
+boundary.
+
+DeepMind's WeatherNext/GraphCast/GenCast code also uses xarray at the data/model
+interface and JAX internally, and current DeepMind infrastructure includes
+`xarray_jax` for making labeled xarray structures JAX PyTrees where direct
+JAX-transformed xarray workflows are valuable.
+
+GraphCast and GenCast do not solve their spherical model computation with an
+SHT; they use spherical graph/icosahedral-mesh architectures. This is a different
+way to avoid latitude/longitude convolution problems, not an alternate SHT
+implementation.
+
+The design lesson for spharmgrid is:
+
+```text
+scientific metadata / files      xarray
+accelerator numerical kernel     native Torch/JAX arrays
+optional labeled JAX execution   xarray_jax-style integration if justified
+```
+
+---
+
+## 14. Phase-4 handoff
 
 Phase 3 should leave the package ready to add new grids without another backend
 redesign.
@@ -408,7 +560,7 @@ identical analysis semantics or bandwidth on every engine.
 
 ---
 
-## 14. Acceptance criteria
+## 15. Acceptance criteria
 
 Phase 3 is complete when:
 
@@ -419,6 +571,14 @@ Phase 3 is complete when:
 - torch-harmonics is a tested optional backend on its accepted rectangular
   grids;
 - S2FFT is a tested optional JAX/spin backend on its accepted Phase-3 grid(s);
+- `spharmgrid.torch` and `spharmgrid.jax` provide tensor-native differentiable
+  APIs for the supported operation set;
+- accelerator APIs use spharmgrid grid objects rather than backend sampling
+  strings as their scientific grid contract;
+- rectangular tensor APIs use trailing horizontal dimensions with arbitrary
+  leading/batch dimensions;
+- file/CF I/O remains an xarray responsibility rather than entering the tensor
+  namespaces;
 - the supported Phase-2 operation graph is shared semantically rather than
   duplicated as independent atmospheric implementations;
 - geographic-vector/spin conventions are independently proven for each backend;
@@ -437,6 +597,9 @@ Phase 3 is complete when:
 - DUCC0: https://github.com/mreineck/ducc
 - torch-harmonics: https://github.com/NVIDIA/torch-harmonics
 - S2FFT: https://github.com/astro-informatics/s2fft
+- Dinosaur/NeuralGCM dycore: https://github.com/neuralgcm/dinosaur
+- DeepMind xarray/JAX integration: https://github.com/google-deepmind/xarray_jax
+- WeatherNext: https://github.com/google-deepmind/weathernext
 
 When implementing this phase, verify current library APIs and grid/bandwidth
 behavior from the installed versions rather than relying on this planning
