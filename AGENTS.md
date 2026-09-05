@@ -5,7 +5,7 @@ Keep this file limited to repository-wide invariants, task routing, and change c
 ## Read first
 
 - Inspect the current checkout, branch, working tree, and relevant files before editing. Current repository content overrides old chats, prompts, reports, and handoffs.
-- Read `PLAN.md` before implementing or changing the initial public API, supported grids, numerical behavior, dependencies, tests, CLI, or documentation scope.
+- Read `PLAN.md` for routing/current phase, and read the linked detailed phase plan before implementing or changing the initial public API, supported grids, numerical behavior, dependencies, tests, CLI, or documentation scope.
 - The sibling repository `../PyStormTracker` is the primary source implementation for the initial extraction. Read its current `AGENTS.md` and the relevant preprocessing code before porting numerical behavior. Do not assume an old snippet still matches that checkout.
 - Do not modify `../PyStormTracker` as part of spharmgrid work unless the owner explicitly requests it.
 
