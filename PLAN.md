@@ -45,6 +45,9 @@ The implementation is organized into sequential plans:
    - Keep GL/CC as the grid substrate while backend conventions are established.
    - Add torch-harmonics and S2FFT as optional accelerator/differentiable
      engines where their rectangular-grid capabilities are valid.
+   - Use tensor-native `spharmgrid.torch` and `spharmgrid.jax` APIs for
+     differentiable accelerator work; keep xarray as the scientific
+     metadata/file-I/O layer.
    - Keep DUCC0 as the default/reference backend.
 
 4. `plans/04-ring-grids.md`
@@ -110,9 +113,26 @@ zero/null modes, radius factors, and atmospheric sign/component conventions.
 Framework-native Torch/JAX array expressions are acceptable where required for
 differentiability, provided they implement the same tested scientific formula.
 
-Do not expose a public `backend=` selector or tensor namespace before the real
-adapters and workload measurements establish the appropriate interface. Never
-auto-select an accelerator merely because hardware is available.
+The primary accelerator interfaces are tensor-native:
+
+```text
+spharmgrid.torch   torch.Tensor
+spharmgrid.jax     jax.Array
+```
+
+Use spharmgrid grid objects as the scientific grid contract and keep
+backend-specific sampling names inside adapters. For rectangular arrays, use
+the trailing two dimensions as latitude/longitude and preserve arbitrary
+leading/batch dimensions.
+
+xarray remains the normal scientific I/O, CF metadata, coordinate, and
+file-decoding layer. Device conversion should occur explicitly at the
+application/data-loader boundary rather than inside every SHT call. Optional
+JAX/xarray interoperability such as `xarray_jax` can be evaluated after the raw
+JAX path is correct; optional xarray `backend=` convenience can be considered
+later if benchmarks justify host/device transfers.
+
+Never auto-select an accelerator merely because hardware is available.
 
 ## Grid direction
 
