@@ -8,6 +8,12 @@ useful NCL/SPHEREPACK and pyspharm workflows.
 
 This phase remains **DUCC0-only** for production numerics.
 
+Implement the scientific operation layer so its formulas and semantics are not
+needlessly tied to DUCC-specific coefficient storage. The future GPU phase is
+expected to reuse the same spectral masks, operator multipliers, zero-mode
+conventions, radius factors, atmospheric definitions, and output semantics over
+small backend adapters. Do not introduce the backend abstraction itself yet.
+
 Use `pyspharm-syl` as an independent SPHEREPACK-based parity implementation.
 NCL/SPHEREPACK function names are semantic/reference mappings, not names to
 copy into the Python API.
@@ -494,6 +500,13 @@ Share vector analysis whenever multiple requested outputs derive from the same
 input wind.
 
 Do not introduce a general backend framework yet.
+
+Keep backend-independent scientific logic visibly separate from DUCC transform
+plumbing where practical. In particular, spectral masks/tapers, degree-based
+operator multipliers, zero/null-mode handling, and atmospheric relationships
+should not be duplicated inside `_ducc.py`. Phase 4 should be able to reuse
+these definitions with torch-harmonics and S2FFT rather than reimplementing the
+physics.
 
 Do not expose DUCC-specific geometry or coefficient objects publicly.
 
