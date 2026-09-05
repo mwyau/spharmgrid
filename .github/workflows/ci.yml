@@ -3,47 +3,105 @@ name: CI
 on:
   pull_request:
   push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  UV_VERSION: "0.12.10"
+
 jobs:
-  checks:
-    runs-on: ubuntu-latest
+  tests:
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
         python: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v10.0.1
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --group dev --frozen
+      - run: uv sync --group dev --all-extras --frozen
       - run: uv run --no-sync pytest
+
+  minimum-dependencies:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group test --all-extras --resolution lowest-direct
+      - run: uv run --no-sync pytest
+
+  code-quality:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+      - run: uv sync --group dev --all-extras --frozen
       - run: uv run --no-sync ruff check src tests
       - run: uv run --no-sync ruff format --check src tests
       - run: uv run --no-sync ty check
 
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v10.0.1
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
-          python-version: "3.13"
+          python-version: "3.14"
       - run: uv sync --group docs --frozen
       - run: uv run --no-sync sphinx-build -W --keep-going -b html docs docs/_build/html
 
   parity:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v10.0.1
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.13"
-      - run: uv sync --group test --group parity --frozen
+      - run: uv sync --group test --group parity --all-extras --frozen
       - run: uv run --no-sync pytest tests/parity
+
+  package:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+      - run: uv build --wheel --sdist
+      - run: uv venv .wheel-venv
+      - run: uv pip install --python .wheel-venv/bin/python dist/*.whl
+      - run: .wheel-venv/bin/python -c 'import spharmgrid; print("wheel import success")'
+      - run: .wheel-venv/bin/spharmgrid --help
