@@ -1,9 +1,9 @@
 # spharmgrid roadmap
 
 `spharmgrid` is an xarray-first spherical-harmonic operations package for
-atmospheric and geophysical fields. Its scope is intentionally limited to
-operations whose numerical core is a spherical-harmonic transform or a direct
-spectral-space operator.
+atmospheric and geophysical fields. Its scope is limited to operations whose
+numerical core is a spherical-harmonic transform or a direct spectral-space
+operator.
 
 It is not a generic interpolation or regridding package.
 
@@ -12,48 +12,65 @@ numerical transform engines:
 
 ```text
 DUCC0             CPU/reference implementation
-torch-harmonics   PyTorch/GPU vector-SHT implementation
-S2FFT             JAX/GPU arbitrary-spin and HEALPix implementation
+torch-harmonics   PyTorch/GPU scalar + vector SHT implementation
+S2FFT             JAX/GPU arbitrary-spin implementation
 ```
 
-The atmospheric and spectral mathematics belong to spharmgrid and should be
-implemented once. Backend-specific code should be limited to transform
-primitives, coefficient/convention translation, supported-grid checks, and
-array/device integration.
+The atmospheric and spectral mathematics belong to spharmgrid. Backend-specific
+code should be limited to transform primitives, convention/coefficient
+translation, supported-grid checks, and framework/device integration.
 
 ## Plan structure
 
 The implementation is organized into sequential plans:
 
-1. `plans/01-core.md`
-   - Initial DUCC0 implementation.
-   - Full rectangular Gauss--Legendre (GL) and pole-including
-     Clenshaw--Curtis (CC) grids.
-   - Scalar spectral filtering and regridding.
-   - Scalar gradient/Laplacian operators.
-   - Wind vorticity/divergence, streamfunction/velocity potential, and inverse
-     wind transforms.
-   - xarray/CF integration.
+1. `plans/01-core.md` — **implemented baseline**
+   - DUCC0 implementation on full rectangular Gauss--Legendre (GL) and
+     pole-including Clenshaw--Curtis (CC) grids.
+   - Scalar filtering/regridding and differential operators.
+   - Atmospheric vorticity/divergence, streamfunction/velocity potential, and
+     inverse wind transforms.
+   - xarray/CF/Dask integration and the file-oriented CLI.
 
-2. `plans/02-sht-suite.md`
-   - **Current next phase.**
-   - Complete the high-value NCL/SPHEREPACK-style scalar/vector SHT operator
-     suite without exposing a generic interpolation layer.
-   - Use `pyspharm-syl`/SPHEREPACK as an independent parity implementation.
+2. `plans/02-sht-suite.md` — **current next phase**
+   - Complete the high-value scalar/vector SHT operator suite.
+   - Add vector regridding, Helmholtz decomposition, inverse gradient, and
+     vector Laplacian/inverse vector Laplacian.
+   - Establish the complete scientific operation contract before alternate
+     transform engines are introduced.
 
-3. `plans/03-ring-grids.md`
-   - Add reduced Gaussian and HEALPix grids through DUCC0's isolatitude-ring
-     SHT interfaces.
-   - Keep transform accuracy and analysis semantics explicit where exact
-     quadrature is unavailable.
+3. `plans/03-gpu-backends.md`
+   - Introduce the smallest backend boundary required by the real DUCC0,
+     torch-harmonics, and S2FFT implementations.
+   - Keep GL/CC as the grid substrate while backend conventions are established.
+   - Add torch-harmonics and S2FFT as optional accelerator/differentiable
+     engines where their rectangular-grid capabilities are valid.
+   - Keep DUCC0 as the default/reference backend.
 
-4. `plans/04-gpu-backends.md`
-   - Add optional accelerator integrations only after CPU/grid semantics are
-     stable.
-   - Integrate both torch-harmonics and S2FFT as thin optional transform
-     backends where their grid capabilities are valid.
-   - Preserve one spharmgrid scientific API over DUCC0, torch-harmonics, and
-     S2FFT, with backend-specific convention/parity tests.
+4. `plans/04-ring-grids.md`
+   - Expand the public grid model only after the backend boundary is proven.
+   - Add HEALPix first, using DUCC0 and S2FFT where appropriate.
+   - Add reduced Gaussian as a separate subphase, initially through DUCC0 unless
+     another engine provides a verified equivalent transform.
+   - Keep analysis accuracy/iteration semantics explicit for non-quadrature
+     grids.
+
+## Why backends precede new grid families
+
+Do not combine two large architectural changes unnecessarily.
+
+The backend boundary should first be derived and validated while spharmgrid has
+only the simple rectangular GL/CC model. This isolates coefficient layout,
+normalization, spin/vector conventions, dtype/device behavior, and backend
+bandwidth differences from the separate problem of representing packed ring or
+pixel grids.
+
+HEALPix also has more than one relevant engine: DUCC0 and S2FFT. Designing its
+public grid object after the S2FFT adapter exists reduces the risk of exposing a
+DUCC-specific ring-geometry representation as the package-level scientific API.
+
+Reduced Gaussian can remain DUCC-only initially; it does not need to block the
+accelerator architecture.
 
 ## Scope rule
 
@@ -80,22 +97,44 @@ Those are better handled by dedicated regridding packages.
 
 ## Backend direction
 
-Phases 1--3 remain DUCC0-only in production. Do not build a speculative
-backend framework before Phase 4. However, new scientific operations should
-keep physical formulas, spectral multipliers, signs, radius conventions, and
-metadata separate from direct DUCC calls so that Phase 4 can reuse the same
-scientific implementation.
+Phases 1 and 2 remain DUCC0-only in production. Do not build a speculative
+backend framework during Phase 2.
 
-The intended Phase 4 design is not three copies of spharmgrid. It is one
-scientific layer over small backend adapters exposing the scalar/vector or
-spin analysis and synthesis primitives needed by the supported operation set.
+Phase 3 is the point where an internal backend abstraction becomes justified,
+because two real alternate engines are implemented against it. Start by
+extracting only what the current DUCC path and alternate adapters actually need;
+do not design a plugin framework in advance.
+
+Keep one scientific definition for spectral masks, operator multipliers,
+zero/null modes, radius factors, and atmospheric sign/component conventions.
+Framework-native Torch/JAX array expressions are acceptable where required for
+differentiability, provided they implement the same tested scientific formula.
+
+Do not expose a public `backend=` selector or tensor namespace before the real
+adapters and workload measurements establish the appropriate interface. Never
+auto-select an accelerator merely because hardware is available.
+
+## Grid direction
+
+Phase 4 uses backend/grid capabilities rather than assuming a Cartesian product
+of every engine and every grid.
+
+Expected initial direction:
+
+```text
+GL                DUCC0 + torch-harmonics + S2FFT where validated
+CC                DUCC0 + torch-harmonics where validated
+HEALPix           DUCC0 + S2FFT
+reduced Gaussian  DUCC0 initially
+```
+
+This is a capability target, not a claim that the same bandwidth, analysis
+method, or precision applies to every backend/grid pair.
 
 ## Current implementation contract
 
 Until `plans/02-sht-suite.md` is implemented, the existing public behavior is
-the Phase 1 contract. Moving the original long `PLAN.md` to
-`plans/01-core.md` should preserve it unchanged as the record of that phase.
+the Phase-1 contract recorded in `plans/01-core.md`.
 
-When plans are added to the repository, keep this root `PLAN.md` short. It is
-the routing document that tells contributors which detailed plan governs the
-requested work.
+Keep this root `PLAN.md` short. It is the routing document; detailed scientific
+and implementation decisions belong in the owning phase plan.
