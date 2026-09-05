@@ -1,24 +1,36 @@
-# Phase 4: optional GPU and differentiable SHT backends
+# Phase 4: three-backend SHT execution
 
 ## Goal
 
 Add accelerator support only after the DUCC CPU API, SHT operator suite, and
 new grid semantics are stable.
 
-The purpose is not to replace DUCC0.
-
-The purpose is to make the same spharmgrid scientific operations useful in
-GPU-resident and differentiable workflows.
-
-Initial candidates:
+The intended long-term architecture is **one spharmgrid scientific API over
+three SHT engines**:
 
 ```text
-torch-harmonics
-S2FFT
+DUCC0             CPU/reference implementation
+torch-harmonics   PyTorch/GPU scalar + vector SHT implementation
+S2FFT             JAX/GPU arbitrary-spin + HEALPix implementation
 ```
 
-Both provide the harmonic primitives needed to reproduce much of spharmgrid's
-mathematics, but neither directly provides spharmgrid's atmospheric/xarray API.
+The purpose is not to replace DUCC0 or to maintain three independent copies of
+the atmospheric algorithms. Both GPU libraries already provide the transform
+primitives required to reproduce essentially all of spharmgrid's current and
+Phase 2 mathematics on the grids they support. spharmgrid should implement the
+physical/spectral definitions once and use thin backend adapters for:
+
+- scalar analysis/synthesis;
+- vector or spin-1 analysis/synthesis;
+- coefficient-layout and convention translation;
+- supported-grid checks;
+- array/device integration.
+
+The majority of `filter`, differential operators, vorticity/divergence,
+streamfunction/velocity potential, Helmholtz decomposition, inverse winds, and
+scalar/vector spectral regridding should remain shared spharmgrid code.
+
+Neither GPU library directly provides spharmgrid's atmospheric/xarray API.
 
 ---
 
@@ -93,7 +105,48 @@ multipliers, variable semantics, signs and output conventions.
 
 ---
 
-## 2. Do not assume identical grid support
+## 2. Shared spharmgrid mathematics
+
+Do not reimplement atmospheric operations independently for each backend.
+
+Keep one source of truth for operations that are fundamentally spectral
+multipliers or compositions, including:
+
+```text
+filter / taper
+    coefficient mask or degree response
+
+scalar Laplacian
+    -l(l+1)/R^2
+
+inverse scalar Laplacian
+    -R^2/[l(l+1)] with the documented zero-mode convention
+
+gradient / inverse gradient
+    scalar <-> spin/vector spectral relationship
+
+vorticity / divergence
+    vector/spin coefficients <-> sqrt(l(l+1))/R scaling
+
+streamfunction / velocity potential
+    vorticity/divergence plus inverse Laplacian
+
+rotational / divergent / full wind
+    construct the appropriate vector/spin spectral components and synthesize
+
+scalar/vector spectral regridding
+    analysis -> optional spectral operation -> synthesis on the target grid
+```
+
+Backend adapters may need different coefficient representations, but the
+scientific definition of these operations must not fork by backend.
+
+The expected custom numerical work is primarily convention translation and
+parity verification, not new atmospheric mathematics.
+
+---
+
+## 3. Do not assume identical grid support
 
 Backend support should be capability-based.
 
@@ -126,7 +179,7 @@ The public API should not promise every backend supports every grid.
 
 ---
 
-## 3. First implementation decision: tensor-native API vs xarray transfer
+## 4. First implementation decision: tensor-native API vs xarray transfer
 
 The current package is xarray-first.
 
@@ -181,12 +234,14 @@ Do not expose either design before measuring real workloads.
 
 ---
 
-## 4. Backend architecture becomes justified only here
+## 5. Backend architecture becomes justified only here
 
 The initial project correctly avoided a hypothetical backend framework.
 
-At this phase, with two or more actual implementations, introduce the smallest
-internal transform protocol that the supported operations need.
+At this phase, with two actual alternate implementations, introduce the
+smallest internal transform protocol that the supported operations need. The
+target is to support all three engines, not merely to experiment with one GPU
+backend.
 
 Conceptually:
 
@@ -231,11 +286,12 @@ backend code.
 
 ---
 
-## 5. Candidate rollout
+## 6. Candidate rollout
 
-### 5.1 torch-harmonics first for PyTorch
+### 6.1 torch-harmonics for PyTorch
 
-Prototype torch-harmonics first for:
+Implement torch-harmonics first because its explicit real vector SHT maps most
+directly to spharmgrid's current wind machinery. Start with:
 
 ```text
 GL
@@ -276,10 +332,11 @@ wind
 Do not add a GPU backend for an operation until cross-backend parity is
 demonstrated.
 
-### 5.2 S2FFT for JAX/spin/HEALPix
+### 6.2 S2FFT for JAX/spin/HEALPix
 
-Use S2FFT where it provides a distinct capability rather than maintaining two
-redundant PyTorch implementations.
+Then implement S2FFT as the second optional accelerator backend, concentrating
+on its distinct JAX, arbitrary-spin, and HEALPix capabilities rather than
+maintaining a redundant second PyTorch-facing API.
 
 Initial focus:
 
@@ -295,12 +352,13 @@ independently.
 
 Do not reuse DUCC sign constants blindly.
 
-If S2FFT's PyTorch wrapper provides no distinct benefit over torch-harmonics,
-do not expose it as a second public PyTorch backend merely for completeness.
+S2FFT's PyTorch wrapper does not need to become a separate public PyTorch
+backend if torch-harmonics already serves that use case. S2FFT can still be a
+first-class spharmgrid backend for JAX/spin/HEALPix workflows.
 
 ---
 
-## 6. Cross-backend convention audit
+## 7. Cross-backend convention audit
 
 For each backend document and test:
 
@@ -335,7 +393,7 @@ where applicable.
 
 ---
 
-## 7. Differentiability
+## 8. Differentiability
 
 For tensor-native APIs:
 
@@ -360,7 +418,7 @@ library is differentiable.
 
 ---
 
-## 8. Precision
+## 9. Precision
 
 Establish explicit cross-backend expectations for:
 
@@ -387,7 +445,7 @@ physical-field error.
 
 ---
 
-## 9. Performance acceptance
+## 10. Performance acceptance
 
 GPU support is valuable primarily when:
 
@@ -423,7 +481,7 @@ For tensor-native workloads, benchmark with data already resident on device.
 
 ---
 
-## 10. Optional dependencies
+## 11. Optional dependencies
 
 Keep accelerator stacks optional.
 
@@ -447,10 +505,12 @@ when a reliable GPU runner is available.
 
 ---
 
-## 11. Public backend selection
+## 12. Public backend selection
 
-Do not expose a public `backend=` enum until at least one alternate backend is
-implemented and tested.
+Do not expose a public `backend=` enum until torch-harmonics is implemented and
+tested and the S2FFT adapter shape is understood. The intended end state is
+explicit access to DUCC0, torch-harmonics, and S2FFT where each supports the
+requested grid/operation.
 
 When that point is reached, choose between:
 
@@ -468,20 +528,25 @@ Explicit selection is required for reproducibility.
 
 ---
 
-## 12. Acceptance criteria
+## 13. Acceptance criteria
 
 Phase 4 is complete when:
 
 - DUCC remains the default/reference CPU implementation;
-- at least one GPU/tensor backend reproduces the supported spharmgrid
-  scientific operation set within stated tolerances;
+- torch-harmonics reproduces the supported spharmgrid scientific operation
+  set on its accepted grids within stated tolerances;
+- S2FFT reproduces the supported spharmgrid scientific operation set on its
+  accepted grids within stated tolerances, with particular coverage for JAX,
+  spin transforms, and HEALPix where applicable;
 - geographic-vector/spin conventions are independently proven;
 - differentiable paths contain no NumPy breaks;
 - unsupported backend/grid combinations fail clearly;
 - GPU performance is measured including realistic overhead;
 - base installation remains free of Torch/JAX dependencies;
-- no two redundant public accelerator backends are maintained without a
-  distinct use case;
+- the three engines share one spharmgrid scientific implementation rather than
+  duplicating physical formulas per backend;
+- overlapping accelerator capabilities are exposed without duplicating
+  framework-specific public APIs that have no distinct use case;
 - documentation separates numerical backend capability from spharmgrid
   scientific semantics.
 
