@@ -109,7 +109,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("input", help="input file readable by xarray")
-    parser.add_argument("output", help="output file written by xarray")
+    parser.add_argument("output", help="output NetCDF file written by xarray")
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
@@ -146,7 +146,9 @@ def _filter(arguments: argparse.Namespace) -> int:
             taper=arguments.taper,
             nthreads=arguments.nthreads,
         )
-        result.to_dataset(name=result.name or "filtered").to_netcdf(arguments.output)
+        _write_netcdf(
+            result.to_dataset(name=result.name or "filtered"), arguments.output
+        )
     return 0
 
 
@@ -169,7 +171,9 @@ def _regrid(arguments: argparse.Namespace) -> int:
             taper=arguments.taper,
             nthreads=arguments.nthreads,
         )
-        result.to_dataset(name=result.name or "regridded").to_netcdf(arguments.output)
+        _write_netcdf(
+            result.to_dataset(name=result.name or "regridded"), arguments.output
+        )
     return 0
 
 
@@ -182,7 +186,7 @@ def _kinematics(arguments: argparse.Namespace) -> int:
             divergence=arguments.divergence,
             nthreads=arguments.nthreads,
         )
-        result.to_netcdf(arguments.output)
+        _write_netcdf(result, arguments.output)
     return 0
 
 
@@ -195,7 +199,7 @@ def _potentials(arguments: argparse.Namespace) -> int:
             velocity_potential=arguments.velocity_potential,
             nthreads=arguments.nthreads,
         )
-        result.to_netcdf(arguments.output)
+        _write_netcdf(result, arguments.output)
     return 0
 
 
@@ -215,8 +219,21 @@ def _wind(arguments: argparse.Namespace) -> int:
             northward=arguments.northward,
             nthreads=arguments.nthreads,
         )
-        result.to_netcdf(arguments.output)
+        _write_netcdf(result, arguments.output)
     return 0
+
+
+def _write_netcdf(dataset: xr.Dataset, output: str) -> None:
+    """Write NetCDF with an installed xarray engine, including h5netcdf."""
+    engines = xr.backends.list_engines()
+    if "netcdf4" in engines:
+        dataset.to_netcdf(output, engine="netcdf4")
+    elif "h5netcdf" in engines:
+        dataset.to_netcdf(output, engine="h5netcdf")
+    elif "scipy" in engines:
+        dataset.to_netcdf(output, engine="scipy")
+    else:
+        dataset.to_netcdf(output)
 
 
 def _select_variable(dataset: xr.Dataset, name: str | None) -> xr.DataArray:

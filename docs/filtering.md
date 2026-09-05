@@ -16,9 +16,15 @@ $6 \leq l \leq 42$. Parsing is case-insensitive and accepts an en dash, for
 example `T6–42`. Do not mix `spectral=` notation with explicit `lmin=` and
 `lmax=` in one call.
 
+With no spectral range, spharmgrid uses the complete transform bandwidth
+representable by the grid rather than inventing an implicit `Tn` truncation.
+This can retain higher-degree zonally symmetric content when latitude sampling
+supports it but longitude sampling limits the largest represented order.
+
 ## Hard selection is the default
 
-`taper=None` is the default. It is an exact hard selection:
+`taper=None` is the default. With an explicit retained range it is an exact
+hard selection:
 
 ```text
 l < lmin             zero
@@ -26,7 +32,8 @@ lmin <= l <= lmax    retained unchanged
 l > lmax             zero
 ```
 
-There is no hidden smoothing.
+There is no hidden smoothing. With no spectral range and no taper, `filter()`
+performs an analysis/synthesis over the grid's available transform bandwidth.
 
 ## Optional Sardeshmukh--Hoskins taper
 
@@ -43,9 +50,10 @@ w(l)=\exp[-K\{l(l+1)\}^2],
 K=\frac{-\ln(\mathrm{taper})}{\{l_{\max}(l_{\max}+1)\}^2}.
 ```
 
-Thus `taper=0.1` means $w(l_{\max})=0.1$. The response is applied only inside
-the retained range; modes outside it remain zero. `taper=1` leaves retained
-modes unchanged.
+Thus `taper=0.1` means $w(l_{\max})=0.1$. With an explicit range, the response
+is applied only inside the retained range and modes outside it remain zero.
+Without an explicit range, the endpoint is the transform `lmax` available on
+the grid. `taper=1` leaves retained modes unchanged.
 
 The taper is a coefficient response, not a generic smoothing-strength
 parameter. Its published lineage is documented in {doc}`references`.

@@ -2,9 +2,20 @@
 
 The `spharmgrid` command is a small file-oriented helper for the same spectral
 filtering, regridding, and atmospheric wind diagnostics exposed by the Python
-API. It delegates reading and writing to xarray and calls the same package
-functions as Python users. Normal NetCDF works when an xarray NetCDF engine is
-installed; optional engines can also support Zarr or GRIB input.
+API. It delegates input decoding to xarray and installed xarray backends, calls
+the same package functions as Python users, and writes NetCDF output through an
+installed NetCDF-capable xarray engine.
+
+Normal NetCDF input and output work with the `io` extra:
+
+```bash
+uv add "spharmgrid[io]"
+```
+
+Other input formats, such as Zarr or GRIB, can be read when xarray can infer an
+installed backend for the supplied path. The CLI does not provide GRIB or Zarr
+output; use the Python API and xarray directly when another output format is
+required.
 
 ```bash
 spharmgrid info input.nc

@@ -304,7 +304,11 @@ def _find_coordinate(
 def _cf_xarray_coordinates(
     field: xr.DataArray | xr.Dataset, standard_name: str
 ) -> list[str]:
-    """Ask cf-xarray for a coordinate only when the optional accessor exists."""
+    """Ask cf-xarray for a coordinate when the optional package is installed."""
+    try:
+        import cf_xarray  # noqa: F401  # registers the xarray .cf accessor
+    except ImportError:
+        return []
     try:
         accessor = field.cf  # type: ignore[attr-defined]
     except (AttributeError, ImportError):

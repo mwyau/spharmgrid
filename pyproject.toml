@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "spharmgrid"
 version = "0.1.0.dev0"
-description = "Spherical-harmonic filtering, regridding, and atmospheric field operations for global xarray grids using ducc0."
+description = "Spherical-harmonic filtering, regridding, differential operators, and atmospheric wind diagnostics for global xarray fields using ducc0."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"

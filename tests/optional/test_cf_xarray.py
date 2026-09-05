@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib.util import find_spec
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -9,9 +11,10 @@ import xarray as xr
 import spharmgrid as sg
 
 
-def test_cf_xarray_axis_metadata_can_identify_supported_coordinates() -> None:
+def test_cf_xarray_is_imported_lazily_for_axis_metadata() -> None:
     """Axis/units metadata is an optional fallback after the core paths."""
-    pytest.importorskip("cf_xarray")
+    if find_spec("cf_xarray") is None:
+        pytest.skip("cf-xarray is not installed")
     latitude = xr.DataArray(
         np.linspace(-90.0, 90.0, 17),
         dims="y",
