@@ -7,6 +7,20 @@ spectral-space operator.
 
 It is not a generic interpolation or regridding package.
 
+Long term, spharmgrid is intended to provide one scientific SHT API over three
+numerical transform engines:
+
+```text
+DUCC0             CPU/reference implementation
+torch-harmonics   PyTorch/GPU vector-SHT implementation
+S2FFT             JAX/GPU arbitrary-spin and HEALPix implementation
+```
+
+The atmospheric and spectral mathematics belong to spharmgrid and should be
+implemented once. Backend-specific code should be limited to transform
+primitives, coefficient/convention translation, supported-grid checks, and
+array/device integration.
+
 ## Plan structure
 
 The implementation is organized into sequential plans:
@@ -36,9 +50,10 @@ The implementation is organized into sequential plans:
 4. `plans/04-gpu-backends.md`
    - Add optional accelerator integrations only after CPU/grid semantics are
      stable.
-   - Evaluate torch-harmonics for PyTorch/vector SHT workflows and S2FFT for
-     JAX/spin/HEALPix workflows.
-   - Preserve one spharmgrid scientific API and verify backend parity.
+   - Integrate both torch-harmonics and S2FFT as thin optional transform
+     backends where their grid capabilities are valid.
+   - Preserve one spharmgrid scientific API over DUCC0, torch-harmonics, and
+     S2FFT, with backend-specific convention/parity tests.
 
 ## Scope rule
 
@@ -62,6 +77,18 @@ The following do not belong in spharmgrid merely for convenience:
 - generic horizontal-grid conversion unrelated to SHTs.
 
 Those are better handled by dedicated regridding packages.
+
+## Backend direction
+
+Phases 1--3 remain DUCC0-only in production. Do not build a speculative
+backend framework before Phase 4. However, new scientific operations should
+keep physical formulas, spectral multipliers, signs, radius conventions, and
+metadata separate from direct DUCC calls so that Phase 4 can reuse the same
+scientific implementation.
+
+The intended Phase 4 design is not three copies of spharmgrid. It is one
+scientific layer over small backend adapters exposing the scalar/vector or
+spin analysis and synthesis primitives needed by the supported operation set.
 
 ## Current implementation contract
 
