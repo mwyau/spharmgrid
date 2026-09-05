@@ -6,13 +6,15 @@ Extend spharmgrid from its initial atmospheric transform set into a coherent,
 high-value spherical-harmonic operator suite comparable in capability to the
 useful NCL/SPHEREPACK and pyspharm workflows.
 
-This phase remains **DUCC0-only** for production numerics.
+This phase remains **DUCC0-only** for production numerics and retains the
+existing rectangular GL/CC grid model. Phase 3 will introduce alternate
+backends before Phase 4 expands the grid model.
 
 Implement the scientific operation layer so its formulas and semantics are not
-needlessly tied to DUCC-specific coefficient storage. The future GPU phase is
-expected to reuse the same spectral masks, operator multipliers, zero-mode
-conventions, radius factors, atmospheric definitions, and output semantics over
-small backend adapters. Do not introduce the backend abstraction itself yet.
+needlessly tied to DUCC-specific coefficient storage. Phase 3 is expected to
+reuse the same spectral masks, operator multipliers, zero-mode conventions,
+radius factors, atmospheric definitions, and output semantics over small
+backend adapters. Do not introduce the backend abstraction itself yet.
 
 Use `pyspharm-syl` as an independent SPHEREPACK-based parity implementation.
 NCL/SPHEREPACK function names are semantic/reference mappings, not names to
@@ -317,8 +319,8 @@ Reasons:
 - A public coefficient representation becomes a compatibility contract.
 - The current physical-field API already supports the high-value atmospheric
   workflows without requiring users to understand packed `alm` storage.
-- A future accelerator layer should not be constrained by a prematurely
-  public DUCC-specific coefficient layout.
+- Phase 3 should not be constrained by a prematurely public DUCC-specific
+  coefficient layout.
 
 Continue using internal analysis/synthesis helpers as needed.
 
@@ -504,9 +506,13 @@ Do not introduce a general backend framework yet.
 Keep backend-independent scientific logic visibly separate from DUCC transform
 plumbing where practical. In particular, spectral masks/tapers, degree-based
 operator multipliers, zero/null-mode handling, and atmospheric relationships
-should not be duplicated inside `_ducc.py`. Phase 4 should be able to reuse
-these definitions with torch-harmonics and S2FFT rather than reimplementing the
+should not be duplicated inside `_ducc.py`. Phase 3 should be able to reuse
+these definitions with torch-harmonics and S2FFT rather than re-deriving the
 physics.
+
+Do not contort Phase-2 implementation into a hypothetical universal array layer.
+Phase 3 may need small framework-native Torch/JAX coefficient operations to
+preserve differentiation while retaining the same scientific formulas.
 
 Do not expose DUCC-specific geometry or coefficient objects publicly.
 
@@ -563,7 +569,8 @@ Phase 2 is complete when:
 - Dask tests cover the new operations where supported;
 - no pyspharm runtime dependency is introduced;
 - no non-SHT interpolation is added;
-- no public raw coefficient format is introduced.
+- no public raw coefficient format is introduced;
+- no alternate-backend or ring-grid public API is introduced prematurely.
 
 ---
 
