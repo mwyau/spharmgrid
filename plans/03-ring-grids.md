@@ -12,6 +12,11 @@ HEALPix
 
 Continue using DUCC0 as the only production SHT engine in this phase.
 
+Define reduced-Gaussian and HEALPix grid geometry as spharmgrid scientific/data
+semantics rather than as public DUCC argument bundles. Phase 4 may map the same
+grid objects to other engines where those engines genuinely support equivalent
+sampling. Do not add backend abstractions in this phase.
+
 This remains an SHT feature. Do not add generic interpolation methods.
 
 The key design change is that not every supported grid can be represented by a
@@ -94,7 +99,10 @@ Requirements:
 - provide enough information to reconstruct xarray coordinates and map
   ordering;
 - make grid equality/equivalence explicit;
-- make backend transform geometry derivable without inspecting xarray data.
+- make backend transform geometry derivable without inspecting xarray data;
+- keep the public grid description independent of DUCC-specific coefficient or
+  transform-call layouts so a future supported backend can map the same grid
+  without changing the scientific API.
 
 Because spharmgrid is still pre-1.0, prefer a coherent grid model over
 preserving a weak abstraction solely for compatibility.
