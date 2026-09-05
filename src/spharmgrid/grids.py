@@ -1,6 +1,6 @@
 """Supported global spherical grids and coordinate discovery.
 
-The public grid descriptor is deliberately small.  ``ducc0`` performs the
+The public grid descriptor is small.  ``ducc0`` performs the
 actual spherical-harmonic transforms; this module validates the two sampling
 geometries that spharmgrid passes to it.
 """

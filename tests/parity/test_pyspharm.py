@@ -1,8 +1,8 @@
-"""Optional Gaussian-grid parity checks against pyspharm-syl/SPHEREPACK."""
+"""Optional GL/CC parity checks against pyspharm-syl/SPHEREPACK."""
 
 from __future__ import annotations
 
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 import numpy as np
 import pytest
@@ -177,14 +177,42 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
     )
 
 
-def test_gaussian_wind_kinematics_potentials_and_inverse_match_pyspharm() -> None:
-    grid = _gaussian_grid()
+@pytest.mark.parametrize(
+    ("kind", "gridtype", "potential_atol"),
+    [
+        ("gaussian", "gaussian", 3.0e-4),
+        ("cc", "regular", 20.0),
+    ],
+)
+def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
+    kind: Literal["cc", "gaussian"],
+    gridtype: Literal["gaussian", "regular"],
+    potential_atol: float,
+) -> None:
+    grid = (
+        _gaussian_grid()
+        if kind == "gaussian"
+        else sg.clenshaw_curtis_grid(17, 36, latitude_order="ascending")
+    )
     u, v = solid_body_wind(grid)
     # Include a degree-one divergent component so SPHEREPACK's potential
     # comparison has a resolved signal rather than testing only its
     # float32-level zero-divergence residual.
     v = v + (7.0 * np.cos(np.deg2rad(grid.latitude))[:, None] * np.ones((1, grid.nlon)))
-    reference = _reference_transform()
+    reference = (
+        _reference_transform()
+        if gridtype == "gaussian"
+        else cast(
+            _SpharmTransform,
+            spharm.Spharmt(
+                grid.nlon,
+                grid.nlat,
+                rsphere=sg.EARTH_RADIUS_M,
+                gridtype=gridtype,
+                legfunc="stored",
+            ),
+        )
+    )
     reference_u = _north_to_south(np.asarray(u.values, dtype=np.float64))
     reference_v = _north_to_south(np.asarray(v.values, dtype=np.float64))
     reference_vorticity, reference_divergence = reference.getvrtdivspec(
@@ -219,13 +247,16 @@ def test_gaussian_wind_kinematics_potentials_and_inverse_match_pyspharm() -> Non
         _north_to_south(np.asarray(potential.strf.values)),
         reference_psi,
         rtol=3.0e-6,
-        atol=3.0e-4,
+        # The regular-grid SPHEREPACK wrapper returns float32 potentials.
+        # At the CC equator, their degree-one zero has a measured residual
+        # of about 16 m2 s-1 on an O(1e8 m2 s-1) field.
+        atol=potential_atol,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.vp.values)),
         reference_chi,
         rtol=3.0e-6,
-        atol=3.0e-4,
+        atol=potential_atol,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(reconstructed.u.values)),

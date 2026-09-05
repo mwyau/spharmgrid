@@ -161,7 +161,7 @@ def apply_ufunc_options(
     """Return Dask options that keep horizontal transforms lazy when possible."""
     if field.chunks is None:
         return {"dask": "forbidden"}
-    # xarray's public ``dask_gufunc_kwargs`` annotation intentionally accepts
+    # xarray's public ``dask_gufunc_kwargs`` annotation accepts
     # heterogeneous values. Keep that third-party boundary localized here.
     gufunc_kwargs: dict[str, Any] = {"allow_rechunk": True}
     if output_sizes is not None:

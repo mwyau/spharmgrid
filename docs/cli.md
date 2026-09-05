@@ -9,7 +9,7 @@ installed NetCDF-capable xarray engine.
 Normal NetCDF input and output work with the `io` extra:
 
 ```bash
-uv add "spharmgrid[io]"
+uv add "spharmgrid[io] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
 Other input formats, such as Zarr or GRIB, can be read when xarray can infer an

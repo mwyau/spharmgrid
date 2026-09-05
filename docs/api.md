@@ -1,6 +1,6 @@
 # API reference
 
-The top-level namespace is intentionally small. Import it as:
+The top-level namespace is small. Import it as:
 
 ```python
 import spharmgrid as sg

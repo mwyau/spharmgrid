@@ -61,7 +61,7 @@ canonical coordinate names, but consults it as a later coordinate-discovery
 aid when installed:
 
 ```bash
-uv add "spharmgrid[cf]"
+uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
 ## Dask
@@ -69,7 +69,7 @@ uv add "spharmgrid[cf]"
 Dask is optional as well:
 
 ```bash
-uv add "spharmgrid[dask]"
+uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
 For Dask-backed xarray fields, transforms remain lazy. Horizontal core

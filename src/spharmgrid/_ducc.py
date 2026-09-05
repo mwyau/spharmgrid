@@ -139,8 +139,8 @@ def vector_analysis(
     """Analyze geographic eastward/northward wind into DUCC E/B coefficients.
 
     DUCC's spin-1 map components are ``(v_theta, v_phi)``.  Geographic wind
-    uses northward ``v``, while increasing theta points south, so the source
-    PyStormTracker convention is ``(-v, u)``.
+    uses northward ``v``, while increasing theta points south, so spharmgrid
+    maps the components as ``(-v, u)``.
     """
     _require_frame(u)
     _require_frame(v)
