@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spharmgrid"
+version = "0.1.0.dev0"
+description = "Spherical-harmonic filtering, regridding, and atmospheric field operations for global xarray grids using ducc0."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+authors = [{ name = "Albert Yau" }]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+dependencies = [
+    "ducc0>=0.39",
+    "numpy>=2.0",
+    "xarray>=2024.10",
+]
+
+[project.scripts]
+spharmgrid = "spharmgrid.cli:main"
+
+[project.urls]
+Documentation = "https://spharmgrid.readthedocs.io/"
+Repository = "https://github.com/mwyau/spharmgrid"
+
+[project.optional-dependencies]
+cf = ["cf-xarray>=0.10"]
+dask = ["dask[array]>=2024.10"]
+io = ["h5netcdf>=1.3", "h5py>=3.11"]
+
+[tool.uv]
+default-groups = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spharmgrid"]
+
+[dependency-groups]
+dev = [
+    { include-group = "docs" },
+    { include-group = "test" },
+    "ruff>=0.12",
+    "ty>=0.0.78",
+]
+docs = [
+    "myst-parser>=4.0",
+    "sphinx>=8.0",
+    "sphinx-rtd-theme>=3.0",
+]
+test = [
+    "cftime>=1.6.5",
+    "dask[array]>=2024.10",
+    "h5netcdf>=1.3",
+    "h5py>=3.11",
+    "pytest>=8.0",
+]
+# The optional comparison suite imports ``spharm`` from pyspharm-syl.  Keep it
+# out of the production and ordinary-test environments because its supported
+# Python versions are independent of spharmgrid's runtime support.
+parity = ["pyspharm-syl>=1.2.0; python_version < '3.14'"]
+
+[tool.pytest.ini_options]
+addopts = ["-ra", "-q"]
+testpaths = ["tests"]
+strict_markers = true
+markers = [
+    "parity: compares against an independently implemented transform package",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["ANN", "B", "C4", "E", "F", "I", "NPY", "PT", "SIM", "UP", "W"]
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ty.analysis]
+allowed-unresolved-imports = ["ducc0", "ducc0.*"]
