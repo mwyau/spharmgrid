@@ -2,19 +2,37 @@
 
 ## Implementation target
 
-Use **Luna Max** for the first implementation pass. This is a small package, but the work is not a small mechanical extraction: it combines spherical-harmonic numerics, GL/CC grid detection, xarray/Dask handling, CF metadata, vector-wind conventions, inverse transforms, a thin CLI, and cross-implementation parity tests. Terra is suitable for later cleanup or isolated follow-up changes, not for the initial implementation.
+Use **Terra Max** for the first implementation pass.
 
-Do not release, tag, publish to PyPI, or add release automation as part of this plan.
+The work is bounded but numerically coupled: it combines DUCC0 spherical-harmonic conventions, GL/CC grid handling, xarray/Dask behavior, vector transforms, CF semantics, external parity tests, packaging, and a complete documentation build. Terra Max is preferred for the first pass because mistakes in vector signs, grid orientation, or API coupling can look plausible while being scientifically wrong.
 
-The implementation agent may and should use the sibling repository at:
+Do not expand the package beyond this plan. In particular, do not add a backend framework, coefficient object model, plugin system, generic grid hierarchy, cache layer, or concurrency framework for possible future use. Prefer small functions and data types that serve the current GL/CC API.
+
+Terra xhigh is acceptable if usage needs to be reduced. Luna Max is suitable for bounded follow-up work after the numerical/API structure is in place. If Luna Max is used for the full implementation, review vector-transform conventions, parity tests, and public API boundaries closely.
+
+Do not release, tag, publish to PyPI, create Zenodo records, or add release automation as part of this plan.
+
+## Read first
+
+Read, in this order:
+
+```text
+AGENTS.md
+skills/scientific-numerics/SKILL.md
+skills/documentation/SKILL.md
+skills/repository-engineering/SKILL.md
+PLAN.md
+```
+
+The sibling repository is the primary source implementation:
 
 ```text
 ../PyStormTracker
 ```
 
-as the primary implementation reference. Read the current source there before porting code. Do not assume snippets in this plan are newer than the local checkout.
+Read its current `AGENTS.md` and current source before porting code. Do not assume snippets in this plan are newer than the local checkout.
 
-Relevant PyStormTracker files include at least:
+Inspect at least:
 
 ```text
 ../PyStormTracker/src/pystormtracker/preprocessing/spectral.py
@@ -24,30 +42,33 @@ Relevant PyStormTracker files include at least:
 ../PyStormTracker/src/pystormtracker/backends.py
 ```
 
-Also inspect the corresponding tests and current repository instructions in `../PyStormTracker/AGENTS.md` when useful.
+Also inspect the corresponding tests and documentation when needed to understand behavior already validated in PyStormTracker.
 
-Do **not** modify `../PyStormTracker` as part of this task. Do **not** make PyStormTracker depend on spharmgrid. The first spharmgrid implementation is a separate package derived from the global spherical-harmonic layer already developed and tested in PyStormTracker.
+Do not modify `../PyStormTracker`. Do not make PyStormTracker depend on spharmgrid.
 
 ---
 
-## Goal
+# Goal
 
-`spharmgrid` is a lightweight xarray-first wrapper/helper around [`ducc0`](https://pypi.org/project/ducc0/) for spherical-harmonic operations used in atmospheric and geophysical science.
+`spharmgrid` is a lightweight xarray-first wrapper/helper around `ducc0` for spherical-harmonic operations used in atmospheric and geophysical science.
 
-The numerical spherical-harmonic transforms come from `ducc0`. spharmgrid supplies:
+`ducc0` supplies the numerical spherical-harmonic transform machinery. spharmgrid supplies:
 
-- grid recognition and coordinate handling for common global atmospheric grids;
-- xarray integration;
-- filtering and spectral regridding;
+- recognition and construction of common global atmospheric grids;
+- xarray DataArray/Dataset integration through `.sg` accessors;
+- equivalent direct Python functions under `spharmgrid`;
+- spectral filtering and spectral regridding;
 - scalar differential operators;
-- vector-wind kinematics and inverse transforms;
+- vector-wind kinematics, potentials, and inverse wind transforms;
 - CF-aware variable discovery and output metadata;
-- a small direct Python API matching the xarray accessor behavior;
-- a minimal file-oriented CLI using xarray for I/O.
+- lazy xarray/Dask execution where xarray supports it;
+- a small file-oriented CLI that delegates I/O to xarray;
+- analytic and SPHEREPACK/pyspharm parity tests;
+- complete Sphinx/MyST documentation built by Read the Docs.
 
-A central goal is to provide clear xarray-native equivalents of commonly used **NCL/SPHEREPACK spherical-harmonic workflows**, implemented with `ducc0` rather than wrapping SPHEREPACK.
+A central goal is to provide clear xarray-native equivalents of common **NCL/SPHEREPACK spherical-harmonic workflows**, implemented with `ducc0` rather than wrapping SPHEREPACK.
 
-This package is **not** a new spherical-harmonic transform implementation and should not present itself as one. It is an atmospheric-science operations layer over `ducc0`.
+Do not describe spharmgrid as a new SHT implementation.
 
 Suggested one-line description:
 
@@ -55,113 +76,110 @@ Suggested one-line description:
 
 ---
 
-## Scientific and software lineage
+# Scientific and software lineage
 
-The initial implementation should be extracted/generalized from the global spherical-harmonic code in PyStormTracker, especially:
+The first implementation should be extracted/generalized from the global spherical-harmonic layer already developed in PyStormTracker:
 
-- scalar filtering in `preprocessing/spectral.py`;
-- GL/CC spectral regridding in `preprocessing/regrid.py`;
-- spin-1 vector transforms and vorticity/divergence in `preprocessing/kinematics.py`.
+- scalar filtering from `preprocessing/spectral.py`;
+- GL/CC spectral regridding from `preprocessing/regrid.py`;
+- spin-1 vector transforms and vorticity/divergence from `preprocessing/kinematics.py`.
 
-PyStormTracker already uses `ducc0.sht` for these operations. Preserve tested sign conventions and transform ordering where they are correct, then validate independently against analytic fields and SPHEREPACK/pyspharm.
+Use that code as the implementation starting point. Remove PyStormTracker-specific data loaders, tracker backends, regional paths, HEALPix paths, and tracking conventions.
 
-Relevant scientific/numerical references should be cited in source documentation where the corresponding method is implemented:
+Validate the extracted numerics independently. Relevant sources include:
 
-- Sardeshmukh, P. D. and B. J. Hoskins, 1984: *Spatial Smoothing on the Sphere*, Monthly Weather Review, 112, 2524–2529. DOI: `10.1175/1520-0493(1984)112<2524:SSOTS>2.0.CO;2`.
-- SPHEREPACK documentation and NCL spherical-harmonic functions for operation semantics and parity targets.
-- Reinecke and Seljebotn, 2013, and Ishioka, 2018, for the numerical SHT lineage used by `ducc0` where appropriate.
+- Sardeshmukh, P. D. and B. J. Hoskins, 1984: *Spatial Smoothing on the Sphere*, Monthly Weather Review, 112, 2524–2529, DOI `10.1175/1520-0493(1984)112<2524:SSOTS>2.0.CO;2`;
+- SPHEREPACK and NCL documentation for established atmospheric transform semantics;
+- Reinecke and Seljebotn (2013) and Ishioka (2018) for DUCC/libsharp numerical lineage where relevant;
+- current CF Standard Name Table for semantic metadata.
 
-Do not describe spharmgrid as implementing SPHEREPACK internally. State that its public operations correspond to common NCL/SPHEREPACK workflows while using `ducc0` for the transforms.
+Keep these roles distinct:
+
+```text
+published method       scientific definition/lineage
+NCL/SPHEREPACK         established atmospheric API/behavior and parity reference
+ducc0                   numerical transform engine
+PyStormTracker          source implementation for extraction
+spharmgrid              xarray/CF atmospheric operations layer
+```
 
 ---
 
-## Scope for the first implementation
+# Initial scope
 
-### Supported grids
+## Supported grids
 
-Support only two structured global grid families initially:
+Support two rectangular global grid families.
 
-1. **Gauss–Legendre (GL)** full Gaussian grid
-   - Gaussian latitudes;
-   - constant number of equally spaced longitudes on every latitude;
-   - rectangular `(lat, lon)` representation.
+### Gauss–Legendre (GL)
 
-2. **Clenshaw–Curtis (CC)** global regular latitude–longitude grid
-   - equally spaced latitude;
-   - both poles included;
-   - equally spaced longitude;
-   - rectangular `(lat, lon)` representation.
+- Gaussian/Gauss–Legendre latitudes;
+- constant number of equally spaced longitudes on every latitude;
+- full rectangular `(lat, lon)` representation.
 
-Use **GL** and **CC** in prose, documentation, comments, and mathematical discussion. Use lowercase string values in Python:
+### Clenshaw–Curtis (CC)
+
+- equally spaced latitude;
+- both poles included;
+- equally spaced longitude;
+- full rectangular `(lat, lon)` representation.
+
+Use **GL** and **CC** in prose, docs, comments, and scientific discussion. Use lowercase values in Python:
 
 ```python
 "gl"
 "cc"
 ```
 
-The canonical public grid terminology is GL/CC. Do not use `latlon` as a grid type because a generic regular latitude–longitude grid does not imply Clenshaw–Curtis sampling.
+Do not use `latlon` as a grid type. A generic regular latitude–longitude grid does not imply CC sampling.
 
-### Explicitly out of scope initially
+## Out of scope
 
-Do not include these in the first public implementation:
+Do not add these in the first implementation:
 
 - reduced Gaussian grids;
 - HEALPix;
-- PyStormTracker's regional DCT filter;
+- PyStormTracker regional DCT filtering;
 - polar stereographic output;
-- arbitrary scattered/general synthesis locations;
-- MPI/backend abstractions copied from PyStormTracker;
-- a public raw `alm`/coefficient object model;
-- an `SHCoeffs`/`SHGrid` hierarchy;
-- a custom calendar/time system;
-- a unit-conversion framework;
-- automatic support for arbitrary regional lat/lon grids;
-- arbitrary user-selectable SHT backends;
-- release/tag/PyPI automation.
+- arbitrary scattered synthesis points;
+- MPI;
+- PyStormTracker's public backend abstraction;
+- selectable SHT backends;
+- public raw `alm` arrays;
+- `SHCoeffs`/`SHGrid`-style object hierarchies;
+- unit-conversion frameworks;
+- custom calendar/time representations;
+- generic regional lat/lon transforms;
+- release/tag/PyPI/Zenodo machinery.
 
-Reduced Gaussian support may be considered later. `ducc0` can represent ring-specific longitude counts, but a reduced Gaussian field does not naturally fit the initial rectangular xarray `(lat, lon)` contract. Do not complicate the first data model for it.
+Reduced Gaussian may be considered later. Do not complicate the initial rectangular xarray model for it.
 
 ---
 
-## Terminology
+# Terminology
 
-Use **field** for a gridded scalar or vector quantity.
-
-Preferred terms:
+Use **field** for a gridded physical scalar or vector quantity.
 
 ```text
-field        physical scalar/vector field represented by a DataArray/Dataset
+field        gridded scalar/vector DataArray or Dataset
 grid         horizontal sampling geometry
 target_grid  output horizontal grid for regridding
-data          generic xarray/file content when no physical-field meaning is needed
+data          generic xarray/file content when physical-field meaning is not needed
 ```
 
-Avoid **frame** in the spharmgrid public API and documentation. `frame` is useful inside tracking/time-step code such as PyStormTracker, but spharmgrid operates equally on a 2-D field or on an xarray object with arbitrary leading dimensions such as `(time, level, member, lat, lon)`.
+Avoid `frame` in the public API and user documentation. spharmgrid should work on a 2-D field or an xarray object with arbitrary leading dimensions such as:
+
+```text
+(time, level, member, lat, lon)
+```
 
 Each horizontal slice is transformed independently.
 
 ---
 
-# Public Python API
+# Package shape
 
-The package should support both:
-
-```python
-import spharmgrid as sg
-```
-
-and xarray accessors registered as:
-
-```python
-field.sg
- ds.sg
-```
-
-Use `.sg` for both `xarray.DataArray` and `xarray.Dataset` accessors.
-
-The accessor implementation must be thin. Accessor methods call the same public/core functions used by the direct API. Do not duplicate numerical logic in accessor classes.
-
-Suggested module layout:
+Use a normal `src/` layout. A compact target is:
 
 ```text
 src/spharmgrid/
@@ -178,15 +196,71 @@ src/spharmgrid/
     cli.py
 ```
 
-Exact file names may change if a smaller layout is clearer, but keep numerical kernels separate from xarray accessor wrappers.
+Change filenames if a smaller organization is clearer. Keep numerical kernels separate from accessor wrappers.
+
+The accessor classes should contain only:
+
+- input/variable selection;
+- argument normalization;
+- calls into the same functions used by the direct API.
+
+Do not put SHT mathematics in accessor classes.
 
 ---
 
-## Grid API
+# Public Python API
 
-Use a small immutable public grid descriptor. Do not create a class hierarchy for GL versus CC unless implementation experience demonstrates a real need.
+The two public styles are first-class and numerically equivalent:
 
-Suggested shape:
+```python
+import spharmgrid as sg
+
+field.sg.filter(...)
+sg.filter(field, ...)
+```
+
+Register `.sg` on both `xarray.DataArray` and `xarray.Dataset` when spharmgrid is imported.
+
+## Public namespace target
+
+Keep the top-level namespace close to:
+
+```python
+sg.Grid
+sg.SpectralRange
+sg.EARTH_RADIUS_M
+
+sg.gaussian_grid
+sg.clenshaw_curtis_grid
+sg.detect_grid
+sg.parse_spectral
+
+sg.filter
+sg.regrid
+sg.gradient
+sg.laplacian
+sg.inverse_laplacian
+
+sg.vorticity
+sg.divergence
+sg.kinematics
+sg.streamfunction
+sg.velocity_potential
+sg.potentials
+sg.rotational_wind
+sg.divergent_wind
+sg.wind
+```
+
+Do not expose internal DUCC coefficient helpers, gufunc kernels, E/B arrays, metadata registries, or accessor classes without a demonstrated need.
+
+---
+
+# Grid API
+
+Use one small immutable grid descriptor. Do not create separate GL/CC class hierarchies unless the implementation truly needs them.
+
+Suggested public form:
 
 ```python
 @dataclass(frozen=True)
@@ -196,9 +270,7 @@ class Grid:
     longitude: np.ndarray
 ```
 
-The actual implementation may store compact grid parameters internally instead of arrays, but the public object must identify the grid type and exact output coordinates.
-
-Public constructors:
+Constructors:
 
 ```python
 sg.gaussian_grid(
@@ -218,70 +290,66 @@ sg.clenshaw_curtis_grid(
 ) -> Grid
 ```
 
-Public detection:
+Detection:
 
 ```python
 sg.detect_grid(field) -> Grid
 
-field.sg.grid      # Grid
-field.sg.grid_type # "gl" or "cc"
+field.sg.grid
+field.sg.grid_type  # "gl" or "cc"
 ```
 
-`target_grid` accepted by regridding should be either:
-
-- a `Grid` returned by spharmgrid; or
-- an xarray `DataArray`/`Dataset` whose horizontal GL/CC coordinates can be detected.
-
-This allows:
+`regrid()` should accept either a `Grid` or an xarray object whose horizontal coordinates define a supported target grid:
 
 ```python
 target = sg.gaussian_grid(64, 128)
-out = field.sg.regrid(target)
+field.sg.regrid(target)
+
+field.sg.regrid(reference_field)
 ```
 
-and:
+Do not make `T42` a grid constructor or target-grid shorthand. `T42` is a spectral truncation, not a unique physical grid.
 
-```python
-out = field.sg.regrid(reference_field)
-```
+## Coordinate discovery
 
-without inventing atmospheric resolution names as grid objects.
+Core coordinate discovery must work without `cf-xarray`:
 
-Do not make `"T42"` mean a physical grid. T42 is a spectral truncation, not a unique horizontal grid.
+1. exact CF latitude/longitude metadata when present;
+2. canonical coordinate names `lat`/`latitude` and `lon`/`longitude`;
+3. optional `cf-xarray` assistance when installed;
+4. clear ambiguity/error otherwise.
 
-### Grid detection
+Do not silently assume that the last two dimensions are latitude and longitude.
 
-Coordinate detection should support standard atmospheric xarray data without requiring `cf-xarray`:
+## CC detection
 
-1. identify latitude/longitude from CF metadata when present;
-2. fall back to canonical coordinate names `lat`/`latitude` and `lon`/`longitude`;
-3. use optional `cf-xarray` integration for broader CF coordinate/axis resolution when installed;
-4. raise a clear error if the horizontal coordinates remain ambiguous.
+Require:
 
-Do not silently use the last two dimensions as latitude/longitude in the public package.
+- equally spaced latitudes within a justified numerical tolerance;
+- both poles represented;
+- uniform globally cyclic longitude spacing;
+- no duplicated cyclic longitude endpoint.
 
-For CC detection:
+## GL detection
 
-- latitude must be equally spaced within numerical tolerance;
-- both `-90` and `+90` degrees must be represented;
-- longitude must be uniformly spaced and globally cyclic without a duplicate endpoint.
+Require:
 
-For GL detection:
+- latitude values matching the corresponding DUCC GL nodes within tolerance;
+- either latitude order;
+- uniform globally cyclic longitude spacing;
+- no duplicated cyclic longitude endpoint.
 
-- latitude values must match the appropriate Gauss–Legendre latitude nodes from `ducc0` within numerical tolerance, allowing either latitude order;
-- longitude must be uniformly spaced and globally cyclic without a duplicate endpoint.
+Support both `[0, 360)` and `[-180, 180)`-style cyclic longitude representations by rolling/reordering internally when needed. Move coordinates and field values together.
 
-Support common longitude conventions such as `[0, 360)` and `[-180, 180)` by normalizing/rolling internally as needed. Preserve user-facing coordinate order/convention for same-grid operations. For new target grids, use the coordinates represented by `Grid`.
+For same-grid operations, preserve the user's coordinate order/convention. For a new `Grid` target, return the target coordinates represented by that object.
 
-Reject grids that only approximately look global but do not satisfy a supported DUCC geometry. Do not classify an arbitrary regular latitude grid that omits the poles as CC.
-
-Confirm exact GL/CC representable `lmax`/`mmax` constraints against the installed `ducc0` API and tests rather than copying an unverified formula. PyStormTracker's current constraints are a starting point, not the final specification.
+Confirm exact representable `lmax`/`mmax` constraints from the installed `ducc0` API and tests. Do not copy an unverified formula from older code.
 
 ---
 
-## Spectral-range API
+# Spectral range
 
-Expose a small immutable value type:
+Expose:
 
 ```python
 @dataclass(frozen=True)
@@ -290,7 +358,7 @@ class SpectralRange:
     lmax: int
 ```
 
-and parser:
+and:
 
 ```python
 sg.parse_spectral("T42")
@@ -300,7 +368,7 @@ sg.parse_spectral("T6-42")
 # SpectralRange(lmin=6, lmax=42)
 ```
 
-Parsing should be case-insensitive:
+Parsing is case-insensitive:
 
 ```text
 T42
@@ -309,9 +377,9 @@ T6-42
 t6-42
 ```
 
-It is reasonable to normalize an en dash as well so copied atmospheric notation such as `T6–42` works.
+Accept an en dash as input normalization so `T6–42` also works.
 
-Do not add rhomboidal or other spectral truncation notation in the first implementation.
+Do not add rhomboidal or other truncation notation initially.
 
 Validate:
 
@@ -319,18 +387,18 @@ Validate:
 0 <= lmin <= lmax
 ```
 
-A public operation may receive either:
+A call may use either:
 
-- a spectral string/value object; or
-- explicit `lmin` and `lmax`.
+- `spectral=` / positional spectral notation; or
+- explicit `lmin=` and `lmax=`.
 
-Do not allow both forms in the same call.
+Reject mixed use in the same call.
 
 ---
 
-## Scalar filtering
+# Scalar filtering
 
-Accessor:
+Accessor examples:
 
 ```python
 field.sg.filter("T42")
@@ -339,7 +407,7 @@ field.sg.filter(lmin=6, lmax=42)
 field.sg.filter("T6-42", taper=0.1)
 ```
 
-Direct API:
+Direct equivalents:
 
 ```python
 sg.filter(field, "T42")
@@ -348,7 +416,7 @@ sg.filter(field, lmin=6, lmax=42)
 sg.filter(field, "T6-42", taper=0.1)
 ```
 
-Suggested signature:
+Target signature:
 
 ```python
 def filter(
@@ -362,60 +430,55 @@ def filter(
 ) -> xr.DataArray: ...
 ```
 
-### Filter semantics
+## Hard filter
 
-Without taper:
-
-```python
-field.sg.filter("T6-42")
-```
-
-means a hard total-wavenumber band pass:
-
-- coefficients with `l < 6` are zero;
-- coefficients with `6 <= l <= 42` are unchanged;
-- coefficients with `l > 42` are zero.
-
-The default is:
+Default:
 
 ```python
 taper=None
 ```
 
+For `T6-42`:
+
+```text
+l < 6       -> 0
+6 <= l <=42 -> unchanged
+l > 42      -> 0
+```
+
 There is no hidden smoothing.
 
-### Taper
+## Taper
 
-Support one taper only in the first implementation. The public parameter is simply:
+Support one taper only. The public parameter is simply:
 
 ```python
 taper: float | None
 ```
 
-Do not expose a taper-name enum or a second `taper_response` parameter.
+Do not add a taper-name enum or `taper_response` parameter.
 
-`taper=0.1` applies the Sardeshmukh–Hoskins exponential spectral taper used by the existing PyStormTracker implementation, with `taper` equal to the response at `lmax`.
+`taper=0.1` means the response at `lmax` for the Sardeshmukh–Hoskins exponential taper already implemented in PyStormTracker.
 
-Document/reference Sardeshmukh and Hoskins (1984) in the implementation and API documentation, but keep the public call concise:
+For total wavenumber `l`:
 
-```python
-field.sg.filter("T6-42", taper=0.1)
+```math
+w(l)=\exp\left[-K\{l(l+1)\}^2\right]
 ```
 
-For total wavenumber `l`, use the existing global spherical formulation from PyStormTracker:
+with:
 
-```text
-w(l) = exp(-K [l(l+1)]^2)
-K = -ln(taper) / [lmax(lmax+1)]^2
+```math
+K=\frac{-\ln(\mathrm{taper})}{\{l_{\max}(l_{\max}+1)\}^2},
 ```
 
-inside the retained band, so:
+so:
 
-```text
-w(lmax) = taper
+```math
+w(l_{\max})=\mathrm{taper}.
 ```
 
-and apply hard zero outside `[lmin, lmax]`.
+Apply the response only inside the retained band and hard-zero modes outside `[lmin, lmax]`.
 
 Validate:
 
@@ -423,15 +486,13 @@ Validate:
 0 < taper <= 1
 ```
 
-`taper=1` is equivalent to unity weighting inside the retained band.
+`taper=1` gives unity weighting inside the retained band.
 
-When `taper is None`, do not run the exponential weighting calculation; use an exact hard band mask.
-
-Do not carry PyStormTracker's current `0.1` default into spharmgrid. The general library default is no taper.
+When `taper is None`, use the exact hard mask and skip the exponential weighting calculation.
 
 ---
 
-## Spectral regridding
+# Spectral regridding
 
 Accessor:
 
@@ -445,14 +506,9 @@ Direct:
 sg.regrid(field, target_grid)
 ```
 
-Regridding should optionally filter in the **same analysis/synthesis cycle**:
+Filtering and regridding must combine in one transform cycle:
 
 ```python
-field.sg.regrid(
-    target_grid,
-    spectral="T6-42",
-)
-
 field.sg.regrid(
     target_grid,
     spectral="T6-42",
@@ -460,20 +516,24 @@ field.sg.regrid(
 )
 ```
 
-Equivalent direct calls:
+Direct:
 
 ```python
-sg.regrid(field, target_grid, spectral="T6-42")
-sg.regrid(field, target_grid, spectral="T6-42", taper=0.1)
+sg.regrid(
+    field,
+    target_grid,
+    spectral="T6-42",
+    taper=0.1,
+)
 ```
 
-Also support explicit bounds:
+Also allow explicit bounds:
 
 ```python
 field.sg.regrid(target_grid, lmin=6, lmax=42, taper=0.1)
 ```
 
-Suggested signature:
+Target signature:
 
 ```python
 def regrid(
@@ -492,18 +552,14 @@ Implementation path:
 
 ```text
 source field
-  -> one scalar SHT analysis
-  -> optional band mask/taper
-  -> one scalar SHT synthesis on target GL/CC grid
+  -> one scalar analysis
+  -> optional spectral mask/taper
+  -> one synthesis on target GL/CC grid
 ```
 
-Do not implement `filter(...).regrid(...)` internally for the combined case because that performs an unnecessary second transform cycle.
+Do not implement combined regrid+filter by calling public `filter()` and then public `regrid()`.
 
-When no spectral range is supplied, preserve all modes that can be represented by both source and target grids. Determine the maximum usable transform degree from the actual supported DUCC geometry constraints. Do not silently truncate to an arbitrary atmospheric convention.
-
-If the user explicitly requests a range that cannot be represented by the source or target grid, raise a clear error rather than silently clamping it.
-
-Supported initial combinations:
+Supported combinations:
 
 ```text
 GL -> GL
@@ -512,34 +568,41 @@ CC -> GL
 CC -> CC
 ```
 
+With no explicit spectral range, use the maximum transform content representable by the source/target geometry under DUCC's actual constraints. Do not impose an atmospheric `Tn` convention automatically.
+
+If an explicit requested range cannot be represented, raise instead of silently clamping.
+
 ---
 
 # Scalar differential operators
 
-Include the following field operations because they are basic spectral operators and correspond to common SPHEREPACK/pyspharm workflows.
+Use spectral operators, not finite differences.
+
+Define:
+
+```python
+sg.EARTH_RADIUS_M = 6_371_220.0
+```
+
+matching the SPHEREPACK/NCL-style spherical Earth value currently used by PyStormTracker.
+
+Allow a `radius` keyword on physical differential/kinematic operations when needed.
 
 ## Gradient
 
-Accessor:
-
 ```python
 grad = field.sg.gradient()
-```
-
-Direct:
-
-```python
 grad = sg.gradient(field)
 ```
 
-Return an `xr.Dataset` with default variables:
+Return a Dataset with default variables:
 
 ```text
 gradient_eastward
 gradient_northward
 ```
 
-Allow output-name overrides:
+Allow:
 
 ```python
 field.sg.gradient(
@@ -548,42 +611,22 @@ field.sg.gradient(
 )
 ```
 
-Use spherical-harmonic differentiation/spin synthesis, not finite differences.
-
-The result is the physical horizontal gradient on a sphere of radius `radius` in units per meter. Default:
-
-```python
-sg.EARTH_RADIUS_M = 6_371_220.0
-```
-
-matching the standard SPHEREPACK/NCL-style spherical Earth value already used by PyStormTracker. All kinematic/differential functions should accept:
-
-```python
-radius: float = sg.EARTH_RADIUS_M
-```
-
-or an equivalent keyword default.
+The result is the physical horizontal gradient on a sphere, with units of input-units per meter when the input units are defined.
 
 ## Laplacian
-
-Accessor/direct:
 
 ```python
 field.sg.laplacian()
 sg.laplacian(field)
 ```
 
-Apply the spectral eigenvalue:
+Apply:
 
-```text
--l(l+1) / radius^2
+```math
+-\frac{l(l+1)}{R^2}.
 ```
 
-for each spherical-harmonic coefficient.
-
 ## Inverse Laplacian
-
-Accessor/direct:
 
 ```python
 field.sg.inverse_laplacian()
@@ -592,59 +635,42 @@ sg.inverse_laplacian(field)
 
 For `l > 0`, apply:
 
-```text
--radius^2 / [l(l+1)]
+```math
+-\frac{R^2}{l(l+1)}.
 ```
 
-The `l=0` mode is singular. Define the inverse as the zero-mean solution by setting the `l=0` output coefficient to zero and document this explicitly.
-
-Do not expose raw coefficient arrays as part of these APIs.
+The `l=0` mode is singular. Define the inverse as the zero-mean solution by setting the `l=0` output coefficient to zero and document that convention.
 
 ---
 
 # Vector-wind API
 
-The vector API should cover the useful transform graph exposed by NCL/SPHEREPACK, but use descriptive Python names rather than NCL's abbreviated routine names.
-
-The core relationships are:
+Cover the useful transform graph associated with NCL/SPHEREPACK routines such as `uv2vr`, `uv2dv`, `uv2vrdv`, `uv2sfvp`, `vr2uv`, `dv2uv`, `vrdv2uv`, and `sfvp2uv`, but use descriptive Python names.
 
 ```text
-u, v
-  -> relative vorticity
-  -> divergence
-  -> vorticity + divergence
-  -> streamfunction + velocity potential
+u, v -> vo
+u, v -> d
+u, v -> vo + d
+u, v -> strf + vp
 
-relative vorticity
-  -> rotational wind
+vo -> rotational wind
+d  -> divergent wind
+vo + d -> full u, v
 
-divergence
-  -> divergent wind
-
-relative vorticity + divergence
-  -> full u, v
-
-streamfunction
-  -> rotational wind
-
-velocity potential
-  -> divergent wind
-
-streamfunction + velocity potential
-  -> full u, v
+strf -> rotational wind
+vp   -> divergent wind
+strf + vp -> full u, v
 ```
 
-These correspond conceptually to NCL/SPHEREPACK operations such as `uv2vr`, `uv2dv`, `uv2vrdv`, `uv2sfvp`, `vr2uv`, `dv2uv`, `vrdv2uv`, and `sfvp2uv`, without copying those function names into spharmgrid.
+Use **rotational wind** and **divergent wind** as the scientific terms.
 
 ---
 
-## Dataset input-variable discovery
+# Dataset variable discovery
 
-For Dataset accessor methods, conventional ERA5/ECMWF names and CF `standard_name` metadata should remove boilerplate from the common case.
+Canonical atmospheric quantities:
 
-Canonical quantities:
-
-| Quantity | Default short name | CF `standard_name` |
+| Quantity | Short name | CF `standard_name` |
 | --- | --- | --- |
 | eastward wind | `u` | `eastward_wind` |
 | northward wind | `v` | `northward_wind` |
@@ -653,11 +679,13 @@ Canonical quantities:
 | streamfunction | `strf` | `atmosphere_horizontal_streamfunction` |
 | velocity potential | `vp` | `atmosphere_horizontal_velocity_potential` |
 
-Resolution order for a requested quantity:
+Verify these exact standard names against the current official CF table during implementation.
+
+Resolution order:
 
 ```text
-explicit variable argument
-  -> unique matching CF standard_name
+explicit argument
+  -> unique exact CF standard_name
   -> canonical short name
   -> error
 ```
@@ -668,9 +696,9 @@ Examples:
 ds.sg.vorticity()
 ```
 
-should find canonical `u` and `v` automatically.
+uses `u` and `v` automatically when present.
 
-This should also work:
+This also works:
 
 ```python
 ds["uwind"].attrs["standard_name"] = "eastward_wind"
@@ -679,35 +707,28 @@ ds["vwind"].attrs["standard_name"] = "northward_wind"
 ds.sg.vorticity()
 ```
 
-Explicit overrides remain available:
+Explicit override:
 
 ```python
 ds.sg.vorticity(u="ua", v="va")
 ```
 
-If multiple variables match the same CF semantic quantity, raise an ambiguity error listing the candidates and require an explicit variable name.
+If multiple variables match the same quantity, raise an ambiguity error listing candidates.
 
-Do not maintain a large heuristic alias table such as `UGRD`, `uwnd`, `vor`, `vort`, etc. CF metadata and the canonical short names are the initial contract.
-
-The direct API receives DataArrays directly and therefore does not need Dataset variable-name discovery.
+Do not maintain a broad alias table such as `UGRD`, `uwnd`, `vor`, `vort`, etc. Add aliases only if a real interoperability requirement appears later.
 
 ---
 
-## Vorticity
+# Wind diagnostics
 
-Accessor:
+## Vorticity
 
 ```python
 vo = ds.sg.vorticity()
 vo = ds.sg.vorticity(output="vort")
 vo = ds.sg.vorticity(u="ua", v="va", output="vort")
-```
 
-Direct:
-
-```python
 vo = sg.vorticity(u, v)
-vo = sg.vorticity(u, v, output="vort")
 ```
 
 Default output name:
@@ -716,19 +737,12 @@ Default output name:
 vo
 ```
 
-Return an `xr.DataArray`.
+Return a DataArray.
 
 ## Divergence
 
-Accessor:
-
 ```python
 d = ds.sg.divergence()
-```
-
-Direct:
-
-```python
 d = sg.divergence(u, v)
 ```
 
@@ -738,19 +752,12 @@ Default output name:
 d
 ```
 
-Return an `xr.DataArray`.
+Return a DataArray.
 
 ## Combined kinematics
 
-Preferred call when both are required:
-
 ```python
 kin = ds.sg.kinematics()
-```
-
-Direct:
-
-```python
 kin = sg.kinematics(u, v)
 ```
 
@@ -762,16 +769,7 @@ Dataset
   d
 ```
 
-Allow output names:
-
-```python
-kin = ds.sg.kinematics(
-    vorticity="vort",
-    divergence="div",
-)
-```
-
-and explicit input names on Dataset accessors:
+Allow:
 
 ```python
 kin = ds.sg.kinematics(
@@ -782,42 +780,33 @@ kin = ds.sg.kinematics(
 )
 ```
 
-Compute both from one vector analysis whenever possible.
+Compute both outputs from one vector analysis whenever possible.
 
 ---
 
-## Streamfunction and velocity potential
+# Streamfunction and velocity potential
 
-Individual accessors:
+Individual:
 
 ```python
 strf = ds.sg.streamfunction()
 vp = ds.sg.velocity_potential()
-```
 
-Direct:
-
-```python
 strf = sg.streamfunction(u, v)
 vp = sg.velocity_potential(u, v)
 ```
 
-Default names:
+Defaults:
 
 ```text
 strf
 vp
 ```
 
-Combined preferred call:
+Combined:
 
 ```python
 pot = ds.sg.potentials()
-```
-
-Direct:
-
-```python
 pot = sg.potentials(u, v)
 ```
 
@@ -829,7 +818,7 @@ Dataset
   vp
 ```
 
-Allow output-name overrides:
+Allow:
 
 ```python
 ds.sg.potentials(
@@ -838,74 +827,67 @@ ds.sg.potentials(
 )
 ```
 
-Use one vector analysis for the combined result.
+Compute both from one vector analysis whenever possible.
 
 ---
 
+# Rotational and divergent wind
+
 ## Rotational wind
 
-The scientific term is **rotational wind** / **rotational wind component**.
-
-Support input from relative vorticity:
+From relative vorticity:
 
 ```python
 vo.sg.rotational_wind()
 sg.rotational_wind(vo)
 ```
 
-and from streamfunction:
+From streamfunction:
 
 ```python
 strf.sg.rotational_wind()
 sg.rotational_wind(strf)
 ```
 
-Determine which scalar quantity was supplied from:
+Identify the scalar source from:
 
-1. explicit `quantity=` override when given;
+1. explicit `quantity=` when supplied;
 2. CF `standard_name`;
 3. canonical short name.
 
-If it cannot be identified, require:
+If ambiguous/unidentified, require:
 
 ```python
 sg.rotational_wind(field, quantity="vorticity")
-```
-
-or:
-
-```python
 sg.rotational_wind(field, quantity="streamfunction")
 ```
 
-Default outputs:
+Default output names:
 
 ```text
 u_rotational
 v_rotational
 ```
 
-Return an `xr.Dataset`.
-
----
+Return a Dataset.
 
 ## Divergent wind
 
-Support input from divergence:
+From divergence:
 
 ```python
 d.sg.divergent_wind()
 sg.divergent_wind(d)
 ```
 
-and from velocity potential:
+From velocity potential:
 
 ```python
 vp.sg.divergent_wind()
 sg.divergent_wind(vp)
 ```
 
-Use the same semantic detection/override approach as `rotational_wind`.
+Use the same source detection rules.
 
 Default outputs:
 
@@ -914,11 +896,11 @@ u_divergent
 v_divergent
 ```
 
-Return an `xr.Dataset`.
+Return a Dataset.
 
 ---
 
-## Full wind reconstruction
+# Full wind reconstruction
 
 Dataset accessor:
 
@@ -926,11 +908,11 @@ Dataset accessor:
 wind = ds.sg.wind()
 ```
 
-When the Dataset contains only one complete supported source pair, detect it automatically:
+Auto-detect when exactly one complete representation is present:
 
 ```text
-vo + d      -> u + v
-strf + vp   -> u + v
+vo + d     -> u + v
+strf + vp  -> u + v
 ```
 
 Return:
@@ -941,100 +923,99 @@ Dataset
   v
 ```
 
-If both complete source representations are present, do not guess. Require:
+If both complete source representations are present, require:
 
 ```python
 ds.sg.wind(source="vorticity_divergence")
-```
-
-or:
-
-```python
 ds.sg.wind(source="potentials")
 ```
 
-Direct API should accept the two source DataArrays and infer their semantic type from metadata/names, with an explicit `source=` escape hatch when needed:
+Direct:
 
 ```python
 sg.wind(vo, d)
 sg.wind(strf, vp)
 ```
 
-Allow full-wind output-name overrides if needed:
+Infer semantics from metadata/name when unambiguous and provide an explicit `source=` escape hatch.
 
-```python
-ds.sg.wind(u="ua", v="va")
-```
-
-For Dataset accessors where `u` and `v` would otherwise mean source-variable arguments, use distinct internal/signature names if necessary to avoid ambiguity. Prefer API clarity over forcing a single shared signature for all accessors.
+Allow output-name overrides without confusing them with source-variable selection. If necessary, use distinct keyword names internally/signature-wise rather than forcing one uniform accessor signature.
 
 ---
 
 # Vector numerical implementation
 
-Use the existing PyStormTracker spin-1 implementation as the starting point, then validate signs and normalizations against analytic tests and SPHEREPACK parity.
+Start from the current PyStormTracker spin-1 implementation and preserve its tested mapping until independent tests prove the convention.
 
-PyStormTracker currently forms the DUCC spin-1 vector map as:
+PyStormTracker currently maps geographic wind into DUCC spin-1 components with the equivalent of:
 
 ```python
 vec_map = np.stack((-v, u), axis=0)
 ```
 
-and analyzes it with `ducc0.sht.analysis_2d(..., spin=1)`.
+and uses `ducc0.sht.analysis_2d(..., spin=1)`.
 
-Its current vorticity/divergence scaling is based on:
+Its current vorticity/divergence scaling uses:
 
-```text
-sqrt(l(l+1)) / radius
+```math
+\frac{\sqrt{l(l+1)}}{R}
 ```
 
-with E/B coefficient sign conventions tied to DUCC's vector transform ordering.
+with signs tied to DUCC's E/B convention.
 
-Do not casually rewrite these signs from memory. Port the tested convention, then prove it with cross-library and analytic tests.
+Do not rewrite these signs from memory. Trace them from current source, then prove the result with analytic and independent parity tests.
 
-For scalar potentials, use the standard spherical identities:
+Use the standard spherical relationships under the adopted sign convention:
 
-```text
-horizontal wind = rotational part + divergent part
-
-vorticity  = Laplacian(streamfunction)
-divergence = Laplacian(velocity potential)
+```math
+\zeta=\nabla^2\psi,
 ```
 
-under the package's adopted sign convention. In spectral space, for `l > 0`:
-
-```text
-psi_lm = -radius^2 / [l(l+1)] * vort_lm
-chi_lm = -radius^2 / [l(l+1)] * div_lm
+```math
+\delta=\nabla^2\chi,
 ```
 
-where `psi` is streamfunction and `chi` is velocity potential if the conventional Laplacian eigenvalue `-l(l+1)/radius^2` is used.
+where `psi` is streamfunction and `chi` is velocity potential.
 
-Set the `l=0` potential coefficients to zero because the additive constant is undefined.
+For `l > 0`:
 
-For inverse vector reconstruction from vorticity/divergence, invert the same DUCC E/B scaling used by the forward path and synthesize with `spin=1`. Verify that the returned components are converted back from DUCC mathematical-vector ordering to geographic `(u, v)` consistently.
+```math
+\psi_{lm}=-\frac{R^2}{l(l+1)}\zeta_{lm},
+```
 
-For reconstruction from streamfunction/velocity potential:
+```math
+\chi_{lm}=-\frac{R^2}{l(l+1)}\delta_{lm}.
+```
 
-1. scalar-analyze the potential field(s);
-2. apply the spherical Laplacian to obtain vorticity/divergence coefficients;
-3. use the same vector synthesis path as the vorticity/divergence inverse.
+Set `l=0` potential coefficients to zero because the additive constant is undefined.
 
-For a single streamfunction, set divergence coefficients to zero. For a single velocity potential, set vorticity coefficients to zero.
+For inverse wind from vorticity/divergence:
 
-Avoid unnecessary analyze/synthesize cycles. Build internal kernels that can produce multiple related outputs from the same spectral coefficients.
+- invert the same E/B scaling used by the forward path;
+- synthesize with `spin=1`;
+- map DUCC components back to geographic `(u, v)` consistently.
+
+For inverse wind from streamfunction/velocity potential:
+
+- scalar-analyze the potential field(s);
+- apply the spherical Laplacian to obtain vorticity/divergence coefficients;
+- use the same vector synthesis path.
+
+For streamfunction alone, set divergence coefficients to zero. For velocity potential alone, set vorticity coefficients to zero.
+
+Share spectral coefficients between related outputs. Avoid repeated analyses/syntheses when one transform can produce the requested result.
 
 ---
 
-# CF metadata and variable semantics
+# CF metadata
 
-CF-compatible output metadata is part of the package contract.
+CF-compatible metadata is part of the API contract.
 
-Do not add a required CF metadata library just to set six known quantities. Keep a small internal metadata table for canonical atmospheric outputs.
+Do not require a CF library just to assign known metadata. Keep a small internal table for canonical outputs.
 
 At minimum:
 
-| Default name | `standard_name` | `long_name` | units |
+| Name | CF `standard_name` | `long_name` | units |
 | --- | --- | --- | --- |
 | `u` | `eastward_wind` | Eastward wind | `m s-1` |
 | `v` | `northward_wind` | Northward wind | `m s-1` |
@@ -1043,39 +1024,35 @@ At minimum:
 | `strf` | `atmosphere_horizontal_streamfunction` | Horizontal streamfunction | `m2 s-1` |
 | `vp` | `atmosphere_horizontal_velocity_potential` | Horizontal velocity potential | `m2 s-1` |
 
-Verify the exact current CF standard names against the official CF Standard Name Table during implementation and test them as literals. Do not invent standard names.
+Verify exact standard names against the current CF table before freezing tests.
 
-An output-name override changes only `DataArray.name`, not the physical metadata:
+An output-name override changes `DataArray.name`, not physical semantics:
 
 ```python
 vo = ds.sg.vorticity(output="vort")
 ```
 
-still has:
+must still carry the vorticity `standard_name`.
 
-```text
-standard_name = atmosphere_relative_vorticity
-```
+## Rotational/divergent component metadata
 
-### Rotational/divergent component metadata
+Check the current CF table for exact names for rotational/divergent wind components. If no exact standard name exists, omit `standard_name` and use accurate `long_name` plus `units="m s-1"`.
 
-For `u_rotational`, `v_rotational`, `u_divergent`, and `v_divergent`, check the current CF table for exact semantic names. If CF does not provide exact standard names, omit `standard_name` and use accurate `long_name` plus `units="m s-1"` rather than assigning the broader `eastward_wind`/`northward_wind` names to a component with a more specific meaning.
+Do not apply the broader `eastward_wind`/`northward_wind` standard names if that would misstate the component semantics.
 
-### Same-quantity operations
+## Same-quantity operations
 
-For filtering and regridding, the physical quantity has not changed. Preserve variable metadata such as:
+Filtering and regridding do not change the physical quantity. Preserve:
 
-- `name`;
+- variable name;
 - `standard_name`;
 - `long_name`;
 - `units`;
-- other non-conflicting user attributes.
+- other non-conflicting attrs.
 
-Do not overwrite existing physical metadata with generic spharmgrid metadata.
+## Generated spatial coordinates
 
-### Coordinates
-
-For generated target coordinates, attach normal CF coordinate attrs:
+Attach ordinary CF coordinate metadata:
 
 ```text
 latitude:
@@ -1089,30 +1066,26 @@ longitude:
     axis = X
 ```
 
-Use the actual coordinate names chosen for the returned object.
-
-Do not invent a CF standard name for GL or CC sampling. Grid family is a numerical property, not a different physical latitude coordinate.
-
-The grid can be rediscovered from the coordinate values. Avoid adding unnecessary custom global attrs unless a concrete need appears.
+Do not invent CF standard names for GL or CC sampling. Grid type is a numerical property.
 
 ---
 
-# Optional cf-xarray integration
+# Optional cf-xarray
 
-`cf-xarray` should be an optional dependency, not a core requirement.
+Make `cf-xarray` optional.
 
-Suggested optional dependency group:
+Core spharmgrid must directly understand the documented `standard_name` attributes and canonical names.
+
+A likely user extra is:
 
 ```toml
 [project.optional-dependencies]
 cf = ["cf-xarray"]
 ```
 
-Core spharmgrid must understand its small set of required `standard_name` values directly from `.attrs`, so the common API works without `cf-xarray`.
+When installed, `cf-xarray` may improve coordinate/axis discovery and interoperability. It must not change numerical results for an otherwise identical valid dataset.
 
-When `cf-xarray` is installed, it may be used to improve coordinate/axis discovery and interoperability with more complex CF datasets. The numerical result for an otherwise identical valid dataset must not change merely because `cf-xarray` is installed.
-
-Add tests both with the core path and, where useful, with the optional integration.
+Test the core path without `cf-xarray` and optional integration where useful.
 
 ---
 
@@ -1120,9 +1093,9 @@ Add tests both with the core path and, where useful, with the optional integrati
 
 Do not implement a spharmgrid time representation.
 
-xarray owns CF decoding/encoding of time and calendars. spharmgrid should preserve non-spatial dimensions and coordinates unchanged while applying each transform over the horizontal dimensions.
+xarray owns CF decoding/encoding of time and calendars. Preserve all non-spatial dimensions/coordinates while applying transforms only over the horizontal dimensions.
 
-This should work for fields shaped like:
+Support shapes including:
 
 ```text
 (lat, lon)
@@ -1132,89 +1105,82 @@ This should work for fields shaped like:
 (member, time, level, lat, lon)
 ```
 
-and other leading-dimension combinations.
+Preserve, when present:
 
-Preserve xarray/cftime semantics including, when present:
-
-- NumPy datetime values;
-- `cftime` values;
+- NumPy datetime coordinates;
+- `cftime` objects;
 - proleptic Gregorian calendars;
 - no-leap calendars;
 - 360-day calendars.
 
-Do not convert timestamps to Unix time, milliseconds, or a package-specific representation.
+Do not convert time to Unix time, integer milliseconds, or another package representation.
 
-Do not add `cftime` as a direct core dependency solely for spharmgrid. Let xarray's I/O stack resolve it when required by a user's dataset.
+Do not add `cftime` as a direct dependency solely for spharmgrid. Let xarray's I/O stack provide it when required by a user's data.
 
 ---
 
 # xarray and Dask behavior
 
-The xarray API is the primary user interface, but all numerical kernels should operate on NumPy arrays and be applied over xarray objects with `xr.apply_ufunc` or an equally clear mechanism.
+The xarray API is primary. Numerical kernels should operate on NumPy arrays and be applied over xarray objects with `xr.apply_ufunc` or an equally direct mechanism.
 
 Requirements:
 
-- transform only the detected horizontal dimensions;
-- preserve all leading dimensions;
-- work eagerly with NumPy-backed DataArrays;
-- work lazily with Dask-backed DataArrays when Dask is installed;
-- do not require Dask as a core dependency solely to support xarray;
-- rechunk horizontal core dimensions only when needed and make the requirement/error clear;
-- preserve input dtype where scientifically/numerically appropriate, but do not sacrifice transform correctness to force float32.
+- transform only detected horizontal dimensions;
+- preserve arbitrary leading dimensions;
+- eager NumPy-backed DataArrays work;
+- Dask-backed DataArrays remain lazy when Dask is installed;
+- Dask is not required as a core dependency solely for xarray support;
+- horizontal core dimensions are rechunked only when needed;
+- errors should state rechunking requirements clearly;
+- preserve dtype where appropriate, but do not force float32 at the expense of transform correctness.
 
-Do not copy PyStormTracker's public `backend="serial"|"dask"|"mpi"` abstraction. spharmgrid does not need a backend selector.
+Do not copy PyStormTracker's `backend="serial"|"dask"|"mpi"` API.
 
-Expose only a small DUCC thread control:
+Expose only:
 
 ```python
 nthreads: int | None = None
 ```
 
-The implementation should avoid obvious Dask × DUCC oversubscription. A reasonable default policy is:
+for DUCC thread control where needed.
 
-- eager field and `nthreads is None`: allow DUCC's normal thread behavior;
-- Dask-backed field and `nthreads is None`: use one DUCC thread per Dask task;
+Default policy:
+
+- eager data + `nthreads is None`: use normal DUCC behavior after confirming the installed DUCC convention;
+- Dask-backed data + `nthreads is None`: use one DUCC thread per task to avoid oversubscription;
 - explicit `nthreads`: honor it.
 
-Verify the exact `ducc0` convention for `nthreads=0`/default in the installed version instead of assuming it.
-
-No MPI support in spharmgrid initially.
+No MPI initially.
 
 ---
 
-# Direct API and accessor parity
+# Direct/accessor parity
 
-The direct and accessor APIs must call the same implementation and return equivalent xarray objects.
-
-Examples:
+These must be numerically equivalent:
 
 ```python
 sg.filter(field, "T6-42", taper=0.1)
 field.sg.filter("T6-42", taper=0.1)
 ```
 
-must be equivalent.
-
-Likewise:
+and:
 
 ```python
 sg.vorticity(ds.u, ds.v)
 ds.sg.vorticity()
 ```
 
-must differ only in how inputs were selected, not in numerical implementation.
+The Dataset accessor adds variable selection; it does not add a different numerical path.
 
-Test this explicitly.
-
-The accessor classes should contain input selection, light argument normalization, and calls to public/core functions. They should not contain SHT mathematics.
+Test accessor/direct equivalence explicitly.
 
 ---
 
 # Minimal CLI
 
-The CLI is a helper for file-oriented use, not the primary API and not a separate data model.
+The CLI is a helper, not the main API.
 
-Use the Python standard library `argparse` unless there is a concrete reason to add a CLI dependency.
+Use standard-library `argparse` unless a concrete need appears for another dependency.
 
 Initial commands:
 
@@ -1226,8 +1192,6 @@ spharmgrid kinematics
 spharmgrid potentials
 spharmgrid wind
 ```
-
-`info` should report detected spatial coordinates, GL/CC grid type, shape, and supported transform degree information useful for diagnosis.
 
 Examples:
 
@@ -1242,37 +1206,33 @@ spharmgrid filter input.nc output.nc \
 spharmgrid kinematics wind.nc output.nc
 ```
 
-Do not require `--u u --v v` for the normal ERA5/CF case. Use the same Dataset variable-discovery logic as the xarray accessor.
+Do not require `--u u --v v` in the normal ERA5/CF case. Use the same variable discovery as the Dataset accessor.
 
-Allow explicit variable overrides when needed.
+Allow explicit input/output variable overrides where the Python API does.
 
-### CLI I/O
+## CLI I/O
 
-Delegate file handling to xarray. Do not build a custom file abstraction.
+Delegate file handling to xarray. Do not build a file abstraction.
 
-At minimum, support normal NetCDF through `xr.open_dataset`/`to_netcdf` when the user's installed xarray engine can handle it. Add thin suffix/engine handling for Zarr or GRIB only if it stays small and can be covered by optional dependencies.
+At minimum, normal NetCDF should work through the installed xarray engine.
 
-Suggested optional groups may include:
+Optional engines may support:
 
-```toml
-io = [
-    "netCDF4",
-    "zarr",
-    "cfgrib",
-]
-```
+- NetCDF variants;
+- Zarr;
+- GRIB/cfgrib reading.
 
-but do not make all I/O engines core dependencies.
+GRIB writing is not required. Reading GRIB through xarray/cfgrib and writing a supported output format is sufficient.
 
-For GRIB, reading through xarray/cfgrib and writing a different xarray-supported format is sufficient initially. Do not implement GRIB encoding.
-
-The CLI should call the same public Python functions/accessors. No separate numerical paths.
+The CLI must call the same public functions/accessors as Python users.
 
 ---
 
-# Core dependencies
+# Dependencies and tooling
 
-Keep the required dependency set small:
+Use `uv`, Hatchling, Ruff, pytest, and the repository's selected static type checker as described in `skills/repository-engineering/SKILL.md`.
+
+Expected core runtime dependencies:
 
 ```text
 numpy
@@ -1280,115 +1240,119 @@ xarray
 ducc0
 ```
 
-Add only packaging/runtime dependencies that are actually required by the implementation.
-
-Optional:
+Optional concepts:
 
 ```text
 cf-xarray       CF integration
-Dask            lazy execution through xarray
-NetCDF/Zarr/GRIB engines as I/O extras
-pyspharm-syl    parity-test environment only
+Dask            lazy xarray execution
+NetCDF/Zarr/GRIB engines
+pyspharm-syl    SPHEREPACK parity environment only
 ```
 
-Do not add Pint/unit libraries initially. The package should expect wind kinematics in `m s-1` for canonical atmospheric outputs and document this clearly. If unit conversion becomes a real use case, it can be added later as optional integration.
+Do not add Pint initially. Wind kinematic functions should document the expected SI wind-unit convention; unit conversion can be added later if it becomes a real requirement.
+
+The parity dependency must not restrict production Python support. Run parity on a Python version where the comparison package installs reliably.
+
+A package metadata version may use an unreleased placeholder required by Python packaging. Do not create a tag, release, changelog policy, or publishing workflow now.
 
 ---
 
 # Testing strategy
 
-Testing must establish both mathematical correctness and compatibility with established atmospheric spherical-harmonic workflows.
-
-Do **not** add large checked-in NCL/SPHEREPACK numerical reference arrays.
-
-Use three layers.
+Use three evidence layers.
 
 ## 1. Analytic tests
 
-Construct deterministic scalar spherical harmonics and simple vector fields with known behavior.
+Use deterministic low-degree scalar harmonics and constructed vector fields.
 
 Cover at least:
 
-- scalar GL analysis/synthesis round trips;
-- scalar CC analysis/synthesis round trips;
+- GL scalar analysis/synthesis behavior;
+- CC scalar analysis/synthesis behavior;
 - GL -> CC and CC -> GL regridding;
-- hard `Tn` truncation;
+- `Tn` hard truncation;
 - `Tn-m` band pass;
-- taper endpoint response, including verifying `w(lmax) == taper` numerically;
+- taper endpoint response, including `w(lmax) == taper`;
 - gradient of known harmonics;
-- Laplacian eigenvalue `-l(l+1)/R^2`;
+- Laplacian eigenvalue;
 - inverse-Laplacian zero-mean convention;
 - purely rotational wind with near-zero divergence;
 - purely divergent wind with near-zero vorticity;
-- forward/inverse wind reconstruction;
+- forward/inverse full-wind reconstruction;
 - streamfunction/vorticity relation;
 - velocity-potential/divergence relation.
 
-Use low-degree harmonics where expected values can be reasoned about directly. Do not rely only on random fields.
+Do not rely only on random fields.
 
 ## 2. Internal identities and round trips
 
-Test identities such as:
+Test:
 
 ```text
 u,v -> vo,d -> u,v
 u,v -> strf,vp -> u,v
 vo -> rotational_wind -> divergence ~= 0
 d  -> divergent_wind  -> vorticity ~= 0
-strf -> rotational_wind -> streamfunction ~= strf up to the l=0 constant
-vp   -> divergent_wind  -> velocity potential ~= vp up to the l=0 constant
+strf -> rotational_wind -> streamfunction ~= strf up to l=0 constant
+vp   -> divergent_wind  -> velocity potential ~= vp up to l=0 constant
 laplacian(inverse_laplacian(zero_mean_field)) ~= zero_mean_field
 ```
 
-Test across GL and CC grids and both ascending/descending latitude coordinate order.
+Run representative identities on GL and CC, ascending and descending latitude, and common longitude conventions.
 
-Also test non-spatial vectorization over time/level/member dimensions.
+Test arbitrary leading dimensions.
 
 ## 3. SPHEREPACK/pyspharm parity
 
-Use a dedicated optional test environment with a maintained SPHEREPACK wrapper such as `pyspharm-syl` if it installs reliably on a supported CI Python version.
+Use a dedicated optional parity environment with a maintained SPHEREPACK wrapper such as `pyspharm-syl` if it installs reliably.
 
-The parity dependency should not constrain spharmgrid's production Python support. If the oracle only builds on a subset such as one Python version, run the parity job there.
+Generate deterministic test fields at runtime. Do not add large checked-in NCL/SPHEREPACK arrays.
 
-Compare deterministic synthetic fields for the overlapping operations:
+Compare overlapping operations where grid definitions align:
 
-- regular/CC-equivalent scalar transforms where the grid definitions align;
 - Gaussian scalar transforms;
+- regular-grid scalar transforms where the SPHEREPACK grid matches the CC case being tested;
 - regridding;
 - gradient;
 - vorticity/divergence;
 - streamfunction/velocity potential;
 - wind reconstruction.
 
-SPHEREPACK/pyspharm uses its own regular-grid definitions and orientation conventions. Match the grid and coordinate conventions explicitly before comparing; do not treat a mismatch in grid definition as a numerical error.
+Before comparing, align:
 
-Use tolerances justified by transform normalization, precision, and grid type. Record why any looser tolerance is required.
+- exact grid definition;
+- latitude nodes/order;
+- longitude origin/order;
+- spectral truncation and `mmax`;
+- radius;
+- normalization;
+- sign/component convention;
+- precision.
 
-The current PyStormTracker NCL/SPHEREPACK parity work may be used to understand expected conventions, but spharmgrid tests should generate their own deterministic inputs instead of depending on PST's checked-in reference datasets.
+Use explicit tolerances and explain any materially loose tolerance.
+
+A parity job may use a narrower Python version than the production matrix.
 
 ---
 
-# Metadata tests
+# Metadata and grid tests
 
 Test:
 
-- auto-detection from canonical names `u`, `v`, `vo`, `d`, `strf`, `vp`;
-- auto-detection from CF `standard_name` with non-canonical variable names;
-- explicit input-variable override;
-- ambiguity errors when multiple variables match;
-- output-name overrides preserving `standard_name`;
-- canonical CF attrs for `u`, `v`, `vo`, `d`, `strf`, `vp`;
-- no invented/incorrect `standard_name` for rotational/divergent components;
-- same-quantity metadata preservation through filter/regrid;
-- generated latitude/longitude CF metadata;
-- time/level/member coordinate preservation;
-- cftime/calendar preservation in an optional test environment when available.
+- canonical variable discovery: `u`, `v`, `vo`, `d`, `strf`, `vp`;
+- CF `standard_name` discovery with non-canonical variable names;
+- explicit variable overrides;
+- ambiguity errors;
+- output-name overrides preserving semantic metadata;
+- canonical output attrs;
+- rotational/divergent component metadata without invented CF names;
+- metadata preservation through filter/regrid;
+- generated latitude/longitude attrs;
+- non-spatial coordinate preservation;
+- CF time/calendar preservation when available;
+- accessor/direct API equality.
 
----
-
-# Grid tests
-
-Test grid detection against exact generated grids and representative coordinate layouts:
+Grid detection tests:
 
 ```text
 GL ascending latitude
@@ -1401,96 +1365,223 @@ CC descending latitude
 
 Reject:
 
-- duplicate cyclic longitude endpoint;
+- duplicate cyclic endpoint;
 - non-global longitude span;
-- regular latitude grid that omits one/both poles but is presented as CC;
-- latitude values that do not match GL nodes;
+- regular latitude grid omitting a pole while presented as CC;
+- latitudes that do not match GL nodes;
 - irregular longitude spacing;
-- ambiguous/missing spatial coordinates.
+- missing/ambiguous spatial coordinates.
 
-Test that internal rolling/reordering is reversed correctly in outputs.
-
----
-
-# Filter/regrid implementation notes from PyStormTracker
-
-The existing PyStormTracker scalar SHT path already contains the essential implementation:
-
-```text
-map
- -> ducc0.sht.analysis_2d(... geometry="CC"/"GL")
- -> coefficient mask/taper
- -> ducc0.sht.synthesis_2d(... target geometry)
-```
-
-Port and simplify the **global GL/CC** logic only.
-
-Do not port these PyStormTracker concerns into spharmgrid:
-
-- reduced-grid `pseudo_analysis` in the first implementation;
-- HEALPix synthesis;
-- regional DCT filtering;
-- polar stereographic synthesis;
-- tracker-specific `Backend` selection;
-- tracker-specific latitude/domain conventions;
-- PST data-loader dependencies.
-
-Replace `DataLoader` coupling with direct xarray/CF coordinate discovery appropriate to this package.
-
-Filtering and regridding should share one scalar SHT kernel so `regrid(..., spectral=...)` does not duplicate work.
+Verify that internal rolls/reversals are restored correctly.
 
 ---
 
 # Error behavior
 
-Prefer explicit scientific/data-model errors over silent fallback.
+Prefer explicit errors over silent fallback.
 
-Raise clear `ValueError`/`TypeError` messages for:
+Raise clear errors for:
 
-- unsupported grid;
-- non-global grid;
+- unsupported/non-global grids;
 - ambiguous latitude/longitude coordinates;
-- ambiguous input variables;
-- incompatible `u`/`v` dimensions or coordinates;
-- invalid spectral range;
-- user specifying both `spectral` and `lmin`/`lmax`;
+- ambiguous physical variables;
+- incompatible `u`/`v` shapes or coordinates;
+- invalid spectral notation/range;
+- mixed `spectral` and explicit `lmin/lmax` arguments;
 - requested `lmax` beyond source/target capability;
-- invalid taper response;
-- inverse operation whose scalar quantity cannot be identified;
-- Dataset `wind()` with multiple complete source representations and no `source=`.
+- invalid taper value;
+- inverse scalar source that cannot be identified;
+- Dataset `wind()` with both complete source representations and no `source=`.
 
-Do not catch every DUCC exception and replace it with a generic message if doing so hides useful numerical diagnostics. Add context while preserving the original exception as the cause.
+Do not replace useful DUCC errors with generic catch-all messages. Add context and preserve the original exception as the cause.
 
 ---
 
-# Documentation to create during implementation
+# Documentation and Read the Docs
 
-Keep documentation small for the first pass. At minimum create:
+Documentation is part of the first implementation, not a later cleanup task.
+
+Follow `skills/documentation/SKILL.md` and use the working PyStormTracker Read the Docs setup as a reference, but keep spharmgrid's configuration smaller.
+
+## Required documentation files
+
+Create at least:
 
 ```text
 README.md
+.readthedocs.yaml
+
+docs/conf.py
+docs/index.md
+docs/quickstart.md
+docs/grids.md
+docs/filtering.md
+docs/regridding.md
+docs/operators.md
+docs/kinematics.md
+docs/cf.md
+docs/cli.md
+docs/api.md
+docs/references.md
 ```
 
-with:
+Pages may be combined when that improves readability. Do not split one concept across several tiny pages.
 
-- what spharmgrid is;
-- statement that `ducc0` is the numerical SHT backend;
-- GL/CC definitions;
-- quick xarray accessor examples;
-- direct API equivalents;
-- filter/regrid examples including `T6-42` and `taper=0.1`;
-- vector examples;
-- CF variable auto-detection;
-- short note on NCL/SPHEREPACK operation correspondence;
-- references.
+## Documentation stack
 
-If API documentation grows beyond a readable README, add a small `docs/` tree later. Do not build a large documentation framework just to complete the first implementation.
+Use:
 
-Comments/docstrings should explain transform conventions, grid assumptions, signs, coefficient scaling, and scientific lineage. Avoid comments that only restate the code.
+```text
+Sphinx
+MyST Markdown
+sphinx_rtd_theme
+sphinx.ext.autodoc
+sphinx.ext.napoleon
+sphinx.ext.viewcode
+```
+
+Add other Sphinx extensions only when the docs actually need them.
+
+Do not copy PyStormTracker's Mermaid/Node/PDF configuration unless spharmgrid documentation uses those features.
+
+Keep docs dependencies in a lightweight `docs` group. Read the Docs should install with uv and build `docs/conf.py`.
+
+Use `.readthedocs.yaml` version 2. Follow the same general uv install pattern as PyStormTracker:
+
+```yaml
+python:
+  install:
+    - method: uv
+      command: sync
+      groups:
+        - docs
+
+sphinx:
+  configuration: docs/conf.py
+```
+
+Choose the RTD Python version from spharmgrid's actual supported matrix rather than copying a version blindly.
+
+A strict local build must pass, for example:
+
+```bash
+uv run --group docs sphinx-build -W --keep-going -b html docs docs/_build/html
+```
+
+Adjust the exact command to the final uv group configuration and document the real command.
+
+## README
+
+Keep README concise. Include:
+
+- package purpose;
+- `ducc0` backend statement;
+- GL/CC support;
+- GitHub installation while unreleased;
+- `.sg` accessor quick start;
+- direct API equivalent;
+- `T42`, `T6-42`, `taper=0.1` example;
+- wind/kinematics example;
+- link to full docs;
+- references/citation note appropriate to the current GitHub-only state.
+
+Do not add release badges/version promises that do not exist.
+
+## User guide content
+
+The built docs must explain:
+
+### Quickstart
+
+- import/register `.sg`;
+- inspect grid;
+- filter;
+- regrid;
+- combined filter+regrid;
+- compute vorticity/divergence;
+- reconstruct wind.
+
+### Grids
+
+- GL/Gauss–Legendre definition;
+- CC/Clenshaw–Curtis definition;
+- why a generic lat/lon grid is not automatically CC;
+- coordinate order and longitude conventions;
+- transform bandwidth constraints.
+
+### Filtering
+
+- `T42` and `T6-42` parsing;
+- hard truncation default;
+- `taper=None` default;
+- `taper=0.1` meaning;
+- Sardeshmukh–Hoskins formula and citation.
+
+### Regridding
+
+- GL/CC pairwise combinations;
+- target-grid construction;
+- why `T42` is not a target-grid name;
+- combined regrid+filter single-cycle behavior.
+
+### Operators
+
+- gradient;
+- Laplacian;
+- inverse Laplacian;
+- Earth radius;
+- units;
+- `l=0` convention.
+
+### Kinematics
+
+- `u/v -> vo/d`;
+- `u/v -> strf/vp`;
+- rotational/divergent wind;
+- full inverse wind;
+- semantic relationship to NCL/SPHEREPACK functions;
+- sign/component/radius conventions needed to interpret results.
+
+### CF/xarray
+
+- canonical short names;
+- CF `standard_name` lookup order;
+- output metadata;
+- optional `cf-xarray`;
+- preserved time/calendars/non-spatial coordinates;
+- Dask behavior.
+
+### CLI
+
+- minimal commands;
+- NetCDF example;
+- optional format engines;
+- variable overrides.
+
+### API reference
+
+Every public top-level function/type and accessor method must be documented. Use autodoc to reduce duplication but keep scientific semantics in maintained prose/docstrings.
+
+### References
+
+Include the scientific/numerical sources used by the implementation. Verify bibliographic details and make DOI/publisher links clickable.
+
+## Documentation wording
+
+Write for atmospheric scientists and xarray users. Use direct technical/scientific prose, not agent instructions.
+
+State clearly:
+
+- spharmgrid is a wrapper/helper around DUCC0;
+- DUCC0 performs the numerical transforms;
+- NCL/SPHEREPACK are semantic/parity references;
+- PyStormTracker is the source implementation for the initial extraction.
+
+Do not claim that spharmgrid contains SPHEREPACK or introduces a new transform algorithm.
 
 ---
 
-# Package/API examples that should work
+# Package examples that must work
 
 ## Scalar workflow
 
@@ -1541,7 +1632,7 @@ kin: vo, d
 pot: strf, vp
 ```
 
-No `u="u", v="v"` arguments should be needed.
+No `u="u", v="v"` arguments are needed.
 
 ## CF-name discovery
 
@@ -1552,7 +1643,7 @@ ds["vwind"].attrs["standard_name"] = "northward_wind"
 kin = ds.sg.kinematics()
 ```
 
-## Inverse wind operations
+## Inverse wind
 
 ```python
 rot = ds["vo"].sg.rotational_wind()
@@ -1578,151 +1669,145 @@ pot = ds.sg.potentials(
 )
 ```
 
-Physical `standard_name` metadata must remain correct regardless of the output variable name.
+Output variable names may change; physical CF semantics must not.
 
 ---
 
-# Suggested implementation sequence
+# Implementation sequence
 
-## Phase 1: package skeleton and grid model
+## Phase 1 — repository/package foundation
 
-- create `pyproject.toml` and `src/spharmgrid` layout;
-- add core dependencies only;
+- create `pyproject.toml` and `src/spharmgrid`;
+- establish uv/Hatchling/Ruff/pytest/type-check setup;
+- create `uv.lock`;
+- add only core dependencies;
 - register `.sg` DataArray/Dataset accessors;
-- implement CF/canonical coordinate discovery;
-- implement GL/CC grid generation and detection;
-- add grid tests;
-- add `EARTH_RADIUS_M = 6_371_220.0`.
+- add `EARTH_RADIUS_M`;
+- establish strict local docs build skeleton early so API docs evolve with code.
 
-## Phase 2: scalar SHT core
+## Phase 2 — grids and coordinate semantics
+
+- implement CF/canonical coordinate discovery;
+- implement `Grid`;
+- implement GL and CC constructors;
+- implement grid detection;
+- handle latitude order and longitude rolling correctly;
+- add grid tests.
+
+## Phase 3 — scalar SHT/filter/regrid core
 
 - extract/simplify global GL/CC scalar analysis/synthesis from PyStormTracker;
-- implement `SpectralRange` and `parse_spectral`;
-- implement hard filter;
-- implement optional `taper=float` using the existing Sardeshmukh–Hoskins form;
-- implement same-grid filter;
-- implement GL/CC regrid and combined filter+regrid;
-- add analytic and PST-behavior tests.
+- implement `SpectralRange`/parser;
+- implement hard filtering;
+- implement optional `taper=float`;
+- implement same-grid filtering;
+- implement pairwise GL/CC regridding;
+- combine filtering+regridding in one analysis/synthesis cycle;
+- add analytic tests.
 
-## Phase 3: scalar differential operators
+## Phase 4 — scalar differential operators
 
 - implement gradient;
 - implement Laplacian;
 - implement inverse Laplacian with zero `l=0` mode;
-- validate on analytic harmonics and against SPHEREPACK/pyspharm where practical.
+- test on analytic harmonics;
+- compare with SPHEREPACK/pyspharm where practical.
 
-## Phase 4: vector transforms
+## Phase 5 — vector transforms
 
-- extract and simplify the PyStormTracker spin-1 vector analysis convention;
+- extract/simplify PyStormTracker spin-1 convention;
 - implement `vorticity`, `divergence`, `kinematics`;
 - implement `streamfunction`, `velocity_potential`, `potentials`;
-- implement vorticity/divergence -> wind;
-- implement streamfunction/velocity-potential -> wind;
-- implement single-source `rotational_wind` and `divergent_wind`;
-- test forward/inverse identities and signs aggressively.
+- implement `vo/d -> wind`;
+- implement `strf/vp -> wind`;
+- implement single-source `rotational_wind`/`divergent_wind`;
+- test signs, radius factors, and inverse identities aggressively.
 
-## Phase 5: xarray semantics and metadata
+## Phase 6 — xarray, CF, and Dask
 
-- add Dataset variable auto-detection;
-- add canonical output metadata;
-- add output-name overrides;
-- ensure all non-spatial dimensions/coordinates survive;
+- implement Dataset variable auto-detection;
+- implement canonical output metadata;
+- implement output-name overrides;
+- preserve leading dimensions and time/calendars;
 - add Dask coverage;
-- add optional `cf-xarray` integration and tests.
+- add optional `cf-xarray` integration/tests.
 
-## Phase 6: SPHEREPACK parity
+## Phase 7 — external parity
 
-- add an optional parity-test dependency/environment;
-- compare deterministic GL/Gaussian and regular-grid cases where definitions align;
-- document any expected convention differences;
-- keep oracle limitations out of the production dependency matrix.
+- add optional SPHEREPACK/pyspharm parity environment;
+- compare deterministic synthetic fields on overlapping GL/regular cases;
+- document convention differences;
+- keep comparison-library restrictions out of production support.
 
-## Phase 7: minimal CLI and README
+## Phase 8 — CLI
 
 - implement thin `argparse` CLI;
-- use xarray directly for file I/O;
+- use xarray for I/O;
 - add `info`, `filter`, `regrid`, `kinematics`, `potentials`, `wind`;
-- write concise README examples and scientific references.
+- test that CLI uses package functions and normal variable discovery.
 
-## Phase 8: cleanup
+## Phase 9 — complete docs
 
-- run tests/lint/type checks;
-- remove copied PST abstractions that are not needed;
-- inspect the public namespace and keep it small;
-- verify accessor/direct API parity;
-- verify no release/tag/PyPI work was added.
+- finish README and full `docs/` user guide;
+- finish API reference/autodoc;
+- add `.readthedocs.yaml`;
+- verify GitHub Markdown and Sphinx/MyST rendering;
+- verify citations/links;
+- run strict Sphinx build with warnings as errors;
+- ensure every public function and accessor method is documented.
+
+## Phase 10 — final review
+
+- run the full ordinary test suite;
+- run Ruff and configured type checks;
+- run the docs build;
+- run optional parity tests in their supported environment;
+- inspect public namespace;
+- remove copied PyStormTracker abstractions that are not needed;
+- check accessor/direct equivalence;
+- check that no excluded feature or release machinery was added.
 
 ---
 
 # Acceptance criteria
 
-The initial implementation is complete when all of the following are true:
+The first implementation is complete when:
 
-1. `import spharmgrid as sg` works from a normal editable/installable package.
-2. Importing spharmgrid registers `.sg` on xarray DataArray and Dataset objects without known namespace conflicts.
+1. `import spharmgrid as sg` works from an installable `src/` package.
+2. Importing spharmgrid registers `.sg` on xarray DataArray and Dataset objects without a known accessor conflict.
 3. GL and CC grids are generated and detected correctly.
 4. Scalar filtering supports `T42`, `T6-42`, explicit bounds, hard cutoff, and optional `taper=0.1` semantics.
-5. `regrid()` supports GL/CC in every pairwise direction and combines regridding + filtering in one transform cycle.
+5. `regrid()` supports GL/CC in every pairwise direction and combines filtering+regridding in one transform cycle.
 6. Gradient, Laplacian, and inverse Laplacian pass analytic tests.
-7. `u/v -> vo/d` passes analytic and SPHEREPACK/pyspharm parity checks.
-8. `u/v -> strf/vp` and the inverse wind transforms pass round-trip/parity checks.
-9. `vo -> rotational_wind` and `d -> divergent_wind` have the expected zero-divergence/zero-vorticity properties within numerical tolerance.
+7. `u/v -> vo/d` passes analytic and independent parity checks where comparable.
+8. `u/v -> strf/vp` and inverse wind transforms pass round-trip/parity checks.
+9. `vo -> rotational_wind` and `d -> divergent_wind` satisfy the expected zero-divergence/zero-vorticity properties within justified numerical tolerance.
 10. ERA5-style `u`, `v`, `vo`, `d`, `strf`, and `vp` names are detected without explicit arguments.
-11. CF `standard_name` metadata is detected when variable names differ.
-12. Output CF metadata is correct and output-name overrides do not alter physical semantics.
+11. Exact CF `standard_name` metadata is detected when variable names differ.
+12. Output CF metadata is correct and output-name overrides do not change physical semantics.
 13. Arbitrary non-spatial xarray dimensions are preserved.
 14. CF time/calendar coordinates pass through unchanged.
-15. NumPy-backed and Dask-backed xarray inputs are both covered.
+15. NumPy-backed and Dask-backed xarray inputs are covered.
 16. Accessor and direct API calls are numerically equivalent.
-17. The CLI is a thin xarray helper and has no separate numerical implementation.
-18. Core dependencies remain small; `cf-xarray` and SPHEREPACK parity tooling are optional.
-19. Reduced Gaussian, HEALPix, regional DCT, MPI, and raw public coefficient APIs have not leaked into the initial scope.
-20. No release, tag, PyPI publishing, or PyStormTracker dependency change is part of this implementation.
+17. The CLI is a thin xarray helper with no separate numerical implementation.
+18. Core runtime dependencies remain small; `cf-xarray`, I/O engines, Dask, and SPHEREPACK parity tooling are optional as appropriate.
+19. Analytic tests, round-trip tests, and the dedicated external parity suite are present.
+20. `README.md` and the complete Sphinx/MyST user documentation describe the implemented API and scientific conventions.
+21. `.readthedocs.yaml` and `docs/conf.py` are present and a strict local Read-the-Docs-equivalent Sphinx build passes.
+22. Every public function/type and accessor method is included in the built API documentation.
+23. Documentation clearly states the DUCC0 backend, GL/CC definitions, NCL/SPHEREPACK relationship, taper method/reference, CF semantics, and inverse zero-mode conventions.
+24. Reduced Gaussian, HEALPix, regional DCT, MPI, alternate SHT backends, and raw public coefficient APIs have not entered the first public scope.
+25. No release, tag, PyPI publishing, Zenodo setup, PyStormTracker dependency, or PyStormTracker source modification is part of this implementation.
 
 ---
 
-# Public namespace target
+# Final implementation rule
 
-Keep the top-level namespace close to this set:
-
-```python
-sg.Grid
-sg.SpectralRange
-sg.EARTH_RADIUS_M
-
-sg.gaussian_grid
-sg.clenshaw_curtis_grid
-sg.detect_grid
-sg.parse_spectral
-
-sg.filter
-sg.regrid
-sg.gradient
-sg.laplacian
-sg.inverse_laplacian
-
-sg.vorticity
-sg.divergence
-sg.kinematics
-sg.streamfunction
-sg.velocity_potential
-sg.potentials
-sg.rotational_wind
-sg.divergent_wind
-sg.wind
-```
-
-Do not expose internal DUCC coefficient helpers, xarray gufunc kernels, E/B coefficient arrays, metadata registries, or accessor implementation classes unless there is a concrete user need.
-
----
-
-# Final implementation guidance
-
-Start by reading the actual current code in `../PyStormTracker`, not by rewriting the mathematics from this plan. Extract the parts that are already validated, remove tracker-specific coupling, then broaden them into the xarray/CF API defined here.
+Start from the actual current code in `../PyStormTracker`. Extract the validated global GL/CC numerical pieces, remove tracker-specific coupling, and expose them through the xarray/CF API defined here.
 
 Use NCL/SPHEREPACK as the external semantic/parity reference and `ducc0` as the numerical transform engine.
 
-The package should remain small enough that a user can understand its purpose from the public API:
+The package should remain understandable from this model:
 
 ```text
 atmospheric field on GL/CC grid
@@ -1730,4 +1815,4 @@ atmospheric field on GL/CC grid
     -> wind kinematics / potentials / inverse wind
 ```
 
-Anything outside that model should need a clear reason before it becomes public API.
+Anything outside that model needs a concrete current requirement before it becomes public API.
