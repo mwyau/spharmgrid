@@ -1,25 +1,32 @@
 # spharmgrid
 
-spharmgrid provides spherical-harmonic filtering, regridding, scalar
-operators, and atmospheric wind transforms for global xarray fields. It is an
-xarray/CF operations layer around [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc):
-DUCC0 supplies the numerical spherical-harmonic transforms.
+**spharmgrid (SPherical HARMonics GRIDding)** is an xarray-first
+spherical-harmonic tool for global atmospheric fields. It provides spectral
+filtering, regridding, scalar operators, and atmospheric wind diagnostics and
+inverse transforms, including relative vorticity, divergence, streamfunction,
+and velocity potential. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies
+the numerical spherical-harmonic transforms.
 
-The initial scope is deliberately limited to full rectangular
-Gauss--Legendre (GL) and pole-including Clenshaw--Curtis (CC) grids. It does
-not reinterpret arbitrary regular latitude--longitude data as CC, and it does
-not provide reduced Gaussian grids, HEALPix, regional transforms, MPI, or an
-alternative transform backend.
+For atmospheric winds, spharmgrid directly computes relative vorticity (`vo`),
+divergence (`d`), streamfunction (`strf`), and velocity potential (`vp`), and
+can reconstruct rotational, divergent, or full wind fields from those derived
+quantities.
+
+The initial scope is limited to full rectangular Gauss--Legendre (GL) and
+pole-including Clenshaw--Curtis (CC) grids. It does not reinterpret arbitrary
+regular latitude--longitude data as CC, and it does not provide reduced
+Gaussian grids, HEALPix, regional transforms, MPI, or an alternative transform
+backend.
 
 ```{toctree}
 :maxdepth: 2
 
 quickstart
-grids
 filtering
 regridding
-operators
 kinematics
+operators
+grids
 cf
 cli
 api

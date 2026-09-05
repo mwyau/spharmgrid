@@ -1,11 +1,13 @@
-# Wind kinematics and inverse transforms
+# Atmospheric wind diagnostics and inverse transforms
 
-spharmgrid provides descriptive xarray equivalents of common
-NCL/SPHEREPACK transform workflows. NCL/SPHEREPACK define useful atmospheric
-semantics and parity comparisons; DUCC0 performs spharmgrid's numerical
-spin-1 transforms.
+spharmgrid computes relative vorticity, horizontal divergence, streamfunction,
+and velocity potential from global wind fields, and reconstructs rotational,
+divergent, or full wind from those derived quantities. These operations are
+descriptive xarray equivalents of common NCL/SPHEREPACK transform workflows.
+NCL/SPHEREPACK define useful atmospheric semantics and parity comparisons;
+DUCC0 performs spharmgrid's numerical spin-1 transforms.
 
-## Forward diagnostics
+## Vorticity, divergence, streamfunction, and velocity potential
 
 Given geographic eastward `u` and northward `v` wind:
 
@@ -27,8 +29,9 @@ kin = ds.sg.kinematics()
 pot = ds.sg.potentials()
 ```
 
-`kinematics()` performs one vector analysis for both diagnostics. `potentials()`
-also shares one vector analysis for its two outputs.
+`kinematics()` performs one vector analysis for relative vorticity and
+divergence. `potentials()` also shares one vector analysis for streamfunction
+and velocity potential.
 
 ## Potentials and signs
 

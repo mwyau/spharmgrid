@@ -44,7 +44,7 @@ import spharmgrid as sg
 .. autofunction:: spharmgrid.inverse_laplacian
 ```
 
-## Wind operations
+## Atmospheric wind diagnostics and transforms
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.vorticity

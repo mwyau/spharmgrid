@@ -1,9 +1,10 @@
 # Command-line interface
 
-The `spharmgrid` command is a small file-oriented helper. It delegates reading
-and writing to xarray and calls the same package functions as Python users.
-Normal NetCDF works when an xarray NetCDF engine is installed; optional engines
-can also support Zarr or GRIB input.
+The `spharmgrid` command is a small file-oriented helper for the same spectral
+filtering, regridding, and atmospheric wind diagnostics exposed by the Python
+API. It delegates reading and writing to xarray and calls the same package
+functions as Python users. Normal NetCDF works when an xarray NetCDF engine is
+installed; optional engines can also support Zarr or GRIB input.
 
 ```bash
 spharmgrid info input.nc
@@ -21,9 +22,10 @@ spharmgrid kinematics wind.nc kinematics.nc
 spharmgrid potentials wind.nc potentials.nc
 ```
 
-`kinematics` and `potentials` use the same CF/canonical variable discovery as
-`Dataset.sg`. Pass `--u` and `--v` only when their input names need an
-override.
+`kinematics` computes relative vorticity and divergence; `potentials` computes
+streamfunction and velocity potential. Both commands use the same CF/canonical
+variable discovery as `Dataset.sg`. Pass `--u` and `--v` only when their input
+names need an override.
 
 Reconstruct wind with an explicit source representation:
 
