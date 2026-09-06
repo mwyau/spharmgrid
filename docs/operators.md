@@ -1,7 +1,6 @@
-# Scalar operators
+# Scalar and vector operators
 
-The scalar operators act in spherical-harmonic space. The default spherical
-Earth radius is:
+The differential operators act in spherical-harmonic space. The default spherical Earth radius is
 
 ```python
 sg.EARTH_RADIUS_M  # 6_371_220.0 metres
@@ -18,24 +17,16 @@ gradient = field.sg.gradient()
 renamed = sg.gradient(field, eastward="dx", northward="dy")
 ```
 
-The result is the physical horizontal gradient. When the input has a `units`
-attribute, each component is labeled with input units per metre.
+The result is the physical horizontal gradient. If the input has a `units` attribute, each component is labeled with input units per metre.
 
 ## Inverse gradient
 
 ```python
 potential = eastward_gradient.sg.inverse_gradient(northward_gradient)
-
-# Direct equivalent.
 potential = sg.inverse_gradient(eastward_gradient, northward_gradient)
 ```
 
-`inverse_gradient()` returns a scalar potential for the vector's irrotational
-component. A rotational component is omitted, consistent with SPHEREPACK
-inverse-gradient semantics. The scalar degree-zero coefficient is set to zero,
-so the result is fixed up to an additive constant. When both inputs declare the
-same gradient unit ending in `m-1`, the result uses the corresponding base
-unit.
+`inverse_gradient()` returns the scalar potential associated with the irrotational part of the vector field. A rotational component does not contribute. The scalar degree-zero coefficient is set to zero, fixing the additive constant. If both inputs have the same gradient unit ending in `m-1`, the result uses the corresponding base unit.
 
 ## Laplacian
 
@@ -43,7 +34,7 @@ unit.
 lap = field.sg.laplacian()
 ```
 
-For every scalar spherical harmonic,
+For each scalar spherical harmonic,
 
 ```math
 \nabla^2 Y_{\ell m}
@@ -63,9 +54,7 @@ For $\ell>0$,
 = -\frac{R^2}{\ell(\ell+1)}Y_{\ell m}.
 ```
 
-The degree-zero mode is singular, so its coefficient is set to zero. As a
-result, `laplacian(inverse_laplacian(field))` recovers the field with its
-spatial mean removed.
+The degree-zero mode is singular and is set to zero. Therefore `laplacian(inverse_laplacian(field))` recovers the field with its spatial mean removed.
 
 ## Vector Laplacian and inverse vector Laplacian
 
@@ -73,28 +62,21 @@ spatial mean removed.
 lap = u.sg.vector_laplacian(v)
 restored = lap.u.sg.inverse_vector_laplacian(lap.v)
 
-# Dataset accessors discover `u` and `v` from exact CF standard names or
-# canonical short names.
 lap = ds.sg.vector_laplacian()
 
-# Direct equivalents.
 lap = sg.vector_laplacian(u, v)
 restored = sg.inverse_vector_laplacian(lap.u, lap.v)
 ```
 
-The vector Laplacian is defined on tangent vector harmonics. For both E and B
-families, it applies
+Dataset accessors identify `u` and `v` from exact CF standard names or canonical short names.
+
+The vector Laplacian acts on tangent vector harmonics. For both E and B families,
 
 ```math
 \nabla_v^2: (E_{\ell m}, B_{\ell m}) \mapsto
--\frac{\ell(\ell+1)}{R^2}(E_{\ell m}, B_{\ell m}),
+-\frac{\ell(\ell+1)}{R^2}(E_{\ell m}, B_{\ell m}).
 ```
 
-This is not a scalar Laplacian applied independently to eastward and northward
-geographic components.
+This differs from applying the scalar Laplacian independently to eastward and northward geographic components.
 
-`inverse_vector_laplacian()` applies
-$-R^2/[\ell(\ell+1)]$ at positive degree. Vector-harmonic degree-zero slots
-do not describe a tangent-vector mode and are set to zero. Thus applying the
-inverse after the vector Laplacian recovers every representable positive-degree
-mode, with those null slots fixed by convention.
+`inverse_vector_laplacian()` applies $-R^2/[\ell(\ell+1)]$ at positive degree. Degree-zero vector-harmonic slots do not represent tangent-vector modes and are set to zero. Applying the inverse after the vector Laplacian therefore recovers all representable positive-degree modes.
