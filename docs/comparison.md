@@ -1,8 +1,8 @@
 # Comparison with related tools
 
-spharmgrid overlaps most directly with [windspharm](https://ajdawson.github.io/windspharm/) and NCL's SPHEREPACK-based spherical harmonic routines. spharmgrid uses xarray objects and DUCC0 spherical harmonic transforms.
+spharmgrid overlaps most directly with [windspharm](https://ajdawson.github.io/windspharm/) and NCL's SPHEREPACK-based spherical harmonic routines. spharmgrid uses xarray objects and DUCC spherical harmonic transforms.
 
-The table maps current spharmgrid operations to the closest windspharm and NCL counterparts. The numerical conventions are not identical: grids, normalization, truncation, Earth radius, vector conventions, and metadata handling can differ.
+The table maps current spharmgrid operations to the closest windspharm and NCL counterparts.
 
 For NCL, `F` denotes fixed-grid routines and `G` denotes Gaussian-grid routines. Lower-case procedure forms and `_Wrap` variants also exist for many functions.
 
@@ -29,14 +29,6 @@ For NCL, `F` denotes fixed-grid routines and `G` denotes Gaussian-grid routines.
 | Vector Laplacian | `sg.vector_laplacian(u, v)` | `lapvf`, `lapvg` | — |
 | Inverse vector Laplacian | `sg.inverse_vector_laplacian(u, v)` | `ilapvf`, `ilapvg` | — |
 
+spharmgrid's pole-including Clenshaw–Curtis (CC) grid corresponds to the pole-including NCL fixed grid and pyspharm `regular` grid; its Gauss–Legendre (GL) grid corresponds to their Gaussian grid.
+
 See the {doc}`api` reference for direct functions and xarray accessors.
-
-## NCL grid names
-
-NCL's fixed grid is an equally spaced global latitude–longitude grid. spharmgrid's pole-including Clenshaw–Curtis grid also has equally spaced latitudes, but the transform conventions should be compared explicitly when reproducing NCL results. Gaussian-grid comparisons likewise require matching latitude nodes and spectral conventions.
-
-## Numerical conventions
-
-Reproducing results across packages requires matching the grid definition, normalization, truncation, Earth radius, vector sign conventions, latitude ordering, and treatment of the degree-zero mode.
-
-spharmgrid supports full rectangular Gauss–Legendre (GL) and pole-including Clenshaw–Curtis (CC) grids. See {doc}`grids` for their definitions and {doc}`filtering` for spectral-range conventions.
