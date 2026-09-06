@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
+import pytest
 import xarray as xr
 
 import spharmgrid as sg
@@ -94,3 +95,16 @@ def solid_body_wind(
         xr.DataArray(u, dims=("lat", "lon"), coords=coordinates, name="u"),
         xr.DataArray(v, dims=("lat", "lon"), coords=coordinates, name="v"),
     )
+
+
+@pytest.fixture(autouse=True)
+def force_exact_assert_allclose(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Temporarily force exact equality for numerical tolerance calibration."""
+    original = np.testing.assert_allclose
+
+    def exact_allclose(*args: object, **kwargs: object) -> None:
+        kwargs["rtol"] = 0.0
+        kwargs["atol"] = 0.0
+        original(*args, **kwargs)
+
+    monkeypatch.setattr(np.testing, "assert_allclose", exact_allclose)
