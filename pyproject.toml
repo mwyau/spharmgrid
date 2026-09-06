@@ -70,6 +70,7 @@ docs = [
 test = [
     "cftime>=1.6.5",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
 ]
 # pyspharm-syl supplies the independent SPHEREPACK comparison implementation.
 # Keep it out of normal test environments because it currently supports
@@ -79,6 +80,7 @@ parity = ["pyspharm-syl>=1.2.1; python_version < '3.14'"]
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]
 testpaths = ["tests"]
+strict_config = true
 strict_markers = true
 markers = [
     "parity: compares against an independently implemented transform package",

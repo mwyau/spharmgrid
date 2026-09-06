@@ -31,9 +31,11 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
+      - name: Check lockfile
+        run: uv lock --check
       - run: uv sync --extra cf --extra dask --frozen
-      - run: uv run --no-sync ruff check src tests
-      - run: uv run --no-sync ruff format --check src tests
+      - run: uv run --no-sync ruff check src tests docs/conf.py
+      - run: uv run --no-sync ruff format --check src tests docs/conf.py
       - run: uv run --no-sync ty check
 
   tests:
@@ -70,7 +72,42 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - run: uv sync --no-default-groups --group test --extra cf --extra dask --frozen
-      - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
+      - name: Run unit tests
+        if: ${{ matrix.os != 'ubuntu-26.04' || matrix.python != '3.14' }}
+        run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
+      - name: Run unit tests with coverage
+        if: ${{ matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' }}
+        run: >-
+          uv run --no-sync pytest
+          tests/unit
+          tests/optional/test_cf_xarray.py
+          --cov=spharmgrid
+          --cov-branch
+          --cov-report=term-missing
+          --cov-report=xml:coverage-unit.xml
+          --junitxml=junit-unit.xml
+          -o junit_family=legacy
+      - name: Upload unit test results to Codecov
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('junit-unit.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./junit-unit.xml
+          report_type: test_results
+          flags: unit
+          name: unit-py314
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+      - name: Upload unit coverage to Codecov
+        if: ${{ success() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('coverage-unit.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./coverage-unit.xml
+          flags: unit
+          name: unit-py314
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
 
   file-backends:
     name: Optional file backends (Python 3.14)
@@ -187,4 +224,34 @@ jobs:
           save-cache: false
           python-version: "3.13"
       - run: uv sync --no-default-groups --group test --group parity --frozen
-      - run: uv run --no-sync pytest tests/parity
+      - name: Run parity tests with coverage
+        run: >-
+          uv run --no-sync pytest
+          tests/parity
+          --cov=spharmgrid
+          --cov-branch
+          --cov-report=term-missing
+          --cov-report=xml:coverage-parity.xml
+          --junitxml=junit-parity.xml
+          -o junit_family=legacy
+      - name: Upload parity test results to Codecov
+        if: ${{ !cancelled() && hashFiles('junit-parity.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./junit-parity.xml
+          report_type: test_results
+          flags: parity
+          name: parity-py313
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+      - name: Upload parity coverage to Codecov
+        if: ${{ !cancelled() && hashFiles('coverage-parity.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./coverage-parity.xml
+          flags: parity
+          name: parity-py313
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
