@@ -1,6 +1,6 @@
 # Scalar and vector operators
 
-The differential operators act in spherical-harmonic space. The default spherical Earth radius is
+The differential operators act in spherical harmonic space. The default spherical Earth radius is
 
 ```python
 sg.EARTH_RADIUS_M  # 6_371_220.0 metres
@@ -79,4 +79,4 @@ The vector Laplacian acts on tangent vector harmonics. For both E and B families
 
 This differs from applying the scalar Laplacian independently to eastward and northward geographic components.
 
-`inverse_vector_laplacian()` applies $-R^2/[\ell(\ell+1)]$ at positive degree. Degree-zero vector-harmonic slots do not represent tangent-vector modes and are set to zero. Applying the inverse after the vector Laplacian therefore recovers all representable positive-degree modes.
+`inverse_vector_laplacian()` applies $-R^2/[\ell(\ell+1)]$ at positive degree. Degree-zero vector harmonic slots do not represent tangent-vector modes and are set to zero. Applying the inverse after the vector Laplacian therefore recovers all representable positive-degree modes.
