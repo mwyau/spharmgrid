@@ -20,7 +20,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-Direct calls use the top-level functions:
+### Direct functions
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
@@ -29,9 +29,8 @@ regridded = sg.regrid(field, target)
 
 ## Atmospheric wind diagnostics
 
-For a Dataset containing canonical `u` and `v` wind variables, or variables
-with the corresponding exact CF standard names, no input-variable arguments
-are needed.
+With canonical `u` and `v` variable names or exact CF standard names, Dataset
+methods identify the wind components automatically.
 
 ```python
 wind = xr.open_dataset("wind.nc")
