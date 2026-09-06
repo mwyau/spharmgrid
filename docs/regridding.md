@@ -34,3 +34,23 @@ result = field.sg.regrid(
 Without an explicit spectral range, regridding retains the content jointly
 representable by the source and target grids. An explicit `Tn` range must be
 representable by both grids.
+
+## Vector regridding
+
+`regrid_vector()` has the same supported GL/CC source-target combinations and
+the same `spectral`, `lmin`, `lmax`, and `taper` options as scalar `regrid()`:
+
+```python
+wind_on_target = ds.sg.regrid_vector(target, spectral="T6-42", taper=0.1)
+
+# The direct equivalent accepts the eastward and northward components.
+wind_on_target = sg.regrid_vector(u, v, target, spectral="T6-42", taper=0.1)
+```
+
+Dataset accessors discover `u` and `v` by exact CF standard names or canonical
+short names.
+
+Vector regridding applies the selection or taper to both vector-harmonic
+families. It does not scalar-regrid the eastward and northward components
+independently. Output names default to `u` and `v`; use `eastward=` and
+`northward=` to change them.

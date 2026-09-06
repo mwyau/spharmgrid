@@ -44,9 +44,23 @@ import spharmgrid as sg
 
    Compute the physical eastward and northward horizontal gradient.
 
+.. autofunction:: spharmgrid.inverse_gradient
+
 .. autofunction:: spharmgrid.laplacian
 
 .. autofunction:: spharmgrid.inverse_laplacian
+```
+
+## Vector spectral operations
+
+```{eval-rst}
+.. autofunction:: spharmgrid.regrid_vector
+
+.. autofunction:: spharmgrid.helmholtz
+
+.. autofunction:: spharmgrid.vector_laplacian
+
+.. autofunction:: spharmgrid.inverse_vector_laplacian
 ```
 
 ## Atmospheric wind diagnostics and transforms

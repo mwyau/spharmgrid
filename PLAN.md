@@ -32,14 +32,14 @@ The implementation is organized into sequential plans:
      inverse wind transforms.
    - xarray/CF/Dask integration and the file-oriented CLI.
 
-2. `plans/02-sht-suite.md` — **current next phase**
+2. `plans/02-sht-suite.md` — **implemented baseline**
    - Complete the high-value scalar/vector SHT operator suite.
    - Add vector regridding, Helmholtz decomposition, inverse gradient, and
      vector Laplacian/inverse vector Laplacian.
    - Establish the complete scientific operation contract before alternate
      transform engines are introduced.
 
-3. `plans/03-gpu-backends.md`
+3. `plans/03-gpu-backends.md` — **current next phase**
    - Introduce the smallest backend boundary required by the real DUCC0,
      torch-harmonics, and S2FFT implementations.
    - Keep GL/CC as the grid substrate while backend conventions are established.
@@ -164,8 +164,8 @@ method, or precision applies to every backend/grid pair.
 
 ## Current implementation contract
 
-Until `plans/02-sht-suite.md` is implemented, the existing public behavior is
-the Phase-1 contract recorded in `plans/01-core.md`.
+The current public behavior is the Phase-2 contract recorded in
+`plans/02-sht-suite.md`.
 
 Keep this root `PLAN.md` short. It is the routing document; detailed scientific
 and implementation decisions belong in the owning phase plan.

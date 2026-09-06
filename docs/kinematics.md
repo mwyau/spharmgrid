@@ -49,6 +49,26 @@ The degree-zero coefficients are set to zero. Input wind is expected in SI
 units of metres per second; relative vorticity and divergence are in `s-1`, and
 the potentials are in `m2 s-1`.
 
+## Helmholtz decomposition
+
+```python
+parts = u.sg.helmholtz(v)
+# Dataset variables: u_divergent, v_divergent, u_rotational, v_rotational
+
+parts = ds.sg.helmholtz()
+
+# Direct equivalent.
+parts = sg.helmholtz(u, v)
+```
+
+`helmholtz()` separates one tangent wind field into its divergent and
+rotational components. For a representable field, each pair sums back to the
+corresponding input geographic component.
+
+The radius factors cancel, so the numerical `radius` value does not change this
+decomposition. The four outputs use descriptive `long_name` metadata because
+CF has no exact standard names for divergent and rotational component winds.
+
 ## Rotational and divergent wind
 
 ```python
