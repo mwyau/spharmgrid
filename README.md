@@ -65,7 +65,7 @@ recovered_field = gradient.gradient_eastward.sg.inverse_gradient(
 wind_laplacian = ds.sg.vector_laplacian()
 ```
 
-The command-line interface delegates file decoding to xarray. NetCDF and Zarr output are supported directly when their optional backends are installed; GRIB input is available through the optional `grib` extra.
+The command-line interface delegates file decoding to xarray. NetCDF and Zarr output are supported when their optional backends are installed; GRIB input is available through the optional `grib` extra.
 
 `inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector-harmonic slots to zero. See the operator documentation for these conventions.
 
