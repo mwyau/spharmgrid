@@ -1,8 +1,8 @@
 # Quick start
 
 Import spharmgrid once to register `.sg` on xarray `DataArray` and `Dataset`
-objects. The accessor is the primary interface; each operation has an
-equivalent direct function.
+objects. The accessor is the primary interface, and each operation also has a
+direct function.
 
 ## Filtering and regridding
 
@@ -21,7 +21,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-The direct equivalents call the same numerical implementation:
+Direct functions are available for the same operations:
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
@@ -49,5 +49,4 @@ The individual diagnostics are also available directly as `vorticity()`,
 conventions.
 
 All operations preserve non-spatial dimensions and their xarray coordinates.
-Read {doc}`grids` before applying an operation to a new data source: only
-valid global GL and CC sampling is accepted.
+See {doc}`grids` for supported sampling geometries and coordinate requirements.
