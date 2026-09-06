@@ -108,6 +108,9 @@ documentation describes implemented behavior; plans remain under `plans/`.
 
 - `pyproject.toml` is authoritative for package metadata, dependencies, build
   configuration, and tool configuration. Keep `uv.lock` synchronized.
+- Update `uv.lock` directly with uv. Do not add temporary GitHub Actions
+  workflows, throwaway CI jobs, or other repository automation solely to
+  generate or refresh a lockfile.
 - Use the existing Hatchling, uv, Ruff, ty, pytest, Sphinx/MyST, and Read the
   Docs setup unless a concrete requirement justifies changing a tool.
 - Keep core runtime dependencies small and optional capabilities optional.
