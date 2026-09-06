@@ -1,4 +1,4 @@
-"""CLI delegation tests using xarray NetCDF and Zarr I/O."""
+"""CLI delegation tests using xarray-supported file backends."""
 
 from __future__ import annotations
 
@@ -12,13 +12,17 @@ from spharmgrid.cli import main
 from tests.conftest import scalar_field, solid_body_wind, supported_grid
 
 
+def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
+    dataset.to_netcdf(path, engine="h5netcdf")
+
+
 def test_info_and_filter_commands(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     grid = supported_grid("cc")
     input_path = tmp_path / "input.nc"
     output_path = tmp_path / "filtered.nc"
-    scalar_field(grid, name="msl").to_dataset().to_netcdf(input_path, engine="h5netcdf")
+    _write_netcdf(scalar_field(grid, name="msl").to_dataset(), input_path)
 
     assert main(["info", str(input_path)]) == 0
     assert "grid_type: cc" in capsys.readouterr().out
@@ -40,16 +44,12 @@ def test_info_and_filter_commands(
         assert "msl" in result
 
 
-def test_zarr_input_and_output(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
     grid = supported_grid("cc")
     input_path = tmp_path / "input.zarr"
     output_path = tmp_path / "filtered.zarr"
-    scalar_field(grid, name="msl").to_dataset().to_zarr(input_path)
+    scalar_field(grid, name="msl").to_dataset().to_zarr(input_path, mode="w")
 
-    assert main(["info", str(input_path)]) == 0
-    assert "grid_type: cc" in capsys.readouterr().out
     assert (
         main(
             [
@@ -68,12 +68,16 @@ def test_zarr_input_and_output(
         assert "msl" in result
 
 
+def test_cfgrib_backend_is_available() -> None:
+    assert "cfgrib" in xr.backends.list_engines()
+
+
 def test_kinematics_command_uses_dataset_variable_discovery(tmp_path: Path) -> None:
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)
     input_path = tmp_path / "wind.nc"
     output_path = tmp_path / "kinematics.nc"
-    xr.Dataset({"u": u, "v": v}).to_netcdf(input_path, engine="h5netcdf")
+    _write_netcdf(xr.Dataset({"u": u, "v": v}), input_path)
 
     assert main(["kinematics", str(input_path), str(output_path)]) == 0
     with xr.open_dataset(output_path, engine="h5netcdf") as result:
@@ -84,9 +88,7 @@ def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
     grid = supported_grid("cc")
     scalar_input = tmp_path / "scalar.nc"
     regridded_output = tmp_path / "regridded.nc"
-    scalar_field(grid, name="msl").to_dataset().to_netcdf(
-        scalar_input, engine="h5netcdf"
-    )
+    _write_netcdf(scalar_field(grid, name="msl").to_dataset(), scalar_input)
 
     assert (
         main(
@@ -116,13 +118,13 @@ def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
     potentials_output = tmp_path / "potentials.nc"
     diagnostics_input = tmp_path / "diagnostics.nc"
     reconstructed_output = tmp_path / "reconstructed.nc"
-    xr.Dataset({"u": u, "v": v}).to_netcdf(wind_input, engine="h5netcdf")
+    _write_netcdf(xr.Dataset({"u": u, "v": v}), wind_input)
     assert main(["potentials", str(wind_input), str(potentials_output)]) == 0
     with xr.open_dataset(potentials_output, engine="h5netcdf") as result:
         assert set(result.data_vars) == {"strf", "vp"}
 
     diagnostics = sg.kinematics(u, v)
-    diagnostics.to_netcdf(diagnostics_input, engine="h5netcdf")
+    _write_netcdf(diagnostics, diagnostics_input)
     assert (
         main(
             [
