@@ -48,6 +48,45 @@ jobs:
       - run: uv sync --group dev --all-extras --frozen
       - run: uv run --no-sync pytest
 
+  free-threaded:
+    name: Free-threaded Python 3.14 (non-blocking)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14t"
+      - run: uv sync --group dev --all-extras --frozen
+      - name: Verify imports keep the GIL disabled
+        run: |
+          uv run --no-sync python - <<'PY'
+          import sys
+
+          if sys._is_gil_enabled():
+              raise RuntimeError("GIL is enabled at interpreter startup")
+
+          modules = (
+              "numpy",
+              "pandas",
+              "xarray",
+              "cf_xarray",
+              "ducc0",
+              "spharmgrid",
+          )
+          for name in modules:
+              __import__(name)
+              gil_enabled = sys._is_gil_enabled()
+              print(f"{name:12}: GIL {'ON' if gil_enabled else 'OFF'}")
+              if gil_enabled:
+                  raise RuntimeError(f"{name} caused the GIL to become enabled")
+          PY
+
   minimum-dependencies:
     name: Minimum direct dependencies
     runs-on: ubuntu-26.04
