@@ -46,21 +46,26 @@ Do not add Mermaid, Node, PDF builds, or other documentation tooling unless the 
 
 Write for atmospheric scientists and Python/xarray users.
 
-Published documentation should read as documentation for a researcher or user, not as instructions to an agent, a design review, or a record of implementation decisions.
+Published documentation should read as documentation for a researcher or user, not as instructions to an agent, a design review, a project-management brief, or a record of implementation decisions.
 
 - Start with the scientific or technical subject.
-- State current behavior directly.
+- Put the current behavior, definition, or result before supporting detail.
 - Keep constraints only when users need them to interpret results or avoid an invalid call.
-- Put implementation plans, rejected alternatives, future architecture, and repository-management rules in `PLAN.md`, `AGENTS.md`, or skills.
-- Do not preserve migration narratives or implementation history in user-facing prose unless provenance itself is relevant, such as the short PyStormTracker lineage note in the references.
+- Put implementation plans, rejected alternatives, future architecture, repository-management rules, and contributor instructions in `PLAN.md`, `AGENTS.md`, or skills.
+- Do not preserve chat history, migration narratives, implementation history, or intermediate design decisions in user-facing prose.
 - Do not list absent features merely to define scope. Document supported behavior instead.
-- Avoid routing or meta-language such as `source of truth`, `owning page`, `this page documents`, `the API is designed to`, `the implementation intentionally`, or explanations of why the documentation is organized a certain way.
-- Avoid contract narration when an example is clearer. Do not say that two APIs are equivalent, share the same path, or delegate to the same kernel unless that fact matters to a user-facing guarantee.
-- Avoid defensive constructions such as `rather than silently`, `does not guess`, `does not reinterpret`, `does not implement a separate path`, or `not a claim that ...` unless the contrast is required to explain an actual error condition or scientific interpretation.
-- Avoid project-management wording such as `initial scope`, `current phase`, `future work`, `planned`, `out of scope`, and `roadmap` in normal user documentation.
-- Avoid machine-facing wording such as `pipeline`, `framework`, `architecture`, `backend abstraction`, or `contract` when ordinary scientific/software wording is more precise. Keep these terms when they name actual software objects or established technical concepts.
-- Remove filler adverbs and minimizers that add no meaning, including `simply`, `merely`, `deliberately`, and `intentionally`.
+- Avoid routing and repository meta-language such as `source of truth`, `authoritative`, `owning page`, `this page owns`, `maintained in`, `future agents`, `future contributors`, `the API is designed to`, and explanations of why documentation is organized a certain way.
+- Avoid contract narration when examples are clearer. Do not explain that two interfaces are equivalent, share the same numerical path, delegate to the same kernel, or are intentionally thin unless that fact is necessary for users.
+- Avoid defensive constructions such as `rather than silently`, `does not guess`, `does not reinterpret`, `does not implement a separate path`, `not a claim that`, or `by design` unless the contrast is required to explain an actual error condition or scientific interpretation.
+- Avoid project-management wording such as `initial scope`, `initial package`, `current phase`, `future work`, `planned`, `out of scope`, `roadmap`, `accepted evolution`, and `change gate` in user documentation.
+- Avoid historical/meta terms such as `lineage`, `provenance`, `heritage`, `source implementation`, and `semantic reference` in normal user-facing prose. Cite the relevant software or paper directly instead. A short factual statement such as `spharmgrid grew out of spherical-harmonic code used in PyStormTracker` is enough when history is relevant.
+- Avoid machine-facing wording such as `pipeline`, `framework`, `architecture`, `backend abstraction`, `contract`, `surface`, and `execution layer` when ordinary scientific/software wording is more precise. Keep these terms only when they name a real software object or established technical concept.
+- Prefer ordinary words such as `analysis`, `check`, `comparison`, `method`, `sequence`, and `implementation` over `audit`, `framework`, `protocol`, `hierarchy`, or similar abstractions when no precision is lost.
+- Avoid `-style` constructions when an exact method, package, or operation can be named.
+- Remove filler adverbs and minimizers that add no meaning, including `simply`, `merely`, `deliberately`, `intentionally`, `directly`, and `essentially` when they are not technically needed.
 - Avoid promotional wording such as `seamless`, `comprehensive`, `sophisticated`, `modern`, `clean`, `robust`, or `high-performance` unless supported by a specific property or measurement.
+- Do not describe a method or feature as rejected, removed, excluded, or unsupported unless that fact is needed to explain current behavior.
+- State the comparison and evidence when claiming parity, accuracy, performance, robustness, or validation.
 
 Prefer concise statements such as:
 
@@ -106,12 +111,12 @@ Explain when relevant:
 - zero-mode, truncation, or sign conventions needed to interpret output;
 - a short runnable example.
 
-State software/scientific lineage plainly:
+For software and scientific references, state only what users need:
 
-- `ducc0` supplies the numerical SHT engine;
-- NCL/SPHEREPACK provide established atmospheric operation semantics and parity references;
-- Sardeshmukh and Hoskins (1984) defines the supported spectral taper form;
-- PyStormTracker is the source of the earlier DUCC0 wrapper from which spharmgrid grew.
+- `ducc0` supplies the numerical SHT routines;
+- NCL/SPHEREPACK are useful atmospheric comparison references;
+- Sardeshmukh and Hoskins (1984) defines the supported spectral taper;
+- spharmgrid grew out of spherical-harmonic code used in PyStormTracker.
 
 Do not imply that spharmgrid contains SPHEREPACK or implements a new transform engine.
 
@@ -127,11 +132,11 @@ Repository Markdown should also render usefully on GitHub.
 
 ## Comments and docstrings
 
-Comments/docstrings should explain non-obvious transform conventions, scientific lineage, coordinate handling, or constraints. Do not narrate obvious code, preserve migration history, or justify implementation structure to the reader.
+Comments/docstrings should explain non-obvious transform conventions, coordinate handling, constraints, or scientific references. Do not narrate obvious code, preserve migration history, or justify implementation structure to the reader.
 
 ## Synchronization
 
-When a public behavior changes, update the owning implementation/docstring, API reference, and relevant user guide page in the same bounded change. Update README examples only when needed.
+When public behavior changes, update the implementation/docstring, API reference, and relevant user guide page in the same bounded change. Update README examples only when needed.
 
 Before adding a new page, check whether an existing page already covers the subject. Cross-link rather than duplicate long parameter tables or method explanations.
 
@@ -148,4 +153,4 @@ Before documentation work is complete:
 - vector sign/radius conventions and inverse zero modes are described where relevant;
 - CF metadata and time-preservation behavior are documented;
 - links and references resolve;
-- public pages contain no agent, roadmap, review, migration, or repository-management prose.
+- public pages contain no agent, roadmap, review, migration, repository-management, or unnecessary meta-historical prose.
