@@ -90,7 +90,7 @@ sg.regrid_vector(
     u,
     v,
     target_grid,
-    spectral=None,
+    truncation=None,
     *,
     lmin=None,
     lmax=None,
@@ -108,7 +108,7 @@ ds.sg.regrid_vector(
     target_grid,
     u="u",
     v="v",
-    spectral="T6-42",
+    truncation="T6-42",
     taper=0.1,
 )
 ```
