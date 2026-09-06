@@ -40,9 +40,6 @@ grib = ["cfgrib>=0.9.15.1"]
 netcdf = ["h5netcdf>=1.8.0"]
 zarr = ["zarr>=3.0.0"]
 
-[tool.uv]
-default-groups = []
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/spharmgrid"]
 
