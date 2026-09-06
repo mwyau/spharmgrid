@@ -18,8 +18,27 @@ env:
   UV_VERSION: "0.12.10"
 
 jobs:
+  code-quality:
+    name: Code quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+      - run: uv sync --extra cf --extra dask --frozen
+      - run: uv run --no-sync ruff check src tests
+      - run: uv run --no-sync ruff format --check src tests
+      - run: uv run --no-sync ty check
+
   tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    needs: code-quality
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     strategy:
@@ -44,12 +63,14 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
+          save-cache: false
           python-version: ${{ matrix.python }}
       - run: uv sync --extra cf --extra dask --frozen
       - run: uv run --no-sync pytest
 
   file-backends:
-    name: Optional GRIB backend
+    name: Optional file backends
+    needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -67,6 +88,7 @@ jobs:
 
   free-threaded:
     name: Free-threaded Python 3.14 compatibility
+    needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -108,7 +130,8 @@ jobs:
           check_import ducc0
 
   minimum-dependencies:
-    name: Minimum direct dependencies
+    name: Minimum dependencies
+    needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -124,27 +147,9 @@ jobs:
       - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
       - run: uv run --no-sync pytest
 
-  code-quality:
-    name: Code quality
-    runs-on: ubuntu-26.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@v10.0.1
-        with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: true
-          save-cache: false
-          python-version: "3.14"
-      - run: uv sync --extra cf --extra dask --frozen
-      - run: uv run --no-sync ruff check src tests
-      - run: uv run --no-sync ruff format --check src tests
-      - run: uv run --no-sync ty check
-
   docs:
     name: Documentation
+    needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -162,6 +167,7 @@ jobs:
 
   parity:
     name: SPHEREPACK parity
+    needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 40
     steps:
