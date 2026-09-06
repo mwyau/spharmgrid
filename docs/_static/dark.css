@@ -1,0 +1,115 @@
+@media screen and (min-width: 1100px) {
+  .wy-nav-content {
+    max-width: 1200px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  .wy-body-for-nav,
+  .wy-nav-content-wrap,
+  .wy-nav-content {
+    background: #17191c;
+    color: #d7dce2;
+  }
+
+  .wy-nav-side {
+    background: #111316;
+  }
+
+  .wy-side-nav-search {
+    background: #20242a;
+  }
+
+  .wy-side-nav-search input[type="text"] {
+    background: #17191c;
+    border-color: #4a515b;
+    color: #f1f3f5;
+  }
+
+  .wy-menu-vertical a {
+    color: #c8ced6;
+  }
+
+  .wy-menu-vertical a:hover,
+  .wy-menu-vertical li.current > a,
+  .wy-menu-vertical li.on a {
+    background: #252a31;
+    color: #ffffff;
+  }
+
+  .wy-menu-vertical li.current,
+  .wy-menu-vertical li.toctree-l1.current > a {
+    background: #1d2126;
+  }
+
+  .rst-content h1,
+  .rst-content h2,
+  .rst-content h3,
+  .rst-content h4,
+  .rst-content h5,
+  .rst-content h6,
+  .rst-content p,
+  .rst-content li,
+  .rst-content dt,
+  .rst-content dd,
+  .rst-content table.docutils td,
+  .rst-content table.docutils th {
+    color: #d7dce2;
+  }
+
+  .rst-content a,
+  .wy-breadcrumbs a {
+    color: #75b7ff;
+  }
+
+  .rst-content code,
+  .rst-content tt,
+  code.literal {
+    background: #24282e;
+    border-color: #3a4048;
+    color: #f0f2f4;
+  }
+
+  .highlight,
+  .highlight pre,
+  div[class^="highlight"] {
+    background: #111316;
+    color: #e6e9ed;
+  }
+
+  .rst-content table.docutils,
+  .rst-content table.field-list,
+  .rst-content table.docutils td,
+  .rst-content table.docutils th {
+    border-color: #3a4048;
+  }
+
+  .rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td,
+  .rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) th {
+    background: #20242a;
+  }
+
+  .rst-content .admonition,
+  .rst-content .note,
+  .rst-content .warning,
+  .rst-content .seealso {
+    background: #20242a;
+  }
+
+  .rst-content blockquote {
+    border-color: #4a515b;
+    color: #c8ced6;
+  }
+
+  .wy-nav-top {
+    background: #20242a;
+  }
+
+  footer,
+  footer p,
+  footer a {
+    color: #9ea6b0;
+  }
+}
