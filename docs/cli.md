@@ -2,15 +2,14 @@
 
 The `spharmgrid` command applies filtering, regridding, and atmospheric wind diagnostics to xarray-supported files.
 
-Install the file backends you need:
+NetCDF input/output is available in the base install. Install other file backends only when needed:
 
 ```bash
-uv add "spharmgrid[netcdf] @ git+https://github.com/mwyau/spharmgrid.git"
 uv add "spharmgrid[zarr] @ git+https://github.com/mwyau/spharmgrid.git"
 uv add "spharmgrid[grib] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
-Input decoding is delegated to xarray and its installed backends. NetCDF, Zarr, and GRIB input are supported when the corresponding backend is installed. Output paths ending in `.zarr` are written as Zarr stores; other output paths are written as NetCDF.
+Input decoding is delegated to xarray and its installed backends. NetCDF input/output uses h5netcdf. Output paths ending in `.zarr` are written as Zarr stores when the `zarr` extra is installed. GRIB input is available through the `grib` extra.
 
 ```bash
 spharmgrid info input.nc
