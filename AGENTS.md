@@ -33,6 +33,9 @@ including its research-software profile and atmospheric-science guidance.
 Repository-local scientific and API rules in this file take precedence when
 more specific.
 
+Use `spherical harmonic` and `spherical harmonics` without a hyphen, including
+when used attributively (for example, `spherical harmonic transform`).
+
 Keep atmospheric, mathematical, xarray, CF, and software terminology precise.
 Preserve equations, signs, normalization, grid definitions, radius factors,
 degree-zero conventions, units, and API names when editing prose. Distinguish
@@ -43,8 +46,8 @@ documentation describes implemented behavior; plans remain under `plans/`.
 ## Scientific and API invariants
 
 - spharmgrid is an xarray-first wrapper/helper around `ducc0` for atmospheric
-  and geophysical spherical-harmonic operations. Do not describe it as a new
-  spherical-harmonic transform implementation.
+  and geophysical spherical harmonic operations. Do not describe it as a new
+  spherical harmonic transform implementation.
 - `ducc0` supplies the numerical SHT machinery. NCL/SPHEREPACK provide important
   operation semantics and parity references. Published methods remain distinct
   from external implementation behavior and spharmgrid behavior.
