@@ -51,7 +51,7 @@ import spharmgrid as sg
 .. autofunction:: spharmgrid.inverse_laplacian
 ```
 
-## Vector spectral operations
+## Vector operations
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.regrid_vector
@@ -91,6 +91,4 @@ import spharmgrid as sg
 
 ## xarray accessors
 
-Importing spharmgrid registers `.sg` on xarray `DataArray` and `Dataset`.
-Accessor examples are shown throughout the {doc}`quickstart`, {doc}`filtering`,
-{doc}`regridding`, {doc}`operators`, and {doc}`kinematics` pages.
+Importing spharmgrid registers `.sg` on xarray `DataArray` and `Dataset`. Examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
