@@ -36,7 +36,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-The same operations are available as direct functions:
+You can also call the top-level functions directly:
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
