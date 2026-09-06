@@ -29,7 +29,7 @@ If more than one variable matches the same quantity, spharmgrid reports the cand
 
 ## Output metadata
 
-Derived wind diagnostics use the CF metadata in the table. Renaming an output does not change its physical metadata:
+Derived kinematic quantities use the CF metadata in the table. Renaming an output does not change its physical metadata:
 
 ```python
 vo = ds.sg.vorticity(output="vort")
