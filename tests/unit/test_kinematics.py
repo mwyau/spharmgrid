@@ -228,7 +228,7 @@ def test_inverse_gradient_recovers_irrotational_potential_and_zero_mode(
     )
 
     expected = degree_one_field(grid)
-    np.testing.assert_allclose(projected, expected, atol=3e-15)
+    np.testing.assert_allclose(projected, expected, rtol=0.0, atol=1e-14)
     recovered_gradient = sg.gradient(projected)
     np.testing.assert_allclose(
         recovered_gradient.gradient_eastward,
