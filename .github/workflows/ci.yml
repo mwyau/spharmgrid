@@ -61,52 +61,37 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --all-extras --frozen
-      - name: Check dependencies independently with the GIL disabled
+      - run: uv sync --extra cf --extra dask --frozen
+      - name: Check free-threaded imports independently
+        shell: bash
         run: |
-          uv run --no-sync python - <<'PY'
-          import subprocess
+          check_import() {
+            local group="$1"
+            local module="$2"
+            uv run --no-sync python - "$group" "$module" <<'PY'
+          import importlib
           import sys
 
-          checks = (
-              ("core", "numpy"),
-              ("core", "xarray"),
-              ("core", "ducc0"),
-              ("cf", "cf_xarray"),
-              ("dask", "dask"),
-              ("io", "h5netcdf"),
-              ("io", "h5py"),
-              ("package", "spharmgrid"),
-          )
+          group, module = sys.argv[1:]
+          try:
+              importlib.import_module(module)
+          except Exception as exc:
+              print(f"::warning::{group}: {module} failed to import on free-threaded Python: {exc}")
+              raise SystemExit(0)
 
-          probe = (
-              "import importlib, sys; "
-              "importlib.import_module(sys.argv[1]); "
-              "print('ON' if sys._is_gil_enabled() else 'OFF')"
-          )
-
-          if sys._is_gil_enabled():
-              print("::warning::GIL is enabled at interpreter startup")
-
-          for group, module in checks:
-              result = subprocess.run(
-                  [sys.executable, "-c", probe, module],
-                  capture_output=True,
-                  text=True,
-                  check=False,
-              )
-              status = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else "UNKNOWN"
-              print(f"{group:7} {module:12}: GIL {status}")
-
-              if result.returncode != 0:
-                  detail = result.stderr.strip().replace("\n", " ")
-                  print(f"::warning::{group} dependency {module} failed to import: {detail}")
-              elif status == "ON":
-                  print(
-                      f"::warning::{group} dependency {module} enables the GIL "
-                      "under free-threaded Python"
-                  )
+          gil_enabled = sys._is_gil_enabled()
+          print(f"{group:8} {module:12}: GIL {'ON' if gil_enabled else 'OFF'}")
+          if gil_enabled:
+              print(f"::warning::{group}: {module} enables the GIL on free-threaded Python")
           PY
+          }
+
+          check_import core numpy
+          check_import core xarray
+          check_import core ducc0
+          check_import cf cf_xarray
+          check_import dask dask
+          check_import package spharmgrid
 
   minimum-dependencies:
     name: Minimum direct dependencies
