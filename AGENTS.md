@@ -37,6 +37,7 @@ Any change to `README.md`, `docs/`, public docstrings, or explanatory repository
 - Do not rewrite vector-transform signs, component ordering, normalization, radius factors, or latitude orientation from memory. Trace the current PyStormTracker implementation, then verify with analytic tests and an independent implementation.
 - Treat PyStormTracker, NCL/SPHEREPACK, and pyspharm results as identified implementation/parity references, not scientific ground truth.
 - Do not claim parity, accuracy, performance, or external validation without stating the comparison and evidence.
+- Scientific validation is cumulative: analytic behavior, internal identities/round trips, and independent-backend parity are separate evidence; parity alone does not establish mathematical correctness.
 - Do not weaken scientific assertions or tolerances to make a failing test pass. Diagnose the cause first.
 
 ## Tests
