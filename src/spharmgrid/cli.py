@@ -21,6 +21,10 @@ _CLI_INSTALL_MESSAGE = (
     "CLI dependencies are not installed.\n\n"
     'Install them with:\n    pip install "spharmgrid[cli]"'
 )
+_GRIB_WINDOWS_PY314_MESSAGE = (
+    "GRIB input is not supported on Windows with Python 3.14.\n"
+    "Use Python 3.12 or 3.13 for GRIB input."
+)
 
 
 class _CLIDependencyError(RuntimeError):
@@ -257,6 +261,18 @@ def _is_zarr_path(path: str) -> bool:
     return Path(path).suffix.lower() == ".zarr"
 
 
+def _is_grib_path(path: str) -> bool:
+    return Path(path).suffix.lower() in {".grib", ".grib1", ".grib2", ".grb"}
+
+
+def _grib_is_unsupported() -> bool:
+    return (
+        sys.platform == "win32"
+        and sys.version_info.major == 3
+        and sys.version_info.minor == 14
+    )
+
+
 def _open_dataset(path: str) -> xr.Dataset:
     """Open NetCDF, Zarr, or another xarray-supported input path."""
     if _is_zarr_path(path):
@@ -266,6 +282,8 @@ def _open_dataset(path: str) -> xr.Dataset:
             return xr.open_zarr(path)
         except ImportError as error:
             raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+    if _is_grib_path(path) and _grib_is_unsupported():
+        raise _CLIDependencyError(_GRIB_WINDOWS_PY314_MESSAGE)
     if not _input_backend_available(path):
         raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
     try:
@@ -302,7 +320,7 @@ def _write_dataset(dataset: xr.Dataset, output: str) -> None:
 
 def _input_backend_available(path: str) -> bool:
     """Check the CLI backend expected for a failed generic input dispatch."""
-    if Path(path).suffix.lower() in {".grib", ".grib1", ".grib2", ".grb"}:
+    if _is_grib_path(path):
         return find_spec("cfgrib") is not None
     return find_spec("h5netcdf") is not None
 
