@@ -1,4 +1,4 @@
-# Atmospheric wind diagnostics and inverse transforms
+# Atmospheric kinematics and inverse transforms
 
 spharmgrid computes relative vorticity, horizontal divergence, streamfunction, and velocity potential from global wind fields. It also reconstructs rotational, divergent, or full wind fields from these quantities.
 
