@@ -1,4 +1,4 @@
-# CF metadata, xarray dimensions, and Dask
+# Xarray, CF, and Dask
 
 ## Dataset variable discovery
 
@@ -40,9 +40,9 @@ Filtering and regridding preserve the input variable name and attributes. Genera
 
 ## Dimensions and time
 
-Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects pass through as xarray coordinates.
+Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects pass through as Xarray coordinates.
 
-## cf-xarray
+## `cf-xarray`
 
 Install the optional `cf-xarray` extra with:
 
@@ -50,7 +50,7 @@ Install the optional `cf-xarray` extra with:
 uv add "spharmgrid[cf]"
 ```
 
-When installed, `cf-xarray` adds a latitude/longitude discovery path after exact CF metadata and canonical coordinate names are checked.
+When installed, `cf-xarray` is used for latitude and longitude discovery after exact CF metadata and canonical coordinate names are checked.
 
 ## Dask
 
@@ -60,4 +60,4 @@ Install Dask support with:
 uv add "spharmgrid[dask]"
 ```
 
-Without Dask installed, spharmgrid lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform. Dask-backed xarray fields execute lazily, and horizontal core dimensions are rechunked when required by xarray generalized ufunc execution. For the local Dask scheduler, spharmgrid sets `num_workers` to `max(1, os.cpu_count() // 4)` only when `num_workers` is unset. A configured `num_workers` value takes precedence. Distributed clusters use their configured worker topology.
+Without Dask installed, spharmgrid lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform. Dask-backed Xarray fields execute lazily, and horizontal core dimensions are rechunked when required by Xarray generalized ufunc execution. For the local Dask scheduler, spharmgrid sets `num_workers` to `max(1, os.cpu_count() // 4)` only when `num_workers` is unset. A configured `num_workers` value takes precedence. Distributed clusters use their configured worker topology.

@@ -1,34 +1,30 @@
-# Comparison with related tools
+# API comparison
 
-spharmgrid overlaps most directly with [windspharm](https://ajdawson.github.io/windspharm/) and NCL's SPHEREPACK-based spherical harmonic routines. spharmgrid uses xarray objects and DUCC spherical harmonic transforms.
+spharmgrid implements atmospheric spherical harmonic operations corresponding to many [NCL](https://www.ncl.ucar.edu/Document/Functions/spherical.shtml) routines through an API for Xarray objects. [windspharm](https://ajdawson.github.io/windspharm/) is another high-level Python interface for a related subset of SPHEREPACK operations. spharmgrid uses DUCC for spherical harmonic transforms; NCL and windspharm use SPHEREPACK.
 
-The table maps current spharmgrid operations to the closest windspharm and NCL counterparts.
-
-For NCL, `F` denotes fixed-grid routines and `G` denotes Gaussian-grid routines. Lower-case procedure forms and `_Wrap` variants also exist for many functions.
+The table maps spharmgrid's direct public functions to the closest NCL and [`windspharm.xarray.VectorWind`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html) methods. NCL `f` routines use fixed grids and `g` routines use Gaussian grids. A dash means windspharm has no direct `VectorWind` method for that operation; lower-level pyspharm functionality is outside this comparison.
 
 | Task | spharmgrid | NCL | windspharm |
 | --- | --- | --- | --- |
-| Spectral filtering / truncation | `field.sg.filter("T42")` | spherical harmonic analysis/synthesis with truncation; `exp_tapersh()` for tapering | `w.truncate(field, truncation=42)` |
-| Scalar spectral regridding | `field.sg.regrid(target_grid)` | `g2gsh*`, `g2fsh*`, `f2gsh*`, `f2fsh*` | — |
-| Vector spectral regridding | `ds.sg.regrid_vector(target_grid)` | `g2gshv*`, `g2fshv*`, `f2gshv*`, `f2fshv*` | — |
-| Scalar gradient | `field.sg.gradient()` | `gradsF`, `gradsG` | `w.gradient(field)` |
-| Inverse scalar gradient | `sg.inverse_gradient(gx, gy)` | `igradsF`, `igradsG` | — |
-| Scalar Laplacian | `field.sg.laplacian()` | `lapsF`, `lapsG` | — |
-| Inverse scalar Laplacian | `field.sg.inverse_laplacian()` | `ilapsF`, `ilapsG` | — |
-| Relative vorticity | `ds.sg.vorticity()` | `uv2vrF`, `uv2vrG` | `w.vorticity()` |
-| Divergence | `ds.sg.divergence()` | `uv2dvF`, `uv2dvG` | `w.divergence()` |
-| Vorticity and divergence | `ds.sg.kinematics()` | `uv2vrdvF`, `uv2vrdvG` | `w.vrtdiv()` |
-| Streamfunction | `sg.streamfunction(u, v)` | `uv2sfvpF`, `uv2sfvpG` returns both potentials | `w.streamfunction()` |
-| Velocity potential | `sg.velocity_potential(u, v)` | `uv2sfvpF`, `uv2sfvpG` returns both potentials | `w.velocitypotential()` |
-| Streamfunction and velocity potential | `ds.sg.potentials()` | `uv2sfvpF`, `uv2sfvpG` | `w.sfvp()` |
-| Helmholtz decomposition | `ds.sg.helmholtz()` | `uv2vrdv*` followed by rotational/divergent synthesis | `w.helmholtz()` |
-| Rotational wind | `sg.rotational_wind(...)` | `vr2uvF`, `vr2uvG`, or streamfunction synthesis | `w.nondivergentcomponent()` from the input wind |
-| Divergent wind | `sg.divergent_wind(...)` | `dv2uvF`, `dv2uvG`, or velocity-potential synthesis | `w.irrotationalcomponent()` from the input wind |
-| Wind from vorticity and divergence | `sg.wind(vo, d)` | `vrdv2uvF`, `vrdv2uvG` | — |
-| Wind from streamfunction and velocity potential | `sg.wind(strf, vp)` | `sfvp2uvf`, `sfvp2uvg` | — |
-| Vector Laplacian | `sg.vector_laplacian(u, v)` | `lapvf`, `lapvg` | — |
-| Inverse vector Laplacian | `sg.inverse_vector_laplacian(u, v)` | `ilapvf`, `ilapvg` | — |
+| Spectral filter | {py:func}`sg.filter() <spharmgrid.filter>` | analysis/synthesis + [`exp_tapersh`](https://www.ncl.ucar.edu/Document/Functions/Built-in/exp_tapersh.shtml) | [`w.truncate()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.truncate) |
+| Scalar regrid | {py:func}`sg.regrid() <spharmgrid.regrid>` | [`g2gsh`](https://www.ncl.ucar.edu/Document/Functions/Built-in/g2gsh.shtml), [`g2fsh`](https://www.ncl.ucar.edu/Document/Functions/Built-in/g2fsh.shtml), [`f2gsh`](https://www.ncl.ucar.edu/Document/Functions/Built-in/f2gsh.shtml), [`f2fsh`](https://www.ncl.ucar.edu/Document/Functions/Built-in/f2fsh.shtml) | — |
+| Vector regrid | {py:func}`sg.regrid_vector() <spharmgrid.regrid_vector>` | [`g2gshv`](https://www.ncl.ucar.edu/Document/Functions/Built-in/g2gshv.shtml), [`g2fshv`](https://www.ncl.ucar.edu/Document/Functions/Built-in/g2fshv.shtml), [`f2gshv`](https://www.ncl.ucar.edu/Document/Functions/Built-in/f2gshv.shtml), [`f2fshv`](https://www.ncl.ucar.edu/Document/Functions/Built-in/f2fshv.shtml) | — |
+| Scalar gradient | {py:func}`sg.gradient() <spharmgrid.gradient>` | [`gradsf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/gradsf.shtml), [`gradsg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/gradsg.shtml) | [`w.gradient()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.gradient) |
+| Inverse gradient | {py:func}`sg.inverse_gradient() <spharmgrid.inverse_gradient>` | [`igradsf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/igradsf.shtml), [`igradsg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/igradsg.shtml) | — |
+| Scalar Laplacian | {py:func}`sg.laplacian() <spharmgrid.laplacian>` | [`lapsf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapsf.shtml), [`lapsg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapsg.shtml) | — |
+| Inverse scalar Laplacian | {py:func}`sg.inverse_laplacian() <spharmgrid.inverse_laplacian>` | [`ilapsf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapsf.shtml), [`ilapsg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapsg.shtml) | — |
+| Relative vorticity | {py:func}`sg.vorticity() <spharmgrid.vorticity>` | [`uv2vrf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrf.shtml), [`uv2vrg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrg.shtml) | [`w.vorticity()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.vorticity) |
+| Divergence | {py:func}`sg.divergence() <spharmgrid.divergence>` | [`uv2dvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2dvf.shtml), [`uv2dvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2dvg.shtml) | [`w.divergence()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.divergence) |
+| Vorticity + divergence | {py:func}`sg.kinematics() <spharmgrid.kinematics>` | [`uv2vrdvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrdvf.shtml), [`uv2vrdvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrdvg.shtml) | [`w.vrtdiv()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.vrtdiv) |
+| Streamfunction | {py:func}`sg.streamfunction() <spharmgrid.streamfunction>` | [`uv2sfvpf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpf.shtml), [`uv2sfvpg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpg.shtml) | [`w.streamfunction()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.streamfunction) |
+| Velocity potential | {py:func}`sg.velocity_potential() <spharmgrid.velocity_potential>` | [`uv2sfvpf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpf.shtml), [`uv2sfvpg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpg.shtml) | [`w.velocitypotential()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.velocitypotential) |
+| Potentials | {py:func}`sg.potentials() <spharmgrid.potentials>` | [`uv2sfvpf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpf.shtml), [`uv2sfvpg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2sfvpg.shtml) | [`w.sfvp()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.sfvp) |
+| Helmholtz decomposition | {py:func}`sg.helmholtz() <spharmgrid.helmholtz>` | [`uv2vrdvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrdvf.shtml), [`uv2vrdvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/uv2vrdvg.shtml) + synthesis | [`w.helmholtz()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.helmholtz) |
+| Rotational wind | {py:func}`sg.rotational_wind() <spharmgrid.rotational_wind>` | [`vr2uvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/vr2uvf.shtml), [`vr2uvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/vr2uvg.shtml) | [`w.nondivergentcomponent()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.nondivergentcomponent) |
+| Divergent wind | {py:func}`sg.divergent_wind() <spharmgrid.divergent_wind>` | [`dv2uvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/dv2uvf.shtml), [`dv2uvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/dv2uvg.shtml) | [`w.irrotationalcomponent()`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html#windspharm.xarray.VectorWind.irrotationalcomponent) |
+| Wind from `vo`, `d` | {py:func}`sg.wind() <spharmgrid.wind>` | [`vrdv2uvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/vrdv2uvf.shtml), [`vrdv2uvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/vrdv2uvg.shtml) | — |
+| Wind from `strf`, `vp` | {py:func}`sg.wind() <spharmgrid.wind>` | [`sfvp2uvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/sfvp2uvf.shtml), [`sfvp2uvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/sfvp2uvg.shtml) | — |
+| Vector Laplacian | {py:func}`sg.vector_laplacian() <spharmgrid.vector_laplacian>` | [`lapvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapvf.shtml), [`lapvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapvg.shtml) | — |
+| Inverse vector Laplacian | {py:func}`sg.inverse_vector_laplacian() <spharmgrid.inverse_vector_laplacian>` | [`ilapvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapvf.shtml), [`ilapvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapvg.shtml) | — |
 
-spharmgrid's pole-including Clenshaw–Curtis (CC) grid corresponds to the pole-including NCL fixed grid and pyspharm `regular` grid; its Gauss–Legendre (GL) grid corresponds to their Gaussian grid.
-
-See the {doc}`api` reference for direct functions and xarray accessors.
+Grid terminology differs between the packages. spharmgrid's CC grid uses equally spaced latitudes from −90° to 90°; NCL and windspharm call this a fixed or regular grid. spharmgrid's GL grid uses Gaussian latitudes, corresponding to their Gaussian grid.

@@ -1,4 +1,4 @@
-# Scalar and vector operators
+# Differential operators
 
 The differential operators act in spherical harmonic space. The default spherical Earth radius is
 

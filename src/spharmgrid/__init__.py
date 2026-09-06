@@ -1,12 +1,12 @@
-"""xarray-first spherical-harmonic atmospheric operations using DUCC0.
+"""Atmospheric spherical harmonic operations for Xarray objects using ``ducc0``.
 
-Importing :mod:`spharmgrid` registers the ``.sg`` accessors on xarray
-``DataArray`` and ``Dataset`` objects.  DUCC0 supplies all numerical
-spherical-harmonic transforms; spharmgrid supplies the GL/CC, xarray, and CF
-operations layer around them.
+Importing :mod:`spharmgrid` registers the ``.sg`` accessors on Xarray
+``DataArray`` and ``Dataset`` objects. ``ducc0`` performs all numerical
+spherical harmonic transforms; spharmgrid supplies the GL/CC, Xarray, and CF
+operations around them.
 """
 
-# Import solely for xarray accessor registration after direct functions exist.
+# Import for Xarray accessor registration after direct functions exist.
 from . import accessors as _accessors  # noqa: F401
 from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
 from .kinematics import (
