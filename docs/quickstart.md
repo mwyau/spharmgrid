@@ -26,7 +26,7 @@ filtered = sg.filter(field, "T6-42", taper=0.1)
 regridded = sg.regrid(field, target)
 ```
 
-## Atmospheric wind diagnostics
+## Atmospheric kinematics
 
 Dataset methods identify `u` and `v` from canonical variable names or exact CF standard names.
 
@@ -39,6 +39,6 @@ pot = wind.sg.potentials()  # strf: streamfunction; vp: velocity potential
 reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
 ```
 
-Individual diagnostics are available as `vorticity()`, `divergence()`, `streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind reconstruction and sign conventions.
+Individual quantities are available as `vorticity()`, `divergence()`, `streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind reconstruction and sign conventions.
 
 Operations preserve non-spatial dimensions and xarray coordinates. See {doc}`grids` for supported sampling geometries and coordinate requirements.
