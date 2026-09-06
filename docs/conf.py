@@ -16,7 +16,7 @@ extensions = [
 ]
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 
 myst_heading_anchors = 3
 myst_enable_extensions = ["dollarmath"]
