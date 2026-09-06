@@ -30,7 +30,7 @@ from .spectral import (
 def regrid(
     field: xr.DataArray,
     target_grid: Grid | xr.DataArray | xr.Dataset,
-    spectral: str | SpectralRange | None = None,
+    truncation: str | SpectralRange | None = None,
     *,
     lmin: int | None = None,
     lmax: int | None = None,
@@ -46,7 +46,7 @@ def regrid(
     field = require_dataarray(field)
     source = field_layout(field)
     target = target_layout(target_grid, source)
-    selection = _resolve_spectral_range(spectral, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
     spec = transform_spec(source.grid, target.grid, selection)
     retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
@@ -79,7 +79,7 @@ def regrid_vector(
     u: xr.DataArray,
     v: xr.DataArray,
     target_grid: Grid | xr.DataArray | xr.Dataset,
-    spectral: str | SpectralRange | None = None,
+    truncation: str | SpectralRange | None = None,
     *,
     lmin: int | None = None,
     lmax: int | None = None,
@@ -98,7 +98,7 @@ def regrid_vector(
     _validate_component_names(eastward, northward)
     source, canonical_u, canonical_v = vector_inputs(u, v)
     target = target_layout(target_grid, source)
-    selection = _resolve_spectral_range(spectral, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
     spec = transform_spec(source.grid, target.grid, selection)
     if spec.lmax < 1:
         raise ValueError(
