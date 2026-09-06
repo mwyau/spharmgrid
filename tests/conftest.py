@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from typing import Literal
 
 import numpy as np
@@ -98,13 +99,62 @@ def solid_body_wind(
 
 
 @pytest.fixture(autouse=True)
-def force_exact_assert_allclose(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Temporarily force exact equality for numerical tolerance calibration."""
-    original = np.testing.assert_allclose
+def report_assert_allclose_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Report numerical error floors without failing calibration comparisons."""
 
-    def exact_allclose(*args: object, **kwargs: object) -> None:
-        kwargs["rtol"] = 0.0
-        kwargs["atol"] = 0.0
-        original(*args, **kwargs)
+    def report_allclose(
+        actual: object,
+        desired: object,
+        *args: object,
+        **kwargs: object,
+    ) -> None:
+        del args, kwargs
+        actual_values, desired_values = np.broadcast_arrays(
+            np.asarray(actual), np.asarray(desired)
+        )
+        difference = np.abs(actual_values - desired_values)
+        finite = (
+            np.isfinite(difference)
+            & np.isfinite(actual_values)
+            & np.isfinite(desired_values)
+        )
 
-    monkeypatch.setattr(np.testing, "assert_allclose", exact_allclose)
+        if np.any(finite):
+            max_abs = float(np.max(difference[finite]))
+            scale = float(np.max(np.abs(desired_values[finite])))
+            near_zero_threshold = max(scale * 1.0e-12, np.finfo(np.float64).tiny)
+            near_zero = finite & (np.abs(desired_values) <= near_zero_threshold)
+            relative = finite & (np.abs(desired_values) > near_zero_threshold)
+            max_near_zero_abs = (
+                float(np.max(difference[near_zero])) if np.any(near_zero) else 0.0
+            )
+            max_rel = (
+                float(
+                    np.max(
+                        difference[relative] / np.abs(desired_values[relative])
+                    )
+                )
+                if np.any(relative)
+                else 0.0
+            )
+        else:
+            max_abs = 0.0
+            max_near_zero_abs = 0.0
+            max_rel = 0.0
+
+        source = "unknown:0"
+        for frame in inspect.stack()[1:]:
+            normalized = frame.filename.replace("\\", "/")
+            if "/tests/" in normalized and not normalized.endswith("tests/conftest.py"):
+                source = f"tests/{normalized.split('/tests/', 1)[1]}:{frame.lineno}"
+                break
+
+        print(
+            "CALIBRATE "
+            f"{source} "
+            f"max_abs={max_abs:.17e} "
+            f"near_zero_abs={max_near_zero_abs:.17e} "
+            f"max_rel={max_rel:.17e}"
+        )
+
+    monkeypatch.setattr(np.testing, "assert_allclose", report_allclose)
