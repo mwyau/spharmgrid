@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import xarray as xr
 
 import spharmgrid as sg
@@ -15,7 +16,9 @@ def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
     dataset.to_netcdf(path, engine="h5netcdf")
 
 
-def test_info_and_filter_commands(tmp_path: Path, capsys) -> None:
+def test_info_and_filter_commands(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     grid = supported_grid("cc")
     input_path = tmp_path / "input.nc"
     output_path = tmp_path / "filtered.nc"
