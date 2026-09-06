@@ -1,6 +1,6 @@
 # Quick start
 
-Import spharmgrid to register `.sg` on xarray `DataArray` and `Dataset` objects.
+Import `spharmgrid` to register `.sg` on Xarray `DataArray` and `Dataset` objects.
 
 ## Filtering and regridding
 
@@ -39,4 +39,4 @@ reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
 
 Individual quantities are available as `vorticity()`, `divergence()`, `streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind reconstruction and sign conventions.
 
-Operations preserve non-spatial dimensions and xarray coordinates. See {doc}`grids` for supported sampling geometries and coordinate requirements.
+Operations preserve non-spatial dimensions and Xarray coordinates. See {doc}`grids` for supported sampling geometries and coordinate requirements.

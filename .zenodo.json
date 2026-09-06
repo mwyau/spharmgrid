@@ -1,6 +1,6 @@
 {
   "title": "spharmgrid",
-  "description": "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.",
+  "description": "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray.",
   "creators": [
     {
       "name": "Yau, Albert M. W.",

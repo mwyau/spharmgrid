@@ -1,13 +1,13 @@
 # Command-line interface
 
-The `spharmgrid` command applies filtering, regridding, and atmospheric kinematics to xarray-supported files.
+The `spharmgrid` command applies filtering, regridding, and atmospheric kinematics to files supported by Xarray.
 
 The `spharmgrid` executable is installed with the core package, so
 `spharmgrid --help` and `spharmgrid --version` work without the CLI extra.
 File-processing commands require the optional CLI backends. If they are not
-installed, the command exits with an actionable installation message.
+installed, the command exits with an installation message.
 
-Install the complete command-line I/O environment with:
+Install the command-line I/O dependencies with:
 
 ```bash
 uv tool install "spharmgrid[cli]"
@@ -21,7 +21,7 @@ uv add "spharmgrid[cli]"
 pip install "spharmgrid[cli]"
 ```
 
-The CLI reads and writes Zarr through xarray's Zarr methods. Other input paths use `xarray.open_dataset()`, so installed backends such as `h5netcdf` and `cfgrib` handle NetCDF and GRIB input. Non-Zarr outputs are written as NetCDF with `h5netcdf`. GRIB output is not supported.
+The CLI reads and writes Zarr through Xarray's Zarr methods. Other input paths use `xarray.open_dataset()`, so installed backends such as `h5netcdf` and `cfgrib` handle NetCDF and GRIB input. Non-Zarr outputs are written as NetCDF with `h5netcdf`. GRIB output is not supported.
 
 ```bash
 spharmgrid info input.nc

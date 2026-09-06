@@ -14,7 +14,7 @@ result = field.sg.regrid(target)
 result = sg.regrid(field, reference_field)
 ```
 
-A `Grid` target keeps the source horizontal dimension names and adds CF latitude/longitude metadata. An xarray target supplies the target horizontal dimensions and coordinates.
+A `Grid` target keeps the source horizontal dimension names and adds CF latitude/longitude metadata. An Xarray target supplies the target horizontal dimensions and coordinates.
 
 ## Filtering during regridding
 

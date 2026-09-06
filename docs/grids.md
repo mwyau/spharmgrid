@@ -1,4 +1,4 @@
-# Supported grids and coordinates
+# Grids and coordinates
 
 spharmgrid supports full rectangular Gauss–Legendre (`"gl"`) and Clenshaw–Curtis (`"cc"`) grids.
 
@@ -12,13 +12,13 @@ grid = sg.gaussian_grid(64, 128, lon0=0.0, latitude_order="ascending")
 
 ## Clenshaw–Curtis (CC)
 
-A CC grid uses equally spaced latitudes including both poles and equally spaced longitudes.
+A CC grid uses equally spaced latitudes from −90° to 90° and equally spaced longitudes.
 
 ```python
 grid = sg.clenshaw_curtis_grid(65, 128, latitude_order="descending")
 ```
 
-CC detection requires an equally spaced latitude coordinate containing both `-90` and `90`, together with a globally cyclic longitude coordinate without a duplicated endpoint.
+CC detection requires equally spaced latitudes spanning −90° to 90°, together with a globally cyclic longitude coordinate without a duplicated endpoint.
 
 ## Coordinate discovery
 
