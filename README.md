@@ -2,9 +2,9 @@
 
 Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) provides spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies the numerical spherical harmonic transforms.
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) performs the numerical spherical harmonic transforms.
 
-Supported grids are full rectangular Gauss--Legendre (GL) and pole-including Clenshaw--Curtis (CC) grids.
+Supported grids are full rectangular Gauss–Legendre (GL) and pole-including Clenshaw–Curtis (CC) grids.
 
 ## Install
 
@@ -13,7 +13,7 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
-The core `spharmgrid` install provides the numerical Python/xarray API.
+The core `spharmgrid` install contains the numerical Python/xarray API.
 Optional capabilities are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
@@ -78,14 +78,14 @@ wind_laplacian = ds.sg.vector_laplacian()
 
 The command-line interface is an optional file-I/O capability. Install
 `spharmgrid[cli]` for NetCDF and Zarr read/write plus GRIB read support. File
-decoding and encoding are delegated to xarray and its installed backend
-packages; GRIB output is not supported. The core-installed `spharmgrid`
-executable still supports `spharmgrid --help` and `spharmgrid --version`; file
-processing reports how to install the CLI extra when its backends are absent.
+decoding and encoding use xarray and its installed backend packages; GRIB
+output is not supported. The core-installed `spharmgrid` executable still
+supports `spharmgrid --help` and `spharmgrid --version`; file processing
+reports how to install the CLI extra when its backends are absent.
 
 `inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector harmonic slots to zero. See the operator documentation for these conventions.
 
-`T42` retains total degrees 0 through 42. `T6-42` retains degrees 6 through 42. Filtering uses a hard spectral selection by default. `taper=0.1` applies the Sardeshmukh--Hoskins exponential response with value 0.1 at the upper retained degree.
+`T42` retains total degrees 0 through 42. `T6-42` retains degrees 6 through 42. Filtering uses a hard spectral selection by default. `taper=0.1` applies the Sardeshmukh–Hoskins exponential response with value 0.1 at the upper retained degree.
 
 See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requirements, coordinate handling, CF metadata, wind diagnostics, inverse transforms, zero-mode conventions, and command-line use.
 
