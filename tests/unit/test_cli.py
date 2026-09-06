@@ -1,4 +1,4 @@
-"""CLI delegation tests using ordinary xarray NetCDF I/O."""
+"""CLI delegation tests using xarray NetCDF and Zarr I/O."""
 
 from __future__ import annotations
 
@@ -37,6 +37,34 @@ def test_info_and_filter_commands(
         == 0
     )
     with xr.open_dataset(output_path, engine="h5netcdf") as result:
+        assert "msl" in result
+
+
+def test_zarr_input_and_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    grid = supported_grid("cc")
+    input_path = tmp_path / "input.zarr"
+    output_path = tmp_path / "filtered.zarr"
+    scalar_field(grid, name="msl").to_dataset().to_zarr(input_path)
+
+    assert main(["info", str(input_path)]) == 0
+    assert "grid_type: cc" in capsys.readouterr().out
+    assert (
+        main(
+            [
+                "filter",
+                str(input_path),
+                str(output_path),
+                "--var",
+                "msl",
+                "--spectral",
+                "T3",
+            ]
+        )
+        == 0
+    )
+    with xr.open_zarr(output_path) as result:
         assert "msl" in result
 
 
