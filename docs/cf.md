@@ -50,7 +50,7 @@ Install the optional `cf-xarray` extra with:
 uv add "spharmgrid[cf]"
 ```
 
-When installed, `cf-xarray` provides an additional latitude/longitude discovery path after exact CF metadata and canonical coordinate names are checked.
+When installed, `cf-xarray` adds a latitude/longitude discovery path after exact CF metadata and canonical coordinate names are checked.
 
 ## Dask
 
