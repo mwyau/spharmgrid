@@ -54,7 +54,7 @@ The notebook uses the immutable
 
 The inspected wind file contains `u` and `v` with dimensions
 `(valid_time, pressure_level, latitude, longitude) = (360, 1, 73, 144)`. The
-singleton pressure level is 850 hPa. Timestamps are four-hourly from December
+singleton pressure level is 850 hPa. Timestamps are six-hourly from December
 2025 through February 2026. The latitude coordinate is descending from 90° to
 -90° and longitude is stored in `[0, 360)` at 2.5° spacing. `sg.detect_grid()`
 identifies the field as a pole-including CC grid with a documented triangular
