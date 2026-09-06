@@ -71,6 +71,7 @@ jobs:
               text = re.sub(r'^\s*threads = resolve_nthreads\([^\n]+\)\n', '', text, flags=re.M)
               text = re.sub(r'^\s*[^\n]*add_argument\("--nthreads"[^\n]*\n', '', text, flags=re.M)
               text = text.replace('[NDArray[np.generic], int]', '[NDArray[np.generic]]')
+              text = text.replace('[NDArray[np.generic], NDArray[np.generic], int]', '[NDArray[np.generic], NDArray[np.generic]]')
               text = text.replace('    *,\n)', ')')
               write(path, text)
 
