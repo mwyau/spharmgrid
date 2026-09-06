@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Hashable
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Any, Literal, NotRequired, TypedDict, TypeVar
+from typing import Literal, NotRequired, TypedDict
 
 import xarray as xr
 
@@ -19,14 +19,14 @@ from .grids import (
     grid_layout,
 )
 
-_ArrayFunction = TypeVar("_ArrayFunction", bound=Callable[..., object])
+_DaskGufuncValue = bool | dict[str, int]
 
 
 class ApplyUfuncDaskOptions(TypedDict):
     """The narrow Dask option subset passed through to xarray.apply_ufunc."""
 
     dask: Literal["forbidden", "parallelized"]
-    dask_gufunc_kwargs: NotRequired[dict[str, Any]]
+    dask_gufunc_kwargs: NotRequired[dict[str, _DaskGufuncValue]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,9 +164,7 @@ def apply_ufunc_options(
     if field.chunks is None:
         return {"dask": "forbidden"}
     _configure_local_dask_workers()
-    # xarray's public ``dask_gufunc_kwargs`` annotation accepts
-    # heterogeneous values. Keep that third-party boundary localized here.
-    gufunc_kwargs: dict[str, Any] = {"allow_rechunk": True}
+    gufunc_kwargs: dict[str, _DaskGufuncValue] = {"allow_rechunk": True}
     if output_sizes is not None:
         gufunc_kwargs["output_sizes"] = output_sizes
     return {"dask": "parallelized", "dask_gufunc_kwargs": gufunc_kwargs}

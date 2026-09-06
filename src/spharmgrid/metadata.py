@@ -172,7 +172,9 @@ def gradient_metadata(
 ) -> dict[str, str]:
     """Metadata for a physical horizontal gradient component."""
     direction = "Eastward" if component == "eastward" else "Northward"
-    attrs = {"long_name": f"{direction} component of horizontal gradient"}
+    attrs: dict[str, str] = {
+        "long_name": f"{direction} component of horizontal gradient"
+    }
     units = source.attrs.get("units")
     if isinstance(units, str) and units:
         attrs["units"] = f"{units} m-1"
@@ -183,7 +185,7 @@ def inverse_gradient_metadata(
     eastward: xr.DataArray, northward: xr.DataArray
 ) -> dict[str, str]:
     """Metadata for a potential reconstructed from horizontal derivatives."""
-    attrs = {
+    attrs: dict[str, str] = {
         "long_name": (
             "Scalar potential of the irrotational component of a horizontal vector"
         )
@@ -204,8 +206,8 @@ def operator_metadata(
 ) -> dict[str, str]:
     """Metadata for scalar operators whose CF standard name depends on input."""
     readable = "Laplacian" if operation == "laplacian" else "Inverse Laplacian"
-    source_name = source.attrs.get("long_name") or source.name or "field"
-    attrs = {"long_name": f"{readable} of {source_name}"}
+    source_name = str(source.attrs.get("long_name") or source.name or "field")
+    attrs: dict[str, str] = {"long_name": f"{readable} of {source_name}"}
     units = source.attrs.get("units")
     if isinstance(units, str) and units:
         attrs["units"] = _laplacian_units(units, operation)
@@ -222,8 +224,10 @@ def vector_operator_metadata(
     readable = (
         "vector Laplacian" if operation == "laplacian" else "inverse vector Laplacian"
     )
-    source_name = source.attrs.get("long_name") or source.name or "vector field"
-    attrs = {"long_name": f"{direction} component of {readable} of {source_name}"}
+    source_name = str(source.attrs.get("long_name") or source.name or "vector field")
+    attrs: dict[str, str] = {
+        "long_name": f"{direction} component of {readable} of {source_name}"
+    }
     units = source.attrs.get("units")
     if isinstance(units, str) and units:
         attrs["units"] = _laplacian_units(units, operation)

@@ -7,6 +7,7 @@ from typing import Literal
 import numpy as np
 import pytest
 import xarray as xr
+from numpy.typing import NDArray
 
 import spharmgrid as sg
 from tests.conftest import scalar_field, supported_grid
@@ -93,7 +94,9 @@ def test_ambiguous_coordinate_names_raise() -> None:
     ],
 )
 def test_unsupported_grid_coordinates_raise(
-    latitude: np.ndarray, longitude: np.ndarray, message: str
+    latitude: NDArray[np.float64],
+    longitude: NDArray[np.float64],
+    message: str,
 ) -> None:
     field = xr.DataArray(
         np.zeros((latitude.size, longitude.size)),

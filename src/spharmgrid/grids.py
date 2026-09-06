@@ -310,7 +310,7 @@ def _cf_xarray_coordinates(
     except ImportError:
         return []
     try:
-        accessor = field.cf  # type: ignore[attr-defined]
+        accessor = field.cf
     except (AttributeError, ImportError):
         return []
     try:
