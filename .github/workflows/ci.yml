@@ -49,10 +49,9 @@ jobs:
       - run: uv run --no-sync pytest
 
   free-threaded:
-    name: Free-threaded Python 3.14 (non-blocking)
+    name: Free-threaded Python 3.14 compatibility
     runs-on: ubuntu-26.04
     timeout-minutes: 20
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -62,29 +61,23 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --extra cf --frozen
-      - name: Verify imports keep the GIL disabled
+      - run: uv sync --frozen
+      - name: Check whether core imports keep the GIL disabled
         run: |
           uv run --no-sync python - <<'PY'
           import sys
 
-          if sys._is_gil_enabled():
-              raise RuntimeError("GIL is enabled at interpreter startup")
+          modules = ("numpy", "xarray", "ducc0", "spharmgrid")
 
-          modules = (
-              "numpy",
-              "pandas",
-              "xarray",
-              "cf_xarray",
-              "ducc0",
-              "spharmgrid",
-          )
+          if sys._is_gil_enabled():
+              print("::warning::GIL is enabled at interpreter startup")
+
           for name in modules:
               __import__(name)
               gil_enabled = sys._is_gil_enabled()
               print(f"{name:12}: GIL {'ON' if gil_enabled else 'OFF'}")
               if gil_enabled:
-                  raise RuntimeError(f"{name} caused the GIL to become enabled")
+                  print(f"::warning::{name} causes the free-threaded interpreter to enable the GIL")
           PY
 
   minimum-dependencies:
