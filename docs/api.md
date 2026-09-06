@@ -1,9 +1,5 @@
 # API reference
 
-```python
-import spharmgrid as sg
-```
-
 ## Typing
 
 The public `spharmgrid` API is fully type annotated and the package ships a `py.typed` marker for downstream static type checking.
