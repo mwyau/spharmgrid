@@ -131,7 +131,7 @@ def test_gaussian_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
         reference, target_reference, source_north_to_south, ntrunc=7
     )
     gradient = sg.gradient(source)
-    regridded = sg.regrid(source, target, spectral="T7")
+    regridded = sg.regrid(source, target, truncation="T7")
 
     np.testing.assert_allclose(
         _north_to_south(np.asarray(filtered.values)),
@@ -186,7 +186,7 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
 
     filtered = sg.filter(source, "T7")
     gradient = sg.gradient(source)
-    regridded = sg.regrid(source, target, spectral="T7")
+    regridded = sg.regrid(source, target, truncation="T7")
     reference_filtered = reference.spectogrd(coefficients)
     reference_east, reference_north = reference.getgrad(coefficients)
     reference_regridded = spharm.regrid(
@@ -419,7 +419,7 @@ def test_vector_sht_suite_matches_independent_spherepack(
     reference_lap_u = np.squeeze(reference_lap_u)
     reference_lap_v = np.squeeze(reference_lap_v)
 
-    regridded = sg.regrid_vector(u, v, target, spectral="T7")
+    regridded = sg.regrid_vector(u, v, target, truncation="T7")
     decomposed = sg.helmholtz(u, v)
     potential = sg.inverse_gradient(
         _dataarray(inverse_gradient_u, grid, "eastward"),
