@@ -17,6 +17,14 @@ spharm = pytest.importorskip(
     reason="run with uv --group parity on a supported Python version",
 )
 
+# pyspharm-syl exposes synthesized maps at float32 precision.  Keep the
+# measured field-level floors explicit for map reconstruction comparisons.
+_SCALAR_MAP_ATOL = 1.0e-6
+_VECTOR_MAP_ATOL = 6.0e-6
+_GRADIENT_ATOL = 1.0e-12
+_KINEMATIC_ATOL = 5.0e-12
+_POTENTIAL_RTOL = 2.0e-6
+
 
 class _SpharmTransform(Protocol):
     """Subset of pyspharm-syl's SPHEREPACK wrapper used in this suite."""
@@ -126,26 +134,26 @@ def test_gaussian_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
     np.testing.assert_allclose(
         _north_to_south(np.asarray(filtered.values)),
         reference_filtered,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_SCALAR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(gradient.gradient_eastward.values)),
         reference_east,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(gradient.gradient_northward.values)),
         reference_north,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(regridded.values)),
         reference_regridded,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_SCALAR_MAP_ATOL,
     )
 
 
@@ -186,39 +194,39 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
         ntrunc=7,
     )
 
-    # pyspharm-syl's SPHEREPACK wrapper returns regular-grid scalar maps at
-    # float32 precision, so this comparison uses its documented ~1e-6 scale.
+    # The regular-grid wrapper returns scalar maps at float32 precision; the
+    # measured cross-backend field error is below 5e-7.
     np.testing.assert_allclose(
         _north_to_south(np.asarray(filtered.values)),
         reference_filtered,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_SCALAR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(gradient.gradient_eastward.values)),
         reference_east,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(gradient.gradient_northward.values)),
         reference_north,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(regridded.values)),
         reference_regridded,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_SCALAR_MAP_ATOL,
     )
 
 
 @pytest.mark.parametrize(
     ("kind", "gridtype", "potential_atol"),
     [
-        ("gaussian", "gaussian", 3.0e-4),
-        ("cc", "regular", 20.0),
+        ("gaussian", "gaussian", 1.0e-5),
+        ("cc", "regular", 8.0),
     ],
 )
 def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
@@ -271,55 +279,54 @@ def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
     np.testing.assert_allclose(
         _north_to_south(np.asarray(diagnostics.vo.values)),
         reference_vo,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_KINEMATIC_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(diagnostics.d.values)),
         reference_d,
-        rtol=3.0e-6,
-        atol=3.0e-11,
+        rtol=0.0,
+        atol=_KINEMATIC_ATOL,
     )
+    # The potential fields are O(1e8 m2 s-1), so their float32 cross-backend
+    # difference is checked relatively.  The CC equatorial zero still needs
+    # an absolute floor; its measured residual is below 5 m2 s-1.
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.strf.values)),
         reference_psi,
-        rtol=3.0e-6,
-        # The regular-grid SPHEREPACK wrapper returns float32 potentials.
-        # At the CC equator, their degree-one zero has a measured residual
-        # of about 16 m2 s-1 on an O(1e8 m2 s-1) field.
+        rtol=_POTENTIAL_RTOL,
         atol=potential_atol,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.vp.values)),
         reference_chi,
-        rtol=3.0e-6,
+        rtol=_POTENTIAL_RTOL,
         atol=potential_atol,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(reconstructed.u.values)),
         reference_u_reconstructed,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(reconstructed.v.values)),
         reference_v_reconstructed,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
 
 
 @pytest.mark.parametrize(
-    ("kind", "gridtype", "potential_atol"),
+    ("kind", "gridtype"),
     [
-        ("gaussian", "gaussian", 3.0e-4),
-        ("cc", "regular", 20.0),
+        ("gaussian", "gaussian"),
+        ("cc", "regular"),
     ],
 )
 def test_vector_sht_suite_matches_independent_spherepack(
     kind: Literal["cc", "gaussian"],
     gridtype: Literal["gaussian", "regular"],
-    potential_atol: float,
 ) -> None:
     """Compare vector analysis/synthesis-derived Phase-2 operations directly."""
     grid = (
@@ -429,49 +436,51 @@ def test_vector_sht_suite_matches_independent_spherepack(
     np.testing.assert_allclose(
         _north_to_south(np.asarray(regridded.u.values)),
         reference_target_u,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(regridded.v.values)),
         reference_target_v,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(decomposed.u_divergent.values)),
         reference_divergent_u,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(decomposed.v_divergent.values)),
         reference_divergent_v,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(decomposed.u_rotational.values)),
         reference_rotational_u,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(decomposed.v_rotational.values)),
         reference_rotational_v,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
+    # This isolated degree-one inverse-gradient field has a much smaller
+    # measured zero-crossing residual than the full wind-potential case.
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.values)),
         reference_potential,
-        rtol=3.0e-6,
-        atol=potential_atol,
+        rtol=_POTENTIAL_RTOL,
+        atol=1.0e-8,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(laplacian.u.values)),
         reference_lap_u,
-        rtol=3.0e-6,
+        rtol=0.0,
         # SPHEREPACK's wrapper returns these physical-laplacian maps as
         # float32.  Their O(1e-12) signal has an O(1e-18) rounding floor.
         atol=1.0e-17,
@@ -479,18 +488,18 @@ def test_vector_sht_suite_matches_independent_spherepack(
     np.testing.assert_allclose(
         _north_to_south(np.asarray(laplacian.v.values)),
         reference_lap_v,
-        rtol=3.0e-6,
+        rtol=0.0,
         atol=1.0e-17,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(inverse_laplacian.u.values)),
         reference_u,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(inverse_laplacian.v.values)),
         reference_v,
-        rtol=3.0e-6,
-        atol=3.0e-6,
+        rtol=0.0,
+        atol=_VECTOR_MAP_ATOL,
     )
