@@ -60,8 +60,6 @@ See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.htm
 
 The optional CLI reads NetCDF, Zarr, and GRIB and writes NetCDF and Zarr. See the [CLI documentation](https://spharmgrid.readthedocs.io/en/latest/cli.html) for installation and usage.
 
-`T42` retains total degrees 0 through 42. `T6-42` retains degrees 6 through 42. Filtering uses a hard spectral selection by default. `taper=0.1` applies the Sardeshmukh–Hoskins exponential response with value 0.1 at the upper retained degree.
-
 See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requirements, coordinate handling, CF metadata, atmospheric kinematics, inverse transforms, zero-mode conventions, and command-line use.
 
 ## References
