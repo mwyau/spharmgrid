@@ -36,7 +36,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-You can also call the top-level functions directly:
+### Direct functions
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
@@ -44,7 +44,7 @@ regridded = sg.regrid(field, target)
 ```
 
 For atmospheric wind fields, a Dataset with `u` and `v` variables or their
-exact CF standard names can compute the common diagnostics directly:
+exact CF standard names can compute the common diagnostics:
 
 ```python
 ds = xr.open_dataset("wind.nc")
@@ -68,6 +68,5 @@ transforms, inverse zero-mode conventions, and command-line use.
 
 See the documentation's
 [references](https://spharmgrid.readthedocs.io/en/latest/references.html) for
-scientific and software citations. The original DUCC0 wrapper grew out of the
-spherical-harmonic functionality in
-[PyStormTracker](https://github.com/mwyau/PyStormTracker).
+scientific and software citations. spharmgrid grew out of spherical-harmonic
+code used in [PyStormTracker](https://github.com/mwyau/PyStormTracker).
