@@ -18,7 +18,7 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
-Optional extras are:
+Optional groups are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
@@ -44,44 +44,19 @@ pip install "spharmgrid[cli]"
 
 ## Quick start
 
-Importing spharmgrid registers `.sg` on xarray `DataArray` and `Dataset` objects.
+Importing spharmgrid registers the `.sg` accessor on xarray objects. This example applies a T6–42 spectral filter to a `DataArray`:
 
 ```python
 import xarray as xr
-import spharmgrid as sg
+import spharmgrid
 
 field = xr.open_dataarray("msl.nc")
-
 filtered = field.sg.filter("T6-42")
-tapered = field.sg.filter("T6-42", taper=0.1)
-
-target = sg.gaussian_grid(64, 128)
-regridded = field.sg.regrid(target)
-combined = field.sg.regrid(target, truncation="T6-42", taper=0.1)
 ```
 
-```python
-filtered = sg.filter(field, "T6-42", taper=0.1)
-regridded = sg.regrid(field, target)
-```
+See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
 
-For atmospheric wind fields, a Dataset with `u` and `v` variables or their exact CF standard names can compute kinematic quantities and inverse transforms:
-
-```python
-ds = xr.open_dataset("wind.nc")
-
-kin = ds.sg.kinematics()   # vo: relative vorticity; d: divergence
-pot = ds.sg.potentials()   # strf: streamfunction; vp: velocity potential
-
-reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
-target_wind = ds.sg.regrid_vector(target, truncation="T42")
-parts = ds.sg.helmholtz()
-gradient = field.sg.gradient()
-recovered_field = gradient.gradient_eastward.sg.inverse_gradient(
-    gradient.gradient_northward,
-)
-wind_laplacian = ds.sg.vector_laplacian()
-```
+## Documentation
 
 The optional CLI reads NetCDF, Zarr, and GRIB and writes NetCDF and Zarr. See the [CLI documentation](https://spharmgrid.readthedocs.io/en/latest/cli.html) for installation and usage.
 
@@ -91,4 +66,8 @@ See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requir
 
 ## References
 
-See the documentation [references](https://spharmgrid.readthedocs.io/en/latest/references.html) for scientific and software citations. Related spherical harmonic code is also used in [PyStormTracker](https://github.com/mwyau/PyStormTracker).
+See the documentation [References](https://spharmgrid.readthedocs.io/en/latest/references.html) for the scientific literature and software cited by spharmgrid.
+
+## License
+
+spharmgrid is distributed under the [BSD 3-Clause License](LICENSE).
