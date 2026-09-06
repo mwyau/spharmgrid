@@ -1,19 +1,8 @@
 # spharmgrid
 
-**spharmgrid** (**sp**herical **harm**onics **grid**ding) is an xarray-first
-spherical-harmonic tool for global atmospheric fields. It provides spectral
-filtering, regridding, scalar operators, and atmospheric wind diagnostics and
-inverse transforms, including relative vorticity, divergence, streamfunction,
-and velocity potential. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies
-the numerical spherical-harmonic transforms.
+**spharmgrid** (**sp**herical **harm**onics **grid**ding) provides spherical-harmonic filtering, regridding, differential operators, and atmospheric wind diagnostics for global xarray fields. It computes relative vorticity (`vo`), divergence (`d`), streamfunction (`strf`), velocity potential (`vp`), Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies the numerical spherical-harmonic transforms.
 
-For atmospheric winds, spharmgrid computes relative vorticity (`vo`),
-divergence (`d`), streamfunction (`strf`), and velocity potential (`vp`), and
-can reconstruct rotational, divergent, or full wind fields from those derived
-quantities.
-
-Supported grids are full rectangular Gauss--Legendre (GL) and pole-including
-Clenshaw--Curtis (CC) grids.
+Supported grids are full rectangular Gauss--Legendre (GL) and pole-including Clenshaw--Curtis (CC) grids. Arbitrary leading dimensions and xarray coordinates are preserved, so fields such as `(time, level, lat, lon)` can be transformed without reshaping them first.
 
 ```{toctree}
 :maxdepth: 2
@@ -30,6 +19,3 @@ cli
 api
 references
 ```
-
-spharmgrid preserves arbitrary leading dimensions and xarray coordinates, so
-fields such as `(time, level, lat, lon)` can be transformed directly.
