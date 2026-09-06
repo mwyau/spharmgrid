@@ -30,7 +30,7 @@ field = xr.open_dataarray("msl.nc")
 filtered = field.sg.filter("T6-42")
 ```
 
-See the {doc}`quickstart` for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
+## Contents
 
 ```{toctree}
 :maxdepth: 2
