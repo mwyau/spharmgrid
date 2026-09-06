@@ -21,12 +21,7 @@ uv add "spharmgrid[cli]"
 pip install "spharmgrid[cli]"
 ```
 
-The CLI supports NetCDF read/write, Zarr read/write, and GRIB input. Actual
-decoding and encoding are delegated to xarray and the backend packages in the
-`cli` extra: `h5netcdf`, `zarr`, and `cfgrib`. A path ending in `.zarr` uses
-the Zarr path; other inputs use xarray's normal dataset-opening dispatch, and
-other outputs are written as NetCDF through `h5netcdf`. GRIB output is not
-supported.
+The CLI reads and writes Zarr through xarray's Zarr methods. Other input paths use `xarray.open_dataset()`, so installed backends such as `h5netcdf` and `cfgrib` handle NetCDF and GRIB input. Non-Zarr outputs are written as NetCDF with `h5netcdf`. GRIB output is not supported.
 
 ```bash
 spharmgrid info input.nc
