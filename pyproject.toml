@@ -70,6 +70,7 @@ docs = [
 test = [
     "cftime>=1.6.5",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
 ]
 # pyspharm-syl supplies the independent SPHEREPACK comparison implementation.
 # Keep it out of normal test environments because it currently supports
