@@ -26,20 +26,22 @@ under `plans/`; user-facing technical and scientific documentation belongs under
 - Do not modify `../PyStormTracker` as part of spharmgrid work unless the owner
   explicitly requests it.
 
-## Route work through the owning skill
+## Route work through the relevant instructions
 
 - **Spherical-harmonic methods, GL/CC grids, filtering, regridding,
   differential operators, vector transforms, NCL/SPHEREPACK parity,
   scientific tests, or numerical behavior:** read
   `skills/scientific-numerics/SKILL.md`.
-- **README, docs, references, API prose, comments, docstrings, Sphinx/MyST, or
-  Read the Docs:** read `skills/documentation/SKILL.md`.
-- **Packaging, dependencies, uv, pyproject configuration, lint/type/test
-  tooling, CLI packaging, documentation build configuration, CI, releases, or
-  publishing:** read `skills/repository-engineering/SKILL.md`.
-
-Any change to `README.md`, `docs/`, public docstrings, or explanatory repository
-prose must also follow `skills/documentation/SKILL.md`.
+- **README, docs, references, API prose, comments, docstrings, scientific or
+  technical explanations:** follow
+  [mwyau/write-like-a-scientist](https://github.com/mwyau/write-like-a-scientist),
+  including its research-software profile and atmospheric-science domain
+  guidance. Repository-local scientific and API rules in this file take
+  precedence when they are more specific.
+- **Sphinx/MyST, Read the Docs, packaging, dependencies, uv, pyproject
+  configuration, lint/type/test tooling, CLI packaging, documentation build
+  configuration, CI, releases, or publishing:** read
+  `skills/repository-engineering/SKILL.md`.
 
 ## Scientific and API invariants
 
@@ -112,18 +114,15 @@ prose must also follow `skills/documentation/SKILL.md`.
 
 ## Writing
 
-- Use plain, direct English. Keep established atmospheric, mathematical, xarray,
-  CF, and software terms when they are the precise terms.
-- Write documentation, comments, and docstrings as technical or scientific
-  descriptions of current behavior, methods, evidence, and limits.
-- Comments should explain non-obvious numerical reasoning, sign or coordinate
-  conventions, sources, constraints, or implementation choices rather than
-  restating code.
-- Avoid filler qualifiers and promotional wording. Do not call something robust,
-  comprehensive, sophisticated, modern, clean, or similar without a specific
-  measured meaning.
-- Distinguish published methods, external implementation behavior,
-  repository-tested behavior, measured validation, and planned work.
+Follow `mwyau/write-like-a-scientist` for general style. For spharmgrid:
+
+- Keep atmospheric, mathematical, xarray, CF, and software terminology precise.
+- Preserve equations, signs, normalization, grid definitions, radius factors,
+  degree-zero conventions, units, and API names when editing prose.
+- Distinguish published methods, external implementation behavior, parity
+  results, repository-tested behavior, measured validation, and planned work.
+- User documentation describes implemented behavior. Plans remain under
+  `plans/`.
 
 ## Change control
 
