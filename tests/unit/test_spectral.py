@@ -137,6 +137,44 @@ def test_vector_regridding_low_degree_field_all_supported_pairs(
     assert result.v.attrs == v.attrs
 
 
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_same_grid_vector_regridding_hard_selection_retains_selected_degree(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    u, v = _axisymmetric_vector_field(grid)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    expected_u = 5.0 * np.cos(latitude) * np.ones((1, grid.nlon))
+    expected_v = -7.0 * np.cos(latitude) * np.ones((1, grid.nlon))
+
+    result = sg.regrid_vector(u, v, grid, truncation="T1")
+
+    np.testing.assert_allclose(result.u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(result.v, expected_v, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_array_equal(result.lat, grid.latitude)
+    np.testing.assert_array_equal(result.lon, grid.longitude)
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_same_grid_vector_regridding_tapers_upper_retained_degree(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    mixed_u, mixed_v = _axisymmetric_vector_field(grid)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    shape = (1, grid.nlon)
+    u = mixed_u.copy(data=3.0 * np.sin(latitude) * np.cos(latitude) * np.ones(shape))
+    v = mixed_v.copy(data=2.0 * np.sin(latitude) * np.cos(latitude) * np.ones(shape))
+
+    hard = sg.regrid_vector(u, v, grid, truncation="T2")
+    tapered = sg.regrid_vector(u, v, grid, truncation="T2", taper=0.1)
+
+    np.testing.assert_allclose(hard.u, u, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_allclose(hard.v, v, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_allclose(tapered.u, 0.1 * hard.u, rtol=0.0, atol=5.0e-16)
+    np.testing.assert_allclose(tapered.v, 0.1 * hard.v, rtol=0.0, atol=5.0e-16)
+
+
 def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
     source = supported_grid("cc", latitude_order="descending", lon0=-180.0)
     target = supported_grid("gl", latitude_order="descending", lon0=-180.0)

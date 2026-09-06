@@ -9,7 +9,12 @@ import pytest
 import xarray as xr
 
 import spharmgrid as sg
-from tests.conftest import degree_one_field, solid_body_wind, supported_grid
+from tests.conftest import (
+    degree_one_field,
+    scalar_field,
+    solid_body_wind,
+    supported_grid,
+)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
@@ -220,6 +225,27 @@ def test_helmholtz_recovers_analytic_rotational_and_divergent_parts(
     )
     assert "standard_name" not in result.u_divergent.attrs
     assert result.u_rotational.attrs["long_name"] == "Eastward rotational wind"
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_inverse_gradient_projects_out_nontrivial_rotational_wind(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    streamfunction = scalar_field(grid, name="strf")
+    rotational = sg.rotational_wind(streamfunction)
+    rotational_values = np.stack(
+        (rotational.u_rotational.values, rotational.v_rotational.values)
+    )
+
+    assert np.linalg.norm(rotational_values) > 1.0e-8
+
+    recovered = sg.inverse_gradient(
+        rotational.u_rotational,
+        rotational.v_rotational,
+    )
+
+    np.testing.assert_allclose(recovered, 0.0, rtol=0.0, atol=5.0e-14)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
