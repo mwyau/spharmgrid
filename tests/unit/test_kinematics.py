@@ -29,8 +29,10 @@ def test_solid_body_rotation_has_known_vorticity_and_zero_divergence(
         * np.ones((1, grid.nlon))
     )
 
-    np.testing.assert_allclose(diagnostics.vo, expected_vorticity, atol=2.0e-15)
-    np.testing.assert_allclose(diagnostics.d, 0.0, atol=2.0e-15)
+    np.testing.assert_allclose(
+        diagnostics.vo, expected_vorticity, rtol=0.0, atol=1.0e-19
+    )
+    np.testing.assert_allclose(diagnostics.d, 0.0, rtol=0.0, atol=0.0)
     assert diagnostics.vo.attrs["standard_name"] == "atmosphere_relative_vorticity"
     assert diagnostics.d.attrs["standard_name"] == "divergence_of_wind"
 
@@ -66,8 +68,10 @@ def test_meridional_degree_one_flow_has_known_divergence_and_zero_vorticity(
         * np.ones((1, grid.nlon))
     )
 
-    np.testing.assert_allclose(diagnostics.vo, 0.0, atol=2.0e-15)
-    np.testing.assert_allclose(diagnostics.d, expected_divergence, atol=2.0e-15)
+    np.testing.assert_allclose(diagnostics.vo, 0.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        diagnostics.d, expected_divergence, rtol=0.0, atol=1.0e-19
+    )
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
@@ -93,17 +97,17 @@ def test_potentials_and_inverse_wind_round_trip(kind: Literal["cc", "gl"]) -> No
     np.testing.assert_allclose(
         recovered_potentials.strf,
         streamfunction,
-        rtol=2.0e-11,
-        atol=2.0e-5,
+        rtol=0.0,
+        atol=1.0e-7,
     )
     np.testing.assert_allclose(
         recovered_potentials.vp,
         velocity_potential,
-        rtol=2.0e-11,
-        atol=2.0e-5,
+        rtol=0.0,
+        atol=1.0e-7,
     )
-    np.testing.assert_allclose(reconstructed.u, u, atol=2.0e-11)
-    np.testing.assert_allclose(reconstructed.v, v, atol=2.0e-11)
+    np.testing.assert_allclose(reconstructed.u, u, rtol=0.0, atol=2.0e-14)
+    np.testing.assert_allclose(reconstructed.v, v, rtol=0.0, atol=1.0e-14)
     assert (
         recovered_potentials.strf.attrs["standard_name"]
         == "atmosphere_horizontal_streamfunction"
@@ -141,10 +145,10 @@ def test_non_zonal_potential_round_trip_restores_cyclic_coordinates(
     recovered = sg.potentials(reconstructed.u, reconstructed.v)
 
     np.testing.assert_allclose(
-        recovered.strf, streamfunction, rtol=2.0e-11, atol=2.0e-5
+        recovered.strf, streamfunction, rtol=0.0, atol=1.0e-7
     )
     np.testing.assert_allclose(
-        recovered.vp, velocity_potential, rtol=2.0e-11, atol=2.0e-5
+        recovered.vp, velocity_potential, rtol=0.0, atol=1.0e-7
     )
     xr.testing.assert_identical(reconstructed.lat, streamfunction.lat)
     xr.testing.assert_identical(reconstructed.lon, streamfunction.lon)
@@ -169,12 +173,14 @@ def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
     )
     divergent_diagnostics = sg.kinematics(divergent.u_divergent, divergent.v_divergent)
 
-    np.testing.assert_allclose(rotational_diagnostics.d, 0.0, atol=2.0e-15)
-    np.testing.assert_allclose(divergent_diagnostics.vo, 0.0, atol=2.0e-15)
-    # The CC equator is an exact analytic zero; two spin/scalar transforms
-    # leave roundoff at several e-15 there.
-    np.testing.assert_allclose(rotational_diagnostics.vo, vo, atol=1.0e-14)
-    np.testing.assert_allclose(divergent_diagnostics.d, divergence, atol=1.0e-14)
+    np.testing.assert_allclose(rotational_diagnostics.d, 0.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(divergent_diagnostics.vo, 0.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        rotational_diagnostics.vo, vo, rtol=0.0, atol=5.0e-14
+    )
+    np.testing.assert_allclose(
+        divergent_diagnostics.d, divergence, rtol=0.0, atol=5.0e-14
+    )
     assert "standard_name" not in rotational.u_rotational.attrs
     assert "standard_name" not in divergent.v_divergent.attrs
 
@@ -194,19 +200,29 @@ def test_helmholtz_recovers_analytic_rotational_and_divergent_parts(
 
     result = sg.helmholtz(u, v)
 
-    np.testing.assert_allclose(result.u_divergent, divergent.u_divergent, atol=3e-15)
-    np.testing.assert_allclose(result.v_divergent, divergent.v_divergent, atol=3e-15)
-    np.testing.assert_allclose(result.u_rotational, rotational.u_rotational, atol=3e-15)
-    np.testing.assert_allclose(result.v_rotational, rotational.v_rotational, atol=3e-15)
+    np.testing.assert_allclose(
+        result.u_divergent, divergent.u_divergent, rtol=0.0, atol=1.0e-30
+    )
+    np.testing.assert_allclose(
+        result.v_divergent, divergent.v_divergent, rtol=0.0, atol=1.0e-14
+    )
+    np.testing.assert_allclose(
+        result.u_rotational, rotational.u_rotational, rtol=0.0, atol=1.0e-14
+    )
+    np.testing.assert_allclose(
+        result.v_rotational, rotational.v_rotational, rtol=0.0, atol=1.0e-30
+    )
     np.testing.assert_allclose(
         result.u_divergent + result.u_rotational,
         u,
-        atol=3e-15,
+        rtol=0.0,
+        atol=1.0e-14,
     )
     np.testing.assert_allclose(
         result.v_divergent + result.v_rotational,
         v,
-        atol=3e-15,
+        rtol=0.0,
+        atol=1.0e-14,
     )
     assert "standard_name" not in result.u_divergent.attrs
     assert result.u_rotational.attrs["long_name"] == "Eastward rotational wind"
@@ -228,17 +244,19 @@ def test_inverse_gradient_recovers_irrotational_potential_and_zero_mode(
     )
 
     expected = degree_one_field(grid)
-    np.testing.assert_allclose(projected, expected, rtol=0.0, atol=3e-14)
+    np.testing.assert_allclose(projected, expected, rtol=0.0, atol=3.0e-14)
     recovered_gradient = sg.gradient(projected)
     np.testing.assert_allclose(
         recovered_gradient.gradient_eastward,
         gradient.gradient_eastward,
-        atol=3e-22,
+        rtol=0.0,
+        atol=0.0,
     )
     np.testing.assert_allclose(
         recovered_gradient.gradient_northward,
         gradient.gradient_northward,
-        atol=3e-22,
+        rtol=0.0,
+        atol=1.0e-20,
     )
     assert projected.name == "potential"
     assert projected.attrs["units"] == "K"
@@ -267,10 +285,14 @@ def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
     inverse_restored = sg.vector_laplacian(inverse.u, inverse.v)
     eigenvalue = -2.0 / sg.EARTH_RADIUS_M**2
 
-    np.testing.assert_allclose(laplacian.u, eigenvalue * u, atol=2e-25)
-    np.testing.assert_allclose(laplacian.v, eigenvalue * v, atol=2e-25)
-    np.testing.assert_allclose(restored.u, u, atol=2e-11)
-    np.testing.assert_allclose(restored.v, v, atol=2e-11)
+    np.testing.assert_allclose(
+        laplacian.u, eigenvalue * u, rtol=0.0, atol=2.0e-25
+    )
+    np.testing.assert_allclose(
+        laplacian.v, eigenvalue * v, rtol=0.0, atol=1.0e-25
+    )
+    np.testing.assert_allclose(restored.u, u, rtol=0.0, atol=5.0e-14)
+    np.testing.assert_allclose(restored.v, v, rtol=0.0, atol=3.0e-14)
     assert "standard_name" not in laplacian.u.attrs
     assert laplacian.u.attrs["units"] == "m s-1 m-2"
     assert restored.u.attrs["units"] == "m s-1"
@@ -319,20 +341,22 @@ def test_new_vector_operations_restore_descending_shifted_coordinates(
     np.testing.assert_allclose(
         components.u_divergent + components.u_rotational,
         wind.u,
-        atol=3e-15,
+        rtol=0.0,
+        atol=5.0e-14,
     )
     np.testing.assert_allclose(
         components.v_divergent + components.v_rotational,
         wind.v,
-        atol=3e-15,
+        rtol=0.0,
+        atol=5.0e-14,
     )
-    np.testing.assert_allclose(restored.u, wind.u, atol=2e-11)
-    np.testing.assert_allclose(restored.v, wind.v, atol=2e-11)
+    np.testing.assert_allclose(restored.u, wind.u, rtol=0.0, atol=5.0e-14)
+    np.testing.assert_allclose(restored.v, wind.v, rtol=0.0, atol=5.0e-14)
     np.testing.assert_allclose(
         recovered,
         scalar - 4.0,
-        rtol=2e-11,
-        atol=2e-11,
+        rtol=0.0,
+        atol=3.0e-14,
     )
     for result in (
         components.u_divergent,
@@ -441,8 +465,8 @@ def test_dataset_discovery_reports_ambiguity_and_wind_source_ambiguity() -> None
     with pytest.raises(ValueError, match="both vorticity/divergence"):
         both.sg.wind()
     result = both.sg.wind(source="potentials")
-    np.testing.assert_allclose(result.u, u, atol=2.0e-11)
+    np.testing.assert_allclose(result.u, u, rtol=0.0, atol=5.0e-13)
 
     ambiguous_vorticity = both.assign(other_vo=kin.vo.rename("other_vo"))
     result = ambiguous_vorticity.sg.wind(source="potentials")
-    np.testing.assert_allclose(result.u, u, atol=2.0e-11)
+    np.testing.assert_allclose(result.u, u, rtol=0.0, atol=5.0e-13)
