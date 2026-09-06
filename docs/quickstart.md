@@ -16,7 +16,7 @@ tapered = field.sg.filter("T6-42", taper=0.1)
 
 target = sg.gaussian_grid(64, 128)
 regridded = field.sg.regrid(target)
-combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
+combined = field.sg.regrid(target, truncation="T6-42", taper=0.1)
 ```
 
 The same operations are available as functions:
