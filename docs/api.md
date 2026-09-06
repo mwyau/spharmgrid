@@ -63,7 +63,7 @@ import spharmgrid as sg
 .. autofunction:: spharmgrid.inverse_vector_laplacian
 ```
 
-## Atmospheric wind diagnostics and transforms
+## Atmospheric kinematics and wind transforms
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.vorticity
@@ -88,6 +88,10 @@ import spharmgrid as sg
 
 .. autofunction:: spharmgrid.wind
 ```
+
+## Threading
+
+For operations with `nthreads=`, `None` lets DUCC use all available threads for eager arrays and uses one DUCC thread per Dask task for Dask-backed arrays. An explicit non-negative integer is passed through to DUCC.
 
 ## xarray accessors
 
