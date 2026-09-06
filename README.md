@@ -18,13 +18,13 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
-Optional capabilities are:
+Optional extras are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
-Dask-backed transforms execute lazily. DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid defaults to roughly one concurrent transform per four available CPUs unless `num_workers` is already configured.
+Dask-backed transforms execute lazily. DUCC uses four threads per transform. For the local Dask scheduler, spharmgrid sets `num_workers=max(1, os.cpu_count() // 4)` unless `num_workers` is configured.
 
 For a standalone command-line installation:
 
@@ -59,8 +59,6 @@ target = sg.gaussian_grid(64, 128)
 regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, truncation="T6-42", taper=0.1)
 ```
-
-The same operations are available as functions:
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
