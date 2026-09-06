@@ -1,0 +1,188 @@
+name: Python Publish
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful CI run containing release-dists
+        required: true
+        type: string
+
+concurrency:
+  group: >-
+    python-publish-${{
+      github.event_name == 'workflow_run'
+      && github.event.workflow_run.id
+      || inputs.run_id
+    }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate distributions
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        startsWith(github.event.workflow_run.head_branch, 'v')
+      )
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Verify manual CI run
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "run_id must be a numeric GitHub Actions run ID" >&2
+            exit 1
+          fi
+
+          RUN_API="repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
+          test "$(gh api "$RUN_API" --jq '.name')" = "CI"
+          test "$(gh api "$RUN_API" --jq '.status')" = "completed"
+          test "$(gh api "$RUN_API" --jq '.conclusion')" = "success"
+
+      - name: Retrieve tested distributions
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-dists
+          path: dist/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.12.10"
+          python-version: "3.14"
+
+      - name: Check distributions
+        run: uvx --from twine==7.0.0 twine check --strict dist/*
+
+      - name: Verify artifact versions
+        env:
+          SOURCE_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || '' }}
+        run: |
+          uv run --no-project python - <<'PY'
+          import os
+          import tarfile
+          import zipfile
+          from email.parser import Parser
+          from pathlib import Path
+
+          def metadata_version(path: Path) -> str:
+              if path.name.endswith(".whl"):
+                  with zipfile.ZipFile(path) as archive:
+                      member_name = next(
+                          name
+                          for name in archive.namelist()
+                          if name.endswith(".dist-info/METADATA")
+                      )
+                      metadata = archive.read(member_name).decode()
+              elif path.name.endswith(".tar.gz"):
+                  with tarfile.open(path, mode="r:gz") as archive:
+                      member_name = next(
+                          name
+                          for name in archive.getnames()
+                          if name.endswith("/PKG-INFO") or name == "PKG-INFO"
+                      )
+                      member = archive.extractfile(member_name)
+                      if member is None:
+                          raise ValueError(f"cannot read metadata from {path}")
+                      metadata = member.read().decode()
+              else:
+                  raise ValueError(f"unexpected distribution: {path}")
+
+              version = Parser().parsestr(metadata).get("Version")
+              if not version:
+                  raise ValueError(f"distribution has no version: {path}")
+              return version
+
+          distributions = sorted(
+              path
+              for path in Path("dist").iterdir()
+              if path.is_file()
+              and (path.name.endswith(".whl") or path.name.endswith(".tar.gz"))
+          )
+          if not distributions:
+              raise SystemExit("no wheel or source distribution found")
+          versions = {metadata_version(path) for path in distributions}
+          if len(versions) != 1:
+              raise SystemExit(f"distribution versions do not agree: {versions}")
+
+          version = versions.pop()
+          tag = os.environ["SOURCE_TAG"]
+          print(f"artifact version: {version}")
+          if tag:
+              print(f"source tag:      {tag}")
+              if tag != f"v{version}":
+                  raise SystemExit(
+                      f"source tag {tag!r} does not match artifact version {version!r}"
+                  )
+          PY
+
+  publish:
+    name: Publish distributions
+    needs: validate
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        startsWith(github.event.workflow_run.head_branch, 'v')
+      )
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    environment:
+      name: >-
+        ${{
+          github.event_name == 'workflow_run' &&
+          !contains(github.event.workflow_run.head_branch, '.dev')
+          && 'pypi' || 'testpypi'
+        }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Retrieve tested distributions
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-dists
+          path: dist/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-path: dist/*
+
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@v1.14.2
+        with:
+          packages-dir: dist/
+          repository-url: >-
+            ${{
+              github.event_name == 'workflow_run' &&
+              !contains(github.event.workflow_run.head_branch, '.dev')
+              && 'https://upload.pypi.org/legacy/'
+              || 'https://test.pypi.org/legacy/'
+            }}
