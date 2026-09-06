@@ -1,4 +1,4 @@
-"""Scalar spherical-harmonic filtering primitives built on DUCC0."""
+"""Scalar spherical-harmonic filtering primitives built on DUCC."""
 
 from __future__ import annotations
 
@@ -69,14 +69,14 @@ def parse_spectral(value: str) -> SpectralRange:
 
 def filter(
     field: xr.DataArray,
-    spectral: str | SpectralRange | None = None,
+    truncation: str | SpectralRange | None = None,
     *,
     lmin: int | None = None,
     lmax: int | None = None,
     taper: float | None = None,
     nthreads: int | None = None,
 ) -> xr.DataArray:
-    """Apply a hard or Sardeshmukh--Hoskins tapered spectral selection.
+    """Apply a hard or Sardeshmukh–Hoskins tapered spectral selection.
 
     With ``taper=None`` (the default), all modes inside the selected inclusive
     range are unchanged and all other modes are zero.  ``taper`` is the
@@ -84,7 +84,7 @@ def filter(
     """
     field = require_dataarray(field)
     source = field_layout(field)
-    selection = _resolve_spectral_range(spectral, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
     spec = transform_spec(source.grid, source.grid, selection)
     retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
@@ -222,17 +222,17 @@ def scalar_transform(
 
 
 def _resolve_spectral_range(
-    spectral: str | SpectralRange | None,
+    truncation: str | SpectralRange | None,
     *,
     lmin: int | None,
     lmax: int | None,
 ) -> SpectralRange | None:
-    if spectral is not None and (lmin is not None or lmax is not None):
-        raise ValueError("use either spectral= or explicit lmin= and lmax=, not both")
-    if spectral is not None:
-        if isinstance(spectral, SpectralRange):
-            return spectral
-        return parse_spectral(spectral)
+    if truncation is not None and (lmin is not None or lmax is not None):
+        raise ValueError("use either truncation= or explicit lmin= and lmax=, not both")
+    if truncation is not None:
+        if isinstance(truncation, SpectralRange):
+            return truncation
+        return parse_spectral(truncation)
     if lmin is None and lmax is None:
         return None
     if lmin is None or lmax is None:
