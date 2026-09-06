@@ -31,7 +31,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _potentials(arguments)
         if arguments.command == "wind":
             return _wind(arguments)
-    except (OSError, ValueError, TypeError) as error:
+    except (ImportError, OSError, ValueError, TypeError) as error:
         parser.error(str(error))
     parser.error(f"unknown command {arguments.command!r}")
     return 2
@@ -45,7 +45,7 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     info = subparsers.add_parser("info", help="show detected GL/CC grid information")
-    info.add_argument("input", help="input file readable by xarray")
+    info.add_argument("input", help="input dataset readable by xarray")
 
     filtered = subparsers.add_parser("filter", help="spectrally filter one variable")
     _input_output_arguments(filtered)
@@ -108,8 +108,8 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("input", help="input file readable by xarray")
-    parser.add_argument("output", help="output NetCDF file written by xarray")
+    parser.add_argument("input", help="input dataset readable by xarray")
+    parser.add_argument("output", help="output .nc or .zarr dataset")
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
@@ -126,8 +126,18 @@ def _wind_input_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--nthreads", type=int, help="DUCC threads per transform")
 
 
+def _is_zarr_path(path: str) -> bool:
+    return path.rstrip("/\\").lower().endswith(".zarr")
+
+
+def _open_dataset(path: str) -> xr.Dataset:
+    if _is_zarr_path(path):
+        return xr.open_zarr(path)
+    return xr.open_dataset(path)
+
+
 def _info(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         grid = detect_grid(dataset)
         print(f"grid_type: {grid.kind}")
         print(f"nlat: {grid.nlat}")
@@ -136,7 +146,7 @@ def _info(arguments: argparse.Namespace) -> int:
 
 
 def _filter(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         field = _select_variable(dataset, arguments.var)
         result = filter(
             field,
@@ -146,14 +156,14 @@ def _filter(arguments: argparse.Namespace) -> int:
             taper=arguments.taper,
             nthreads=arguments.nthreads,
         )
-        _write_netcdf(
+        _write_dataset(
             result.to_dataset(name=result.name or "filtered"), arguments.output
         )
     return 0
 
 
 def _regrid(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         field = _select_variable(dataset, arguments.var)
         constructor = gaussian_grid if arguments.grid == "gl" else clenshaw_curtis_grid
         target = constructor(
@@ -171,14 +181,14 @@ def _regrid(arguments: argparse.Namespace) -> int:
             taper=arguments.taper,
             nthreads=arguments.nthreads,
         )
-        _write_netcdf(
+        _write_dataset(
             result.to_dataset(name=result.name or "regridded"), arguments.output
         )
     return 0
 
 
 def _kinematics(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         result = kinematics(
             _wind_variable(dataset, "u", arguments.u),
             _wind_variable(dataset, "v", arguments.v),
@@ -186,12 +196,12 @@ def _kinematics(arguments: argparse.Namespace) -> int:
             divergence=arguments.divergence,
             nthreads=arguments.nthreads,
         )
-        _write_netcdf(result, arguments.output)
+        _write_dataset(result, arguments.output)
     return 0
 
 
 def _potentials(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         result = potentials(
             _wind_variable(dataset, "u", arguments.u),
             _wind_variable(dataset, "v", arguments.v),
@@ -199,12 +209,12 @@ def _potentials(arguments: argparse.Namespace) -> int:
             velocity_potential=arguments.velocity_potential,
             nthreads=arguments.nthreads,
         )
-        _write_netcdf(result, arguments.output)
+        _write_dataset(result, arguments.output)
     return 0
 
 
 def _wind(arguments: argparse.Namespace) -> int:
-    with xr.open_dataset(arguments.input) as dataset:
+    with _open_dataset(arguments.input) as dataset:
         if arguments.source == "vorticity_divergence":
             first = _wind_variable(dataset, "vo", arguments.vorticity)
             second = _wind_variable(dataset, "d", arguments.divergence)
@@ -219,12 +229,18 @@ def _wind(arguments: argparse.Namespace) -> int:
             northward=arguments.northward,
             nthreads=arguments.nthreads,
         )
-        _write_netcdf(result, arguments.output)
+        _write_dataset(result, arguments.output)
     return 0
 
 
+def _write_dataset(dataset: xr.Dataset, output: str) -> None:
+    if _is_zarr_path(output):
+        dataset.to_zarr(output, mode="w")
+        return
+    _write_netcdf(dataset, output)
+
+
 def _write_netcdf(dataset: xr.Dataset, output: str) -> None:
-    """Write NetCDF with an installed xarray engine, including h5netcdf."""
     engines = xr.backends.list_engines()
     if "netcdf4" in engines:
         dataset.to_netcdf(output, engine="netcdf4")
