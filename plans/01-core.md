@@ -19,8 +19,7 @@ The package name is expanded as:
 
 A concise description is:
 
-> Spherical-harmonic filtering, regridding, differential operators, and
-> atmospheric wind diagnostics for global xarray fields using DUCC0.
+> Spherical harmonics regridding tool for atmospheric science
 
 DUCC0 supplies the numerical spherical-harmonic transforms. spharmgrid does not
 implement a new SHT engine.
@@ -32,7 +31,7 @@ implement a new SHT engine.
 Keep these responsibilities distinct:
 
 ```text
-published methods       scientific definition and lineage
+published methods       scientific definitions
 NCL/SPHEREPACK          established atmospheric semantics and parity reference
 DUCC0                    numerical scalar and spin-weighted SHT engine
 PyStormTracker           source implementation for the initial extraction
@@ -107,8 +106,7 @@ global atmospheric field on GL/CC grid
     -> wind diagnostics / potentials / inverse wind
 ```
 
-The xarray accessor is the primary interface, with numerically equivalent direct
-functions:
+The xarray accessor and direct functions use the same numerical implementation:
 
 ```python
 field.sg.filter("T6-42")
@@ -118,35 +116,7 @@ sg.filter(field, "T6-42")
 Importing spharmgrid registers `.sg` on `xarray.DataArray` and
 `xarray.Dataset`.
 
-Keep the top-level namespace small and close to:
-
-```python
-sg.Grid
-sg.SpectralRange
-sg.EARTH_RADIUS_M
-
-sg.gaussian_grid
-sg.clenshaw_curtis_grid
-sg.detect_grid
-sg.parse_spectral
-
-sg.filter
-sg.regrid
-sg.gradient
-sg.laplacian
-sg.inverse_laplacian
-
-sg.vorticity
-sg.divergence
-sg.kinematics
-sg.streamfunction
-sg.velocity_potential
-sg.potentials
-sg.rotational_wind
-sg.divergent_wind
-sg.wind
-```
-
+Keep the top-level namespace small and close to the documented public API.
 Internal DUCC coefficient helpers, gufunc kernels, E/B arrays, metadata
 registries, layouts, and accessor classes are implementation details.
 
@@ -211,11 +181,9 @@ Do not implement a combined operation by calling public `filter()` followed by
 public `regrid()`.
 
 Without an explicit `Tn` range, retain the latitude and azimuthal content jointly
-representable by source and target sampling under DUCC's actual limits. This is
-a deliberate refinement over forcing the transform into an atmospheric
-triangular shorthand when the grid can represent higher-degree zonally
-symmetric content. Explicit `Tn` input remains triangular and must raise if the
-requested range cannot be represented.
+representable by source and target sampling under DUCC's actual limits. Explicit
+`Tn` input remains triangular and must raise if the requested range cannot be
+represented.
 
 ---
 
@@ -230,10 +198,10 @@ EARTH_RADIUS_M = 6_371_220.0
 ```
 
 `gradient()` returns physical eastward/northward derivatives. `laplacian()`
-applies the spherical-harmonic eigenvalue
-`-l(l+1)/R^2`. `inverse_laplacian()` uses the corresponding inverse for
-positive degree and sets the singular degree-zero coefficient to zero, defining
-the zero-mean solution.
+applies the spherical-harmonic eigenvalue `-l(l+1)/R^2`.
+`inverse_laplacian()` uses the corresponding inverse for positive degree and
+sets the singular degree-zero coefficient to zero, defining the zero-mean
+solution.
 
 ---
 
@@ -355,10 +323,16 @@ spharmgrid potentials
 spharmgrid wind
 ```
 
-Input decoding belongs to xarray and installed backends. The CLI's normal output
-contract is NetCDF through an installed NetCDF-capable xarray engine. Do not
-build a separate file abstraction or numerical path. Other output formats can
-be handled directly through xarray in Python.
+Input decoding belongs to xarray and installed backends. NetCDF, Zarr, and GRIB
+are supported through optional backend dependencies. A path ending in `.zarr`
+is opened with `xarray.open_zarr()` and written with `Dataset.to_zarr()`.
+Other input paths use `xarray.open_dataset()`, allowing installed engines such as
+h5netcdf or cfgrib to handle them. Non-Zarr outputs are NetCDF and use an
+installed NetCDF-capable xarray engine.
+
+The CLI should not introduce a separate file abstraction or numerical path.
+Backend-specific dependencies remain optional because Python callers may supply
+already-open xarray objects and may choose other xarray engines.
 
 ---
 
@@ -377,26 +351,24 @@ Keep optional concerns separate:
 ```text
 cf-xarray       coordinate/CF integration aid
 Dask            lazy xarray execution
-h5netcdf/h5py   normal CLI NetCDF I/O
+cfgrib          GRIB input through xarray
+h5netcdf        NetCDF CLI input/output
+zarr            Zarr CLI input/output
 pyspharm-syl    independent SPHEREPACK parity environment
 ```
+
+The ordinary test environment includes cfgrib, h5netcdf, and zarr because CLI
+format behavior is part of the tested contract. `cftime` is not a test
+dependency unless a test directly exercises cftime objects.
 
 Python 3.12--3.14 is the current supported matrix. The independent parity
 dependency may use a narrower interpreter range without narrowing production
 support.
 
-The current CI additions beyond the original implementation sequence are
-accepted engineering hardening, not package-scope expansion:
-
-- supported-Python tests;
-- a minimum-direct-dependency lane;
-- Ruff/ty checks;
-- strict Sphinx docs build;
-- independent parity lane;
-- wheel/sdist build plus fresh wheel import/CLI check;
-- lockfile and GitHub Actions dependency maintenance.
-
-No release/publishing automation is required at the current pre-release stage.
+The free-threaded compatibility probe checks each direct core and optional
+runtime dependency independently. A package that cannot install or that enables
+the GIL is reported as a warning so one incompatibility does not prevent the
+remaining checks from running.
 
 ---
 
@@ -412,6 +384,10 @@ Current coverage should continue to include both GL and CC for the core analytic
 and round-trip behavior, coordinate-order/cyclic-representation invariance,
 Dask laziness, arbitrary leading dimensions, CF metadata, and accessor/direct
 API equivalence.
+
+CLI tests should cover NetCDF and Zarr read/write paths. GRIB support should be
+covered by the cfgrib backend integration without making GRIB an unconditional
+runtime dependency.
 
 External parity should cover operations where the external grid and convention
 can be aligned exactly. Do not weaken scientific tests merely to force equality
@@ -447,6 +423,7 @@ Documentation must state:
 - wind sign/component conventions;
 - CF discovery/metadata behavior;
 - Dask/thread behavior;
+- NetCDF/Zarr CLI output behavior and optional GRIB input support;
 - NCL/SPHEREPACK's role as semantic/parity reference;
 - PyStormTracker's role as the source of the initial extracted implementation.
 
