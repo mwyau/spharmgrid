@@ -1,5 +1,12 @@
 # spharmgrid
 
+[![CI](https://github.com/mwyau/spharmgrid/actions/workflows/ci.yml/badge.svg)](https://github.com/mwyau/spharmgrid/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/spharmgrid/badge/?version=latest)](https://spharmgrid.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://img.shields.io/pypi/v/spharmgrid)](https://pypi.org/project/spharmgrid/)
+[![PyPI Python Version](https://img.shields.io/pypi/pyversions/spharmgrid)](https://pypi.org/project/spharmgrid/)
+[![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22546617-blue.svg)](https://doi.org/10.5281/zenodo.22546617)
+
 Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
 
 **spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) performs the numerical spherical harmonic transforms.
