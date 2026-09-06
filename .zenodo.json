@@ -1,0 +1,30 @@
+{
+  "title": "spharmgrid",
+  "description": "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.",
+  "creators": [
+    {
+      "name": "Yau, Albert M. W.",
+      "orcid": "0009-0000-7825-9627"
+    }
+  ],
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "BSD-3-Clause",
+  "language": "eng",
+  "keywords": [
+    "spherical harmonics",
+    "atmospheric science",
+    "regridding",
+    "spectral filtering",
+    "atmospheric kinematics",
+    "xarray",
+    "Python"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.18764813",
+      "relation": "isDerivedFrom",
+      "resource_type": "software"
+    }
+  ]
+}

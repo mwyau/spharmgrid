@@ -111,11 +111,11 @@ documentation describes implemented behavior; plans remain under `plans/`.
 ## Package and tooling
 
 - `pyproject.toml` is authoritative for package metadata, dependencies, build
-  configuration, and tool configuration. Keep `uv.lock` synchronized.
-- Regenerate `uv.lock` directly with normal repository tooling such as `uv
-  lock`; do not hand-edit it. Never create temporary GitHub Actions workflows,
-  throwaway CI jobs, or other repository automation solely to generate or
-  refresh a lockfile.
+  configuration, and tool configuration. Keep `uv.lock` synchronized, but do
+  not generate, regenerate, or hand-edit it. If it becomes stale, notify the
+  owner to run `uv lock` locally and commit the result.
+- Never create temporary GitHub Actions workflows, throwaway CI jobs, or other
+  repository automation to generate or refresh a lockfile.
 - Keep uv's normal `dev` group enabled so standard local commands such as
   `uv run ruff`, `uv run ty check`, and `uv run pytest` work directly. CI jobs
   that require a reduced environment should opt out with
@@ -159,6 +159,8 @@ documentation describes implemented behavior; plans remain under `plans/`.
 - Keep changes within the requested scope and preserve unrelated work.
 - Develop new features on a dedicated feature branch rather than directly on
   `main`.
+- Do not create pull requests or Git tags unless the owner explicitly instructs
+  you to create that specific pull request or tag.
 - Use Conventional Commits-style subjects such as `feat: ...`, `fix: ...`,
   `docs: ...`, `test: ...`, `ci: ...`, `refactor: ...`, or `chore: ...`.
 - Do not build abstractions or extension points for hypothetical future
