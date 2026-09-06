@@ -31,9 +31,11 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
+      - name: Check lockfile
+        run: uv lock --check
       - run: uv sync --extra cf --extra dask --frozen
-      - run: uv run --no-sync ruff check src tests
-      - run: uv run --no-sync ruff format --check src tests
+      - run: uv run --no-sync ruff check src tests docs/conf.py
+      - run: uv run --no-sync ruff format --check src tests docs/conf.py
       - run: uv run --no-sync ty check
 
   tests:
