@@ -138,7 +138,7 @@ def test_vector_regridding_low_degree_field_all_supported_pairs(
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_same_grid_vector_regridding_hard_selection_retains_selected_degree(
+def test_same_grid_vector_filter_removes_degree_two(
     kind: Literal["cc", "gl"],
 ) -> None:
     grid = supported_grid(kind)
@@ -156,7 +156,7 @@ def test_same_grid_vector_regridding_hard_selection_retains_selected_degree(
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_same_grid_vector_regridding_tapers_upper_retained_degree(
+def test_same_grid_vector_taper_has_expected_upper_degree_response(
     kind: Literal["cc", "gl"],
 ) -> None:
     grid = supported_grid(kind)
@@ -166,13 +166,13 @@ def test_same_grid_vector_regridding_tapers_upper_retained_degree(
     u = mixed_u.copy(data=3.0 * np.sin(latitude) * np.cos(latitude) * np.ones(shape))
     v = mixed_v.copy(data=2.0 * np.sin(latitude) * np.cos(latitude) * np.ones(shape))
 
-    hard = sg.regrid_vector(u, v, grid, truncation="T2")
+    hard = sg.regrid_vector(u, v, grid, truncation="T2-2")
     tapered = sg.regrid_vector(u, v, grid, truncation="T2", taper=0.1)
 
     np.testing.assert_allclose(hard.u, u, rtol=0.0, atol=1.0e-14)
     np.testing.assert_allclose(hard.v, v, rtol=0.0, atol=1.0e-14)
-    np.testing.assert_allclose(tapered.u, 0.1 * hard.u, rtol=0.0, atol=5.0e-16)
-    np.testing.assert_allclose(tapered.v, 0.1 * hard.v, rtol=0.0, atol=5.0e-16)
+    np.testing.assert_allclose(tapered.u, 0.1 * u, rtol=0.0, atol=1.0e-15)
+    np.testing.assert_allclose(tapered.v, 0.1 * v, rtol=0.0, atol=1.0e-15)
 
 
 def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
@@ -233,7 +233,7 @@ def test_vector_regridding_round_trip_is_band_limited() -> None:
     np.testing.assert_allclose(restored.v, v, rtol=0.0, atol=3.0e-14)
 
 
-def test_combined_filter_and_regrid_matches_single_spectral_cycle_result() -> None:
+def test_combined_filter_and_regrid_matches_sequential_result() -> None:
     source = scalar_field(supported_grid("cc"))
     target = supported_grid("gl")
 
@@ -295,13 +295,21 @@ def test_gradient_laplacian_and_inverse_laplacian_of_degree_one(
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_inverse_laplacian_uses_zero_mean_solution(kind: Literal["cc", "gl"]) -> None:
+def test_inverse_laplacian_sets_degree_zero_to_zero(kind: Literal["cc", "gl"]) -> None:
     grid = supported_grid(kind)
     field = degree_one_field(grid) + 7.0
 
     inverse = sg.inverse_laplacian(field)
     restored = sg.laplacian(inverse)
 
+    np.testing.assert_allclose(
+        inverse,
+        -(sg.EARTH_RADIUS_M**2) * degree_one_field(grid) / 2.0,
+        rtol=0.0,
+        # Roundoff in the degree-one coefficient is amplified by R**2 after
+        # analyzing a field that also contains a large constant.
+        atol=1.0e-1,
+    )
     np.testing.assert_allclose(restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12)
 
 

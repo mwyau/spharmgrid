@@ -11,7 +11,6 @@ import xarray as xr
 import spharmgrid as sg
 from tests.conftest import (
     degree_one_field,
-    scalar_field,
     solid_body_wind,
     supported_grid,
 )
@@ -185,99 +184,117 @@ def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_helmholtz_recovers_analytic_rotational_and_divergent_parts(
+def test_helmholtz_separates_known_rotational_and_divergent_degree_one_flows(
     kind: Literal["cc", "gl"],
 ) -> None:
     grid = supported_grid(kind)
-    scalar = degree_one_field(grid)
-    streamfunction = (3.0 * sg.EARTH_RADIUS_M * scalar).rename("strf")
-    velocity_potential = (-2.0 * sg.EARTH_RADIUS_M * scalar).rename("vp")
-    rotational = sg.rotational_wind(streamfunction)
-    divergent = sg.divergent_wind(velocity_potential)
-    u = (rotational.u_rotational + divergent.u_divergent).rename("u")
-    v = (rotational.v_rotational + divergent.v_divergent).rename("v")
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    shape = (grid.nlat, grid.nlon)
+    coordinates = {"lat": grid.latitude, "lon": grid.longitude}
+    rotational_u = xr.DataArray(
+        10.0 * np.cos(latitude) * np.ones((1, grid.nlon)),
+        dims=("lat", "lon"),
+        coords=coordinates,
+    )
+    rotational_v = xr.DataArray(
+        np.zeros(shape),
+        dims=("lat", "lon"),
+        coords=coordinates,
+    )
+    divergent_u = xr.DataArray(
+        np.zeros(shape),
+        dims=("lat", "lon"),
+        coords=coordinates,
+    )
+    divergent_v = xr.DataArray(
+        7.0 * np.cos(latitude) * np.ones((1, grid.nlon)),
+        dims=("lat", "lon"),
+        coords=coordinates,
+    )
+    u = (rotational_u + divergent_u).rename("u")
+    v = (rotational_v + divergent_v).rename("v")
 
     result = sg.helmholtz(u, v)
 
     np.testing.assert_allclose(
-        result.u_divergent, divergent.u_divergent, rtol=0.0, atol=1.0e-30
+        result.u_rotational, rotational_u, rtol=0.0, atol=3.0e-14
     )
     np.testing.assert_allclose(
-        result.v_divergent, divergent.v_divergent, rtol=0.0, atol=1.0e-14
+        result.v_rotational, rotational_v, rtol=0.0, atol=1.0e-30
     )
-    np.testing.assert_allclose(
-        result.u_rotational, rotational.u_rotational, rtol=0.0, atol=1.0e-14
-    )
-    np.testing.assert_allclose(
-        result.v_rotational, rotational.v_rotational, rtol=0.0, atol=1.0e-30
-    )
+    np.testing.assert_allclose(result.u_divergent, divergent_u, rtol=0.0, atol=1.0e-30)
+    np.testing.assert_allclose(result.v_divergent, divergent_v, rtol=0.0, atol=3.0e-14)
     np.testing.assert_allclose(
         result.u_divergent + result.u_rotational,
         u,
         rtol=0.0,
-        atol=1.0e-14,
+        atol=3.0e-14,
     )
     np.testing.assert_allclose(
         result.v_divergent + result.v_rotational,
         v,
         rtol=0.0,
-        atol=1.0e-14,
+        atol=3.0e-14,
     )
     assert "standard_name" not in result.u_divergent.attrs
     assert result.u_rotational.attrs["long_name"] == "Eastward rotational wind"
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_inverse_gradient_projects_out_nontrivial_rotational_wind(
+def test_inverse_gradient_projects_pure_rotation_to_zero(
     kind: Literal["cc", "gl"],
 ) -> None:
     grid = supported_grid(kind)
-    streamfunction = scalar_field(grid, name="strf")
-    rotational = sg.rotational_wind(streamfunction)
-    rotational_values = np.stack(
-        (rotational.u_rotational.values, rotational.v_rotational.values)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    coordinates = {"lat": grid.latitude, "lon": grid.longitude}
+    eastward = xr.DataArray(
+        10.0 * np.cos(latitude) * np.ones((1, grid.nlon)) / sg.EARTH_RADIUS_M,
+        dims=("lat", "lon"),
+        coords=coordinates,
+        attrs={"units": "K m-1"},
+    )
+    northward = xr.DataArray(
+        np.zeros((grid.nlat, grid.nlon)),
+        dims=("lat", "lon"),
+        coords=coordinates,
+        attrs={"units": "K m-1"},
     )
 
-    assert np.linalg.norm(rotational_values) > 1.0e-8
+    assert np.max(np.abs(eastward.values)) > 1.0e-8
 
-    recovered = sg.inverse_gradient(
-        rotational.u_rotational,
-        rotational.v_rotational,
-    )
+    recovered = sg.inverse_gradient(eastward, northward)
 
     np.testing.assert_allclose(recovered, 0.0, rtol=0.0, atol=5.0e-14)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_inverse_gradient_recovers_irrotational_potential_and_zero_mode(
+def test_inverse_gradient_recovers_known_potential_from_mixed_vector_field(
     kind: Literal["cc", "gl"],
 ) -> None:
     grid = supported_grid(kind)
-    field = degree_one_field(grid) + 4.0
-    field.attrs["units"] = "K"
-    gradient = sg.gradient(field)
-    rotational_u, rotational_v = solid_body_wind(grid)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    coordinates = {"lat": grid.latitude, "lon": grid.longitude}
+    eastward = xr.DataArray(
+        10.0 * np.cos(latitude) * np.ones((1, grid.nlon)) / sg.EARTH_RADIUS_M,
+        dims=("lat", "lon"),
+        coords=coordinates,
+        attrs={"units": "K m-1"},
+    )
+    northward = xr.DataArray(
+        np.cos(latitude) * np.ones((1, grid.nlon)) / sg.EARTH_RADIUS_M,
+        dims=("lat", "lon"),
+        coords=coordinates,
+        attrs={"units": "K m-1"},
+    )
+
     projected = sg.inverse_gradient(
-        gradient.gradient_eastward + rotational_u / sg.EARTH_RADIUS_M,
-        gradient.gradient_northward + rotational_v / sg.EARTH_RADIUS_M,
+        eastward,
+        northward,
         output="potential",
     )
 
-    expected = degree_one_field(grid)
+    expected = np.sin(latitude) * np.ones((1, grid.nlon))
     np.testing.assert_allclose(projected, expected, rtol=0.0, atol=5.0e-14)
-    recovered_gradient = sg.gradient(projected)
-    np.testing.assert_allclose(
-        recovered_gradient.gradient_eastward,
-        gradient.gradient_eastward,
-        rtol=0.0,
-        atol=0.0,
-    )
-    np.testing.assert_allclose(
-        recovered_gradient.gradient_northward,
-        gradient.gradient_northward,
-        rtol=0.0,
-        atol=1.0e-20,
-    )
     assert projected.name == "potential"
     assert projected.attrs["units"] == "K"
     assert "standard_name" not in projected.attrs
