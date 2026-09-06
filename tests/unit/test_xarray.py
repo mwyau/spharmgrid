@@ -200,7 +200,7 @@ def test_equivalent_wind_longitude_conventions_align_with_their_data() -> None:
     velocity_potential = xr.DataArray(
         sg.EARTH_RADIUS_M * np.cos(latitude) * np.sin(longitude),
         dims=("lat", "lon"),
-        coords=coordinates if False else {"lat": grid.latitude, "lon": grid.longitude},
+        coords={"lat": grid.latitude, "lon": grid.longitude},
         name="vp",
     )
     components = sg.wind(streamfunction, velocity_potential)
