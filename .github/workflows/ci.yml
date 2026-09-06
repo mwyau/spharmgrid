@@ -45,7 +45,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --group dev --all-extras --frozen
+      - run: uv sync --group dev --extra dask --frozen
       - run: uv run --no-sync pytest
 
   free-threaded:
@@ -93,7 +93,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --group test --all-extras --resolution lowest-direct
+      - run: uv sync --group test --extra dask --resolution lowest-direct
       - run: uv run --no-sync pytest
 
   code-quality:
@@ -109,7 +109,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - run: uv sync --group dev --all-extras --frozen
+      - run: uv sync --group dev --extra dask --frozen
       - run: uv run --no-sync ruff check src tests
       - run: uv run --no-sync ruff format --check src tests
       - run: uv run --no-sync ty check
@@ -143,5 +143,5 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.13"
-      - run: uv sync --group test --group parity --all-extras --frozen
+      - run: uv sync --group test --group parity --extra dask --frozen
       - run: uv run --no-sync pytest tests/parity
