@@ -80,6 +80,7 @@ parity = ["pyspharm-syl>=1.2.1; python_version < '3.14'"]
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]
 testpaths = ["tests"]
+strict_config = true
 strict_markers = true
 markers = [
     "parity: compares against an independently implemented transform package",
