@@ -8,7 +8,7 @@ band_pass = field.sg.filter("T6-42")
 explicit = field.sg.filter(lmin=6, lmax=42)
 ```
 
-`T42` retains modes with total degree $0 \leq l \leq 42$. `T6-42` retains $6 \leq l \leq 42$. Parsing is case-insensitive and accepts an en dash, for example `T6–42`. `spectral=` cannot be combined with explicit `lmin=` and `lmax=` in the same call.
+`T42` retains modes with total degree $0 \leq l \leq 42$. `T6-42` retains $6 \leq l \leq 42$. Parsing is case-insensitive and accepts an en dash, for example `T6–42`. `truncation=` cannot be combined with explicit `lmin=` and `lmax=` in the same call.
 
 With no spectral range, spharmgrid uses the transform bandwidth supported by the grid. The latitude sampling can support degrees above the largest represented zonal order.
 
