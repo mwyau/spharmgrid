@@ -23,7 +23,9 @@ import spharmgrid as sg
 
 .. autofunction:: spharmgrid.clenshaw_curtis_grid
 
-.. autofunction:: spharmgrid.detect_grid
+.. py:function:: spharmgrid.detect_grid(field)
+
+   Detect a supported GL or CC grid from an xarray object.
 
 .. autofunction:: spharmgrid.parse_spectral
 ```
@@ -67,11 +69,5 @@ import spharmgrid as sg
 ## xarray accessors
 
 Importing spharmgrid registers `.sg` on xarray `DataArray` and `Dataset`.
-
-```{eval-rst}
-.. autoclass:: spharmgrid.accessors.DataArrayAccessor
-   :members:
-
-.. autoclass:: spharmgrid.accessors.DatasetAccessor
-   :members:
-```
+Accessor examples are shown throughout the {doc}`quickstart`, {doc}`filtering`,
+{doc}`regridding`, {doc}`operators`, and {doc}`kinematics` pages.
