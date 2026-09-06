@@ -1,8 +1,8 @@
 # spharmgrid
 
-Spherical-harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
 
-**spharmgrid** (**sp**herical **harm**onics **grid**ding) provides spherical-harmonic filtering, regridding, differential operators, and atmospheric wind diagnostics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies the numerical spherical-harmonic transforms.
+**spharmgrid** (**sp**herical **harm**onics **grid**ding) provides spherical harmonic filtering, regridding, differential operators, and atmospheric wind diagnostics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies the numerical spherical harmonic transforms.
 
 Supported grids are full rectangular Gauss--Legendre (GL) and pole-including Clenshaw--Curtis (CC) grids.
 
@@ -83,7 +83,7 @@ packages; GRIB output is not supported. The core-installed `spharmgrid`
 executable still supports `spharmgrid --help` and `spharmgrid --version`; file
 processing reports how to install the CLI extra when its backends are absent.
 
-`inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector-harmonic slots to zero. See the operator documentation for these conventions.
+`inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector harmonic slots to zero. See the operator documentation for these conventions.
 
 `T42` retains total degrees 0 through 42. `T6-42` retains degrees 6 through 42. Filtering uses a hard spectral selection by default. `taper=0.1` applies the Sardeshmukh--Hoskins exponential response with value 0.1 at the upper retained degree.
 
@@ -91,4 +91,4 @@ See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requir
 
 ## References
 
-See the documentation [references](https://spharmgrid.readthedocs.io/en/latest/references.html) for scientific and software citations. Related spherical-harmonic code is also used in [PyStormTracker](https://github.com/mwyau/PyStormTracker).
+See the documentation [references](https://spharmgrid.readthedocs.io/en/latest/references.html) for scientific and software citations. Related spherical harmonic code is also used in [PyStormTracker](https://github.com/mwyau/PyStormTracker).
