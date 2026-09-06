@@ -79,7 +79,7 @@ class DataArrayAccessor:
 
     def filter(
         self,
-        spectral: str | SpectralRange | None = None,
+        truncation: str | SpectralRange | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -89,7 +89,7 @@ class DataArrayAccessor:
         """Filter this field by total wavenumber."""
         return calculate_filter(
             self._obj,
-            spectral,
+            truncation,
             lmin=lmin,
             lmax=lmax,
             taper=taper,
@@ -99,7 +99,7 @@ class DataArrayAccessor:
     def regrid(
         self,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        spectral: str | SpectralRange | None = None,
+        truncation: str | SpectralRange | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -110,7 +110,7 @@ class DataArrayAccessor:
         return calculate_regrid(
             self._obj,
             target_grid,
-            spectral,
+            truncation,
             lmin=lmin,
             lmax=lmax,
             taper=taper,
@@ -121,7 +121,7 @@ class DataArrayAccessor:
         self,
         v: xr.DataArray,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        spectral: str | SpectralRange | None = None,
+        truncation: str | SpectralRange | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -135,7 +135,7 @@ class DataArrayAccessor:
             self._obj,
             v,
             target_grid,
-            spectral,
+            truncation,
             lmin=lmin,
             lmax=lmax,
             taper=taper,
@@ -425,7 +425,7 @@ class DatasetAccessor:
     def regrid_vector(
         self,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        spectral: str | SpectralRange | None = None,
+        truncation: str | SpectralRange | None = None,
         *,
         u: str | None = None,
         v: str | None = None,
@@ -441,7 +441,7 @@ class DatasetAccessor:
             find_variable(self._obj, "u", u),
             find_variable(self._obj, "v", v),
             target_grid,
-            spectral,
+            truncation,
             lmin=lmin,
             lmax=lmax,
             taper=taper,
