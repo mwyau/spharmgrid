@@ -91,7 +91,7 @@ import spharmgrid as sg
 
 ## Execution
 
-DUCC transforms use four threads internally. For Dask-backed arrays, spharmgrid sets the default local Dask worker count to `max(1, os.cpu_count() // 4)` when `num_workers` has not already been configured. Existing Dask configuration and distributed cluster topology are left unchanged.
+DUCC transforms use four threads internally. For Dask-backed arrays, spharmgrid sets the local Dask worker count to `max(1, os.cpu_count() // 4)` only when `num_workers` is unset. A configured `num_workers` value takes precedence. Distributed clusters use their configured worker topology.
 
 ## xarray accessors
 
