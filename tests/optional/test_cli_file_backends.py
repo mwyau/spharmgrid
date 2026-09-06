@@ -37,7 +37,7 @@ def test_info_and_filter_commands(
                 str(output_path),
                 "--var",
                 "msl",
-                "--spectral",
+                "--truncation",
                 "T3",
             ]
         )
@@ -61,7 +61,7 @@ def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
                 str(output_path),
                 "--var",
                 "msl",
-                "--spectral",
+                "--truncation",
                 "T3",
             ]
         )
@@ -103,7 +103,7 @@ def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
                 "12",
                 "--nlon",
                 "24",
-                "--spectral",
+                "--truncation",
                 "T3",
             ]
         )
