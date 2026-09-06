@@ -111,6 +111,10 @@ documentation describes implemented behavior; plans remain under `plans/`.
 - Update `uv.lock` directly with uv. Do not add temporary GitHub Actions
   workflows, throwaway CI jobs, or other repository automation solely to
   generate or refresh a lockfile.
+- Keep uv's normal `dev` group enabled so standard local commands such as
+  `uv run ruff`, `uv run ty check`, and `uv run pytest` work directly. CI jobs
+  that require a reduced environment should opt out with
+  `--no-default-groups` instead of disabling development dependencies globally.
 - Use the existing Hatchling, uv, Ruff, ty, pytest, Sphinx/MyST, and Read the
   Docs setup unless a concrete requirement justifies changing a tool.
 - Keep core runtime dependencies small and optional capabilities optional.
