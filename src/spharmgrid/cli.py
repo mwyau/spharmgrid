@@ -61,8 +61,9 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="spharmgrid",
         description=(
-            "DUCC-backed spherical-harmonic operations for xarray files. "
-            "CLI I/O supports NetCDF and Zarr read/write plus GRIB input."
+            f"spharmgrid {_package_version()} - "
+            "Spherical harmonic tools for filtering, regridding, and kinematics. "
+            "CLI reads NetCDF, Zarr, and GRIB, and writes NetCDF and Zarr."
         ),
     )
     parser.add_argument(
