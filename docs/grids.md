@@ -1,8 +1,7 @@
 # Supported grids and coordinates
 
-spharmgrid supports two full rectangular global sampling geometries. `ducc0`
-uses their geometry labels internally; spharmgrid exposes lowercase Python
-labels, `"gl"` and `"cc"`.
+spharmgrid supports full rectangular Gauss--Legendre (`"gl"`) and
+Clenshaw--Curtis (`"cc"`) sampling geometries.
 
 ## Gauss--Legendre (GL)
 
@@ -23,10 +22,9 @@ longitudes.
 grid = sg.clenshaw_curtis_grid(65, 128, latitude_order="descending")
 ```
 
-A generic regular latitude--longitude grid is not necessarily CC. Detection
-requires an equally spaced latitude coordinate with `-90` and `90` present,
-plus a globally cyclic non-duplicated longitude coordinate. A grid that omits
-a pole is rejected rather than silently treated as CC.
+CC detection requires an equally spaced latitude coordinate containing both
+`-90` and `90`, together with a globally cyclic, non-duplicated longitude
+coordinate.
 
 ## Coordinate discovery and cyclic representations
 
@@ -36,23 +34,22 @@ Latitude and longitude are discovered in this order:
 2. the canonical coordinate names `lat`/`latitude` and `lon`/`longitude`;
 3. optional `cf-xarray` assistance when installed.
 
-Ambiguous coordinates raise an error. spharmgrid does not guess that the last
-two dimensions are spatial.
+Ambiguous coordinates raise an error.
 
 Latitude may be ascending or descending. Longitudes may use `[0, 360)` or a
-`[-180, 180)`-style cycle and may begin at another regular cyclic point. The
-implementation moves longitude values and data columns together into DUCC's
-cyclic-eastward order, then restores the source representation. A same-grid
-operation therefore preserves the user’s coordinate order and convention.
+`[-180, 180)`-style cycle and may begin at another regular cyclic point.
+Same-grid operations preserve the input coordinate order and longitude
+convention.
 
 ## Transform limits
 
 DUCC documents the latitude analysis limit as `nlat - 2` for CC and `nlat - 1`
 for GL. The azimuthal limit is `(nlon - 1) // 2`. An explicit `Tn` request is
 triangular, so both the source and target must represent all degrees and orders
-through `n`; otherwise spharmgrid raises an error. Without an explicit range,
-regridding retains the content jointly representable by its source and target
-latitude and longitude sampling.
+through `n`.
 
-`T42` is a spectral truncation, not a physical-grid name. Construct a target
-grid explicitly instead.
+Without an explicit range, regridding retains the content jointly representable
+by the source and target latitude and longitude sampling.
+
+`T42` is a spectral truncation, not a physical-grid name. Construct the target
+grid explicitly.
