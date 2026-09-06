@@ -317,28 +317,37 @@ spharmgrid potentials
 spharmgrid wind
 ```
 
-Input decoding belongs to xarray and installed backends. NetCDF, Zarr, and GRIB
-are supported through optional backend dependencies. A path ending in `.zarr`
-is opened with `xarray.open_zarr()` and written with `Dataset.to_zarr()`.
-Other input paths use `xarray.open_dataset()`, allowing installed engines such as
-h5netcdf or cfgrib to handle them. Non-Zarr outputs are NetCDF and use an
-installed NetCDF-capable xarray engine.
+NetCDF is part of the base installation. `h5netcdf[h5py]` provides the bundled
+xarray NetCDF backend, and CLI NetCDF output is written explicitly through
+`engine="h5netcdf"`.
+
+Zarr and GRIB remain optional file-format integrations. A path ending in
+`.zarr` is opened with `xarray.open_zarr()` and written with
+`Dataset.to_zarr()` when the `zarr` extra is installed. Other input paths use
+`xarray.open_dataset()`, allowing installed engines such as h5netcdf or cfgrib
+to handle them. GRIB is input-only through cfgrib.
 
 The CLI should not introduce a separate file abstraction or numerical path.
-Backend-specific dependencies remain optional because Python callers may supply
-already-open xarray objects and may choose other xarray engines.
+Python callers may still supply already-open xarray objects or use other xarray
+backends themselves.
 
 ---
 
 # Dependencies and repository engineering
 
-Core runtime dependencies remain intentionally small:
+Core runtime dependencies are:
 
 ```text
 numpy
 xarray
 ducc0
+h5netcdf[h5py]
 ```
+
+NetCDF is core because the installed `spharmgrid` CLI is expected to read and
+write ordinary atmospheric NetCDF files without an additional package extra.
+Do not use xarray's broad `io` extra for this purpose; it brings unrelated I/O
+packages and calendar support that spharmgrid does not require.
 
 Keep optional concerns separate:
 
@@ -346,16 +355,16 @@ Keep optional concerns separate:
 cf-xarray       coordinate/CF integration aid
 Dask            lazy xarray execution
 cfgrib          GRIB input through xarray
-h5netcdf        NetCDF CLI input/output
 zarr            Zarr CLI input/output
 pyspharm-syl    independent SPHEREPACK parity environment
 ```
 
-The ordinary test environment includes h5netcdf and zarr because their CLI
-read/write paths are exercised directly. GRIB remains an optional install extra
-and is checked separately because cfgrib/ecCodes have a heavier platform
-footprint. `cftime` is not a direct test dependency unless a test explicitly
-uses cftime objects.
+The ordinary test environment includes Zarr because the CLI Zarr read/write
+path is exercised directly. NetCDF tests use the core h5netcdf backend. GRIB
+remains an optional install extra and is checked in a dedicated backend lane
+because cfgrib/ecCodes have a heavier platform footprint. `cftime` is not a
+direct spharmgrid dependency unless a future test or feature explicitly uses
+cftime objects.
 
 uv's normal `dev` dependency group remains enabled so standard local commands
 such as `uv run ruff`, `uv run ty check`, and `uv run pytest` work without
@@ -366,10 +375,11 @@ Python 3.12--3.14 is the current supported matrix. The independent parity
 dependency may use a narrower interpreter range without narrowing production
 support.
 
-The free-threaded compatibility probe checks each direct core and optional
-runtime dependency independently. A package that cannot install or that enables
-the GIL is reported as a warning so one incompatibility does not prevent the
-remaining checks from running.
+The free-threaded compatibility probe checks core modules independently,
+including h5netcdf and h5py, then installs and checks each optional integration
+separately. A package that cannot install or that enables the GIL is reported as
+a warning so one incompatibility does not prevent the remaining checks from
+running.
 
 ---
 
@@ -424,7 +434,7 @@ Documentation must state:
 - wind sign/component conventions;
 - CF discovery/metadata behavior;
 - Dask/thread behavior;
-- NetCDF/Zarr CLI output behavior and optional GRIB input support;
+- NetCDF CLI support in the base install, Zarr output, and optional GRIB input;
 - NCL/SPHEREPACK's role as semantic/parity reference;
 - PyStormTracker's role as the source of the initial extracted implementation.
 
