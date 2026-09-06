@@ -45,7 +45,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --group dev --extra dask --frozen
+      - run: uv sync --group dev --extra cf --extra dask --frozen
       - run: uv run --no-sync pytest
 
   free-threaded:
@@ -61,7 +61,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --extra cf --extra dask --frozen
+      - run: uv sync --extra cf --extra dask --extra netcdf --extra zarr --frozen
       - name: Check free-threaded imports independently
         shell: bash
         run: |
@@ -91,6 +91,8 @@ jobs:
           check_import core ducc0
           check_import cf cf_xarray
           check_import dask dask
+          check_import netcdf h5netcdf
+          check_import zarr zarr
           check_import package spharmgrid
 
   minimum-dependencies:
@@ -122,7 +124,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - run: uv sync --group dev --extra dask --frozen
+      - run: uv sync --group dev --extra cf --extra dask --frozen
       - run: uv run --no-sync ruff check src tests
       - run: uv run --no-sync ruff format --check src tests
       - run: uv run --no-sync ty check
