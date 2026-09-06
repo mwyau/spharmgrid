@@ -1,7 +1,6 @@
 # Quick start
 
-Import spharmgrid to register `.sg` on xarray `DataArray` and `Dataset`
-objects.
+Import spharmgrid to register `.sg` on xarray `DataArray` and `Dataset` objects.
 
 ## Filtering and regridding
 
@@ -20,7 +19,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-### Direct functions
+The same operations are available as functions:
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
@@ -29,8 +28,7 @@ regridded = sg.regrid(field, target)
 
 ## Atmospheric wind diagnostics
 
-With canonical `u` and `v` variable names or exact CF standard names, Dataset
-methods identify the wind components automatically.
+Dataset methods identify `u` and `v` from canonical variable names or exact CF standard names.
 
 ```python
 wind = xr.open_dataset("wind.nc")
@@ -41,9 +39,6 @@ pot = wind.sg.potentials()  # strf: streamfunction; vp: velocity potential
 reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
 ```
 
-The individual diagnostics are also available as `vorticity()`, `divergence()`,
-`streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind
-reconstruction and sign conventions.
+Individual diagnostics are available as `vorticity()`, `divergence()`, `streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind reconstruction and sign conventions.
 
-All operations preserve non-spatial dimensions and xarray coordinates. See
-{doc}`grids` for supported sampling geometries and coordinate requirements.
+Operations preserve non-spatial dimensions and xarray coordinates. See {doc}`grids` for supported sampling geometries and coordinate requirements.
