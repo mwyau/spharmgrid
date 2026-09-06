@@ -21,7 +21,7 @@ def test_leading_dimensions_and_time_coordinates_are_preserved() -> None:
     assert result.dims == field.dims
     xr.testing.assert_identical(result.member, field.member)
     xr.testing.assert_identical(result.time, field.time)
-    np.testing.assert_allclose(result, field, atol=2.0e-11)
+    np.testing.assert_allclose(result, field, rtol=0.0, atol=2.0e-14)
 
 
 def test_detected_horizontal_dimensions_need_not_be_last_or_adjacent() -> None:
@@ -32,7 +32,7 @@ def test_detected_horizontal_dimensions_need_not_be_last_or_adjacent() -> None:
     result = sg.filter(field, "T3")
 
     assert result.dims == field.dims
-    np.testing.assert_allclose(result, field, atol=2.0e-11)
+    np.testing.assert_allclose(result, field, rtol=0.0, atol=2.0e-14)
 
 
 def test_cftime_calendar_coordinate_is_preserved() -> None:
@@ -60,7 +60,9 @@ def test_dask_input_stays_lazy_with_rechunked_horizontal_core_dimensions() -> No
     result = sg.filter(field, "T3")
 
     assert hasattr(result.data, "dask")
-    np.testing.assert_allclose(result.compute(), field.compute(), atol=2.0e-11)
+    np.testing.assert_allclose(
+        result.compute(), field.compute(), rtol=0.0, atol=2.0e-14
+    )
 
 
 def test_mixed_eager_and_dask_wind_inputs_stay_lazy() -> None:
@@ -72,7 +74,7 @@ def test_mixed_eager_and_dask_wind_inputs_stay_lazy() -> None:
 
     assert hasattr(result.vo.data, "dask")
     expected = sg.kinematics(u, v)
-    xr.testing.assert_allclose(result.compute(), expected)
+    xr.testing.assert_allclose(result.compute(), expected, rtol=0.0, atol=0.0)
 
 
 def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
@@ -111,14 +113,26 @@ def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
     )
     assert hasattr(inverse_gradient.data, "dask")
     xr.testing.assert_allclose(
-        regridded.compute(), sg.regrid_vector(eager_u, eager_v, target)
+        regridded.compute(),
+        sg.regrid_vector(eager_u, eager_v, target),
+        rtol=0.0,
+        atol=0.0,
     )
-    xr.testing.assert_allclose(decomposed.compute(), sg.helmholtz(eager_u, eager_v))
+    xr.testing.assert_allclose(
+        decomposed.compute(),
+        sg.helmholtz(eager_u, eager_v),
+        rtol=0.0,
+        atol=0.0,
+    )
     eager_laplacian = sg.vector_laplacian(eager_u, eager_v)
-    xr.testing.assert_allclose(laplacian.compute(), eager_laplacian)
+    xr.testing.assert_allclose(
+        laplacian.compute(), eager_laplacian, rtol=0.0, atol=0.0
+    )
     xr.testing.assert_allclose(
         restored.compute(),
         sg.inverse_vector_laplacian(eager_laplacian.u, eager_laplacian.v),
+        rtol=0.0,
+        atol=0.0,
     )
     xr.testing.assert_allclose(
         inverse_gradient.compute(),
@@ -126,6 +140,8 @@ def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
             eager_gradient.gradient_eastward,
             eager_gradient.gradient_northward,
         ),
+        rtol=0.0,
+        atol=0.0,
     )
 
 
@@ -160,8 +176,8 @@ def test_xarray_target_uses_reference_coordinates_and_dimension_names() -> None:
     result = sg.regrid(source, reference)
 
     assert result.dims == ("latitude", "longitude")
-    np.testing.assert_allclose(result.latitude, target_grid.latitude)
-    np.testing.assert_allclose(result.longitude, target_grid.longitude)
+    np.testing.assert_array_equal(result.latitude, target_grid.latitude)
+    np.testing.assert_array_equal(result.longitude, target_grid.longitude)
 
 
 def test_incompatible_wind_coordinates_raise_before_transform() -> None:
