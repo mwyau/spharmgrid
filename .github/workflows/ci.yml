@@ -61,7 +61,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --extra cf --extra dask --extra netcdf --extra zarr --frozen
+      - run: uv sync --frozen
       - name: Check free-threaded imports independently
         shell: bash
         run: |
@@ -86,13 +86,25 @@ jobs:
           PY
           }
 
+          check_optional() {
+            local group="$1"
+            local requirement="$2"
+            local module="$3"
+            if ! uv pip install "$requirement"; then
+              echo "::warning::$group: $requirement could not be installed on free-threaded Python"
+              return
+            fi
+            check_import "$group" "$module"
+          }
+
           check_import core numpy
           check_import core xarray
           check_import core ducc0
-          check_import cf cf_xarray
-          check_import dask dask
-          check_import netcdf h5netcdf
-          check_import zarr zarr
+          check_optional cf "cf-xarray>=0.10.4" cf_xarray
+          check_optional dask "dask[array]>=2024.1.0" dask
+          check_optional grib "cfgrib>=0.9.15.1" cfgrib
+          check_optional netcdf "h5netcdf>=1.8.0" h5netcdf
+          check_optional zarr "zarr>=3.0.0" zarr
           check_import package spharmgrid
 
   minimum-dependencies:
@@ -108,7 +120,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --group test --extra dask --resolution lowest-direct
+      - run: uv sync --group test --extra cf --extra dask --resolution lowest-direct
       - run: uv run --no-sync pytest
 
   code-quality:
