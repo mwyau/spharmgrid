@@ -33,10 +33,10 @@ See the {doc}`api` reference for direct functions and xarray accessors.
 
 ## NCL grid names
 
-NCL's fixed grid is an equally spaced global latitude--longitude grid. spharmgrid's pole-including Clenshaw--Curtis grid also has equally spaced latitudes, but the transform conventions should be compared explicitly when reproducing NCL results. Gaussian-grid comparisons likewise require matching latitude nodes and spectral conventions.
+NCL's fixed grid is an equally spaced global latitude–longitude grid. spharmgrid's pole-including Clenshaw–Curtis grid also has equally spaced latitudes, but the transform conventions should be compared explicitly when reproducing NCL results. Gaussian-grid comparisons likewise require matching latitude nodes and spectral conventions.
 
 ## Numerical conventions
 
 Reproducing results across packages requires matching the grid definition, normalization, truncation, Earth radius, vector sign conventions, latitude ordering, and treatment of the degree-zero mode.
 
-spharmgrid supports full rectangular Gauss--Legendre (GL) and pole-including Clenshaw--Curtis (CC) grids. See {doc}`grids` for their definitions and {doc}`filtering` for spectral-range conventions.
+spharmgrid supports full rectangular Gauss–Legendre (GL) and pole-including Clenshaw–Curtis (CC) grids. See {doc}`grids` for their definitions and {doc}`filtering` for spectral-range conventions.
