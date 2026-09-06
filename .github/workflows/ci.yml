@@ -88,7 +88,10 @@ jobs:
           save-cache: false
           python-version: "3.14"
       - run: uv sync --no-default-groups --group test --extra cli --frozen
-      - run: uv run --no-sync pytest tests/optional/test_file_backends.py
+      - run: >-
+          uv run --no-sync pytest
+          tests/optional/test_file_backends.py
+          tests/optional/test_cli_file_backends.py
 
   free-threaded:
     name: Free-threaded tests (Python 3.14t)
@@ -148,7 +151,7 @@ jobs:
           save-cache: false
           python-version: "3.12"
       - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
-      - run: uv run --no-sync pytest
+      - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
 
   docs:
     name: Documentation (Python 3.14)
