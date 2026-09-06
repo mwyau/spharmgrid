@@ -33,8 +33,9 @@ including its research-software profile and atmospheric-science guidance.
 Repository-local scientific and API rules in this file take precedence when
 more specific.
 
-Use `spherical harmonic` and `spherical harmonics` without a hyphen, including
-when used attributively (for example, `spherical harmonic transform`).
+Use `spherical harmonic` as a modifier (for example, `spherical harmonic
+transform`). Use `spherical harmonics` only as a plural noun. Never hyphenate
+either form.
 
 Keep atmospheric, mathematical, xarray, CF, and software terminology precise.
 Preserve equations, signs, normalization, grid definitions, radius factors,
