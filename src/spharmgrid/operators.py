@@ -28,7 +28,7 @@ from ._xarray import (
 from .metadata import gradient_metadata, inverse_gradient_metadata, operator_metadata
 from .spectral import scalar_transform, transform_spec
 
-EARTH_RADIUS_M = 6_371_220.0
+EARTH_RADIUS_M = 6_371_220.0  # NCL default Earth radius in metres
 
 
 def gradient(
