@@ -104,7 +104,6 @@ jobs:
           check_import numpy
           check_import xarray
           check_import ducc0
-          check_import spharmgrid
 
   minimum-dependencies:
     name: Minimum direct dependencies
