@@ -58,7 +58,7 @@ filtered = sg.filter(field, "T6-42", taper=0.1)
 regridded = sg.regrid(field, target)
 ```
 
-For atmospheric wind fields, a Dataset with `u` and `v` variables or their exact CF standard names can compute wind diagnostics and inverse transforms:
+For atmospheric wind fields, a Dataset with `u` and `v` variables or their exact CF standard names can compute kinematic quantities and inverse transforms:
 
 ```python
 ds = xr.open_dataset("wind.nc")
@@ -87,7 +87,7 @@ reports how to install the CLI extra when its backends are absent.
 
 `T42` retains total degrees 0 through 42. `T6-42` retains degrees 6 through 42. Filtering uses a hard spectral selection by default. `taper=0.1` applies the Sardeshmukh–Hoskins exponential response with value 0.1 at the upper retained degree.
 
-See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requirements, coordinate handling, CF metadata, wind diagnostics, inverse transforms, zero-mode conventions, and command-line use.
+See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requirements, coordinate handling, CF metadata, atmospheric kinematics, inverse transforms, zero-mode conventions, and command-line use.
 
 ## References
 
