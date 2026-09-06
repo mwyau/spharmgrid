@@ -1,6 +1,6 @@
 # Comparison with related tools
 
-spharmgrid overlaps most directly with [windspharm](https://ajdawson.github.io/windspharm/) and NCL's SPHEREPACK-based spherical-harmonic routines. spharmgrid uses xarray objects and DUCC0 spherical-harmonic transforms.
+spharmgrid overlaps most directly with [windspharm](https://ajdawson.github.io/windspharm/) and NCL's SPHEREPACK-based spherical harmonic routines. spharmgrid uses xarray objects and DUCC0 spherical harmonic transforms.
 
 The table maps current spharmgrid operations to the closest windspharm and NCL counterparts. The numerical conventions are not identical: grids, normalization, truncation, Earth radius, vector conventions, and metadata handling can differ.
 
@@ -8,7 +8,7 @@ For NCL, `F` denotes fixed-grid routines and `G` denotes Gaussian-grid routines.
 
 | Task | spharmgrid | NCL | windspharm |
 | --- | --- | --- | --- |
-| Spectral filtering / truncation | `field.sg.filter("T42")` | spherical-harmonic analysis/synthesis with truncation; `exp_tapersh()` for tapering | `w.truncate(field, truncation=42)` |
+| Spectral filtering / truncation | `field.sg.filter("T42")` | spherical harmonic analysis/synthesis with truncation; `exp_tapersh()` for tapering | `w.truncate(field, truncation=42)` |
 | Scalar spectral regridding | `field.sg.regrid(target_grid)` | `g2gsh*`, `g2fsh*`, `f2gsh*`, `f2fsh*` | — |
 | Vector spectral regridding | `ds.sg.regrid_vector(target_grid)` | `g2gshv*`, `g2fshv*`, `f2gshv*`, `f2fshv*` | — |
 | Scalar gradient | `field.sg.gradient()` | `gradsF`, `gradsG` | `w.gradient(field)` |
