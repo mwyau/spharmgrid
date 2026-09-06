@@ -1,8 +1,8 @@
 # Supported grids and coordinates
 
-spharmgrid supports full rectangular Gauss--Legendre (`"gl"`) and Clenshaw--Curtis (`"cc"`) grids.
+spharmgrid supports full rectangular Gauss–Legendre (`"gl"`) and Clenshaw–Curtis (`"cc"`) grids.
 
-## Gauss--Legendre (GL)
+## Gauss–Legendre (GL)
 
 A GL grid uses Gaussian latitude nodes and equally spaced longitudes on every latitude ring. Latitude nodes are generated from `ducc0.misc.GL_thetas`.
 
@@ -10,7 +10,7 @@ A GL grid uses Gaussian latitude nodes and equally spaced longitudes on every la
 grid = sg.gaussian_grid(64, 128, lon0=0.0, latitude_order="ascending")
 ```
 
-## Clenshaw--Curtis (CC)
+## Clenshaw–Curtis (CC)
 
 A CC grid uses equally spaced latitudes including both poles and equally spaced longitudes.
 
