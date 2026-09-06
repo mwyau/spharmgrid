@@ -17,7 +17,7 @@ S2FFT             JAX/GPU arbitrary-spin implementation
 ```
 
 The atmospheric and spectral mathematics belong to spharmgrid. Backend-specific
-code should be limited to transform primitives, convention/coefficient
+code should be limited to transform integration, convention/coefficient
 translation, supported-grid checks, and framework/device integration.
 
 ## Plan structure
@@ -43,11 +43,16 @@ The implementation is organized into sequential plans:
    - Introduce the smallest backend boundary required by the real DUCC0,
      torch-harmonics, and S2FFT implementations.
    - Keep GL/CC as the grid substrate while backend conventions are established.
+   - Use torch-harmonics as the PyTorch SHT implementation rather than copying
+     or independently reimplementing `RealSHT`/`InverseRealSHT` or vector SHTs.
    - Add torch-harmonics and S2FFT as optional accelerator/differentiable
      engines where their rectangular-grid capabilities are valid.
    - Use tensor-native `spharmgrid.torch` and `spharmgrid.jax` APIs for
      differentiable accelerator work; keep xarray as the scientific
      metadata/file-I/O layer.
+   - Support SFNO interoperability without turning spharmgrid into a full neural
+     operator/model package; use maintained torch-harmonics/neuraloperator/Makani
+     model layers where they already solve that problem.
    - Keep DUCC0 as the default/reference backend.
 
 4. `plans/04-ring-grids.md`
@@ -112,6 +117,12 @@ Keep one scientific definition for spectral masks, operator multipliers,
 zero/null modes, radius factors, and atmospheric sign/component conventions.
 Framework-native Torch/JAX array expressions are acceptable where required for
 differentiability, provided they implement the same tested scientific formula.
+
+For PyTorch, delegate FFT/Legendre/SHT/ISHT and vector-SHT numerics to the
+installed torch-harmonics package. spharmgrid adds grid/capability translation
+and its own deterministic scientific spectral operations on top. Learned SFNO
+spectral convolution is a separate model-layer concern: use maintained
+`SpectralConvS2`/neuraloperator/Makani implementations rather than copying them.
 
 The primary accelerator interfaces are tensor-native:
 
