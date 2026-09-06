@@ -1,6 +1,6 @@
 # Spectral regridding
 
-`regrid()` supports all source-target combinations of Gauss--Legendre (GL) and Clenshaw--Curtis (CC) grids:
+`regrid()` supports all source-target combinations of Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids:
 
 ```text
 GL -> GL    GL -> CC
