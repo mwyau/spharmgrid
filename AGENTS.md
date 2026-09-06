@@ -1,9 +1,8 @@
 # Repository instructions
 
 Keep this file limited to repository-wide invariants, task routing, and change
-control. Detailed procedures belong under `skills/`; implementation plans belong
-under `plans/`; user-facing technical and scientific documentation belongs under
-`docs/`.
+control. Implementation plans belong under `plans/`; user-facing technical and
+scientific documentation belongs under `docs/`.
 
 ## Read first
 
@@ -19,29 +18,27 @@ under `plans/`; user-facing technical and scientific documentation belongs under
   - `plans/03-gpu-backends.md` — current next phase: backend boundary,
     torch-harmonics, and S2FFT.
   - `plans/04-ring-grids.md` — later HEALPix and reduced-Gaussian work.
-- The sibling repository `../PyStormTracker` is an important source reference
-  for behavior extracted into spharmgrid. Read its current implementation when
-  a task depends on that behavior; do not assume an old snippet still matches
-  that checkout.
-- Do not modify `../PyStormTracker` as part of spharmgrid work unless the owner
+- PyStormTracker, NCL/SPHEREPACK, and pyspharm may be useful implementation or
+  parity references when a task explicitly depends on them. Do not treat a
+  sibling checkout as part of spharmgrid's required development environment.
+- Do not modify another repository as part of spharmgrid work unless the owner
   explicitly requests it.
 
-## Route work through the relevant instructions
+## Writing
 
-- **Spherical-harmonic methods, GL/CC grids, filtering, regridding,
-  differential operators, vector transforms, NCL/SPHEREPACK parity,
-  scientific tests, or numerical behavior:** read
-  `skills/scientific-numerics/SKILL.md`.
-- **README, docs, references, API prose, comments, docstrings, scientific or
-  technical explanations:** follow
-  [mwyau/write-like-a-scientist](https://github.com/mwyau/write-like-a-scientist),
-  including its research-software profile and atmospheric-science domain
-  guidance. Repository-local scientific and API rules in this file take
-  precedence when they are more specific.
-- **Sphinx/MyST, Read the Docs, packaging, dependencies, uv, pyproject
-  configuration, lint/type/test tooling, CLI packaging, documentation build
-  configuration, CI, releases, or publishing:** read
-  `skills/repository-engineering/SKILL.md`.
+For README, docs, references, API prose, comments, docstrings, and scientific or
+technical explanations, follow
+[mwyau/write-like-a-scientist](https://github.com/mwyau/write-like-a-scientist),
+including its research-software profile and atmospheric-science guidance.
+Repository-local scientific and API rules in this file take precedence when
+more specific.
+
+Keep atmospheric, mathematical, xarray, CF, and software terminology precise.
+Preserve equations, signs, normalization, grid definitions, radius factors,
+degree-zero conventions, units, and API names when editing prose. Distinguish
+published methods, external implementation behavior, parity results,
+repository-tested behavior, measured validation, and planned work. User
+documentation describes implemented behavior; plans remain under `plans/`.
 
 ## Scientific and API invariants
 
@@ -50,7 +47,7 @@ under `plans/`; user-facing technical and scientific documentation belongs under
   spherical-harmonic transform implementation.
 - `ducc0` supplies the numerical SHT machinery. NCL/SPHEREPACK provide important
   operation semantics and parity references. Published methods remain distinct
-  from NCL behavior, PyStormTracker behavior, and spharmgrid behavior.
+  from external implementation behavior and spharmgrid behavior.
 - The current supported horizontal grids are full Gauss--Legendre (GL) and
   pole-including Clenshaw--Curtis (CC) grids. Do not silently reinterpret another
   latitude-longitude grid as CC.
@@ -59,11 +56,11 @@ under `plans/`; user-facing technical and scientific documentation belongs under
   field.
 - Keep the xarray `.sg` accessor thin. Accessor and direct `spharmgrid` functions
   must use the same numerical implementation.
-- Keep scientific defaults explicit. In particular, spectral tapering is off
-  unless `taper` is supplied.
+- Keep scientific defaults explicit. Spectral tapering is off unless `taper` is
+  supplied.
 - Preserve xarray non-spatial dimensions, CF time/calendar objects, and
   coordinate alignment. spharmgrid does not define its own time representation.
-- Use CF `standard_name` metadata and the documented canonical short names for
+- Use CF `standard_name` metadata and documented canonical short names for
   automatic variable discovery. Do not grow a heuristic alias table without a
   demonstrated interoperability need.
 - Do not invent CF standard names. When no exact standard name exists, use
@@ -80,9 +77,8 @@ under `plans/`; user-facing technical and scientific documentation belongs under
 - Do not replace a named scientific method with an approximation while retaining
   its name.
 - Do not rewrite vector-transform signs, component ordering, normalization,
-  radius factors, or latitude orientation from memory. Trace the current source
-  implementation and verify it with analytic tests and an independent
-  implementation.
+  radius factors, or latitude orientation from memory. Trace the implementation
+  and verify it with analytic tests and an independent implementation.
 - Treat PyStormTracker, NCL/SPHEREPACK, and pyspharm results as identified
   implementation/parity references, not scientific ground truth.
 - Do not claim parity, accuracy, performance, or external validation without
@@ -97,11 +93,7 @@ under `plans/`; user-facing technical and scientific documentation belongs under
 
 - Unit tests should protect a numerical primitive or small API contract using
   deterministic analytic or constructed fields.
-- Parity tests compare against an identified implementation such as
-  SPHEREPACK/pyspharm or the source PyStormTracker behavior.
-- Use independent reference implementations and analytically known fields to
-  validate spherical-harmonic operations with operation-specific, empirically
-  justified numerical tolerances.
+- Parity tests compare against an identified independent implementation.
 - Prefer analytic harmonics, identities, round trips, invariance checks, and
   explicit tolerances over large stored reference arrays.
 - Hold grid, coordinates, normalization, radius, truncation, and comparison
@@ -112,26 +104,49 @@ under `plans/`; user-facing technical and scientific documentation belongs under
   cyclic longitude conventions, leading xarray dimensions, and Dask behavior
   where supported.
 
-## Writing
+## Package and tooling
 
-Follow `mwyau/write-like-a-scientist` for general style. For spharmgrid:
+- `pyproject.toml` is authoritative for package metadata, dependencies, build
+  configuration, and tool configuration. Keep `uv.lock` synchronized.
+- Use the existing Hatchling, uv, Ruff, ty, pytest, Sphinx/MyST, and Read the
+  Docs setup unless a concrete requirement justifies changing a tool.
+- Keep core runtime dependencies small and optional capabilities optional.
+- Keep the wheel limited to `src/spharmgrid`.
+- Keep repository-only material such as `.github/`, `AGENTS.md`, `plans/`, and
+  agent instruction files out of source distributions. Tests and user-facing
+  documentation may remain in the sdist.
+- The production test suite must not require network access or optional parity
+  tooling.
+- Keep DUCC thread control small and explicit; avoid nested oversubscription and
+  unmeasured concurrency abstractions.
+- The CLI must use the same package API as Python callers rather than a separate
+  numerical path.
 
-- Keep atmospheric, mathematical, xarray, CF, and software terminology precise.
-- Preserve equations, signs, normalization, grid definitions, radius factors,
-  degree-zero conventions, units, and API names when editing prose.
-- Distinguish published methods, external implementation behavior, parity
-  results, repository-tested behavior, measured validation, and planned work.
-- User documentation describes implemented behavior. Plans remain under
-  `plans/`.
+## CI and publishing
+
+- CI covers the supported Python/OS matrix, minimum direct dependencies, Ruff,
+  typing, strict documentation, and independent parity. Forward-looking probes
+  may be non-blocking when their failure is understood and reported clearly.
+- `Python Publish` also serves as the package-distribution test workflow. It may
+  run for pull requests and ordinary `main` pushes, but publishing itself is
+  restricted to release tags.
+- Package tests must build both wheel and sdist, install and import the wheel,
+  smoke-test the installed CLI, check distribution metadata strictly, and
+  verify repository-only files do not leak into the sdist.
+- Release tags must match the package version exactly.
+- Development tags such as `.devN` publish to TestPyPI; stable tags publish to
+  PyPI.
+- Use PyPI Trusted Publishing/OIDC. Grant `id-token: write` only to the publish
+  job. Publish the exact distributions produced by the successful package-test
+  job rather than rebuilding them.
+- Keep the trusted publishing workflow filename stable unless the corresponding
+  PyPI/TestPyPI Trusted Publisher configuration is updated.
 
 ## Change control
 
 - Keep changes within the requested scope and preserve unrelated work.
 - Do not build abstractions or extension points for hypothetical future
   features. Add structure when current supported behavior needs it.
-- Release and publishing changes must preserve tested-artifact publishing,
-  tag/version agreement, Trusted Publishing/OIDC, and the separation between
-  TestPyPI prereleases and stable PyPI releases.
 - Do not force-push, reset shared history backwards, or overwrite newer unrelated
   work unless the owner explicitly requests a pre-release history rewrite.
 - Do not commit or push unless the current task explicitly requests it. If
