@@ -5,9 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "spharmgrid"
 version = "0.1.0.dev0"
-description = "Spherical-harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray"
+description = "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [{ name = "Albert Yau" }]
 classifiers = [
