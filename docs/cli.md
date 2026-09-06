@@ -1,7 +1,6 @@
 # Command-line interface
 
-The `spharmgrid` command provides file-based access to filtering, regridding,
-and atmospheric wind diagnostics.
+The `spharmgrid` command applies filtering, regridding, and atmospheric wind diagnostics to files.
 
 Install NetCDF input/output support with:
 
@@ -9,8 +8,7 @@ Install NetCDF input/output support with:
 uv add "spharmgrid[io] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
-Input is read through xarray. Other formats such as Zarr or GRIB can be read
-when the corresponding xarray backend is installed. CLI output is NetCDF.
+Input is read through xarray. Zarr, GRIB, and other formats can be read when the corresponding xarray backend is installed. CLI output is NetCDF.
 
 ```bash
 spharmgrid info input.nc
@@ -28,9 +26,7 @@ spharmgrid kinematics wind.nc kinematics.nc
 spharmgrid potentials wind.nc potentials.nc
 ```
 
-`kinematics` computes relative vorticity and divergence. `potentials` computes
-streamfunction and velocity potential. Pass `--u` and `--v` when the wind
-variable names cannot be identified from CF metadata or canonical short names.
+`kinematics` computes relative vorticity and divergence. `potentials` computes streamfunction and velocity potential. Pass `--u` and `--v` when CF metadata or canonical short names do not identify the wind variables uniquely.
 
 Reconstruct wind from vorticity and divergence with:
 
