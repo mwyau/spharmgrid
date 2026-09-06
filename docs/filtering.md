@@ -24,7 +24,7 @@ l > lmax             zero
 
 With no spectral range and no taper, `filter()` performs analysis and synthesis over the grid's available transform bandwidth.
 
-## Sardeshmukh--Hoskins taper
+## Sardeshmukh–Hoskins taper
 
 Pass a response in `(0, 1]` to apply the exponential taper of Sardeshmukh and Hoskins (1984):
 
