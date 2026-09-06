@@ -19,7 +19,7 @@ env:
 
 jobs:
   code-quality:
-    name: Code quality
+    name: Code quality (Python 3.14)
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -37,7 +37,7 @@ jobs:
       - run: uv run --no-sync ty check
 
   tests:
-    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    name: Tests (${{ matrix.name }}, Python ${{ matrix.python }})
     needs: code-quality
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
@@ -46,14 +46,19 @@ jobs:
       matrix:
         include:
           - os: ubuntu-26.04
+            name: Ubuntu
             python: "3.12"
           - os: ubuntu-26.04
+            name: Ubuntu
             python: "3.13"
           - os: ubuntu-26.04
+            name: Ubuntu
             python: "3.14"
           - os: windows-2025
+            name: Windows
             python: "3.13"
           - os: macos-26
+            name: macOS
             python: "3.14"
     steps:
       - uses: actions/checkout@v7.0.1
@@ -68,7 +73,7 @@ jobs:
       - run: uv run --no-sync pytest
 
   file-backends:
-    name: Optional file backends
+    name: Optional file backends (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -86,7 +91,7 @@ jobs:
       - run: uv run --no-sync pytest tests/optional/test_file_backends.py
 
   free-threaded:
-    name: Free-threaded Python 3.14 compatibility
+    name: Free-threaded compatibility (Python 3.14t)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -128,7 +133,7 @@ jobs:
           check_import ducc0
 
   minimum-dependencies:
-    name: Minimum dependencies
+    name: Minimum dependencies (Python 3.12)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -146,7 +151,7 @@ jobs:
       - run: uv run --no-sync pytest
 
   docs:
-    name: Documentation
+    name: Documentation (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -164,7 +169,7 @@ jobs:
       - run: uv run --no-sync sphinx-build -W --keep-going -b html docs docs/_build/html
 
   parity:
-    name: SPHEREPACK parity
+    name: Parity tests (Python 3.13)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 40
