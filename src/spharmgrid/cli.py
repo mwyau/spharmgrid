@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 import xarray as xr
 
@@ -45,7 +47,7 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     info = subparsers.add_parser("info", help="show detected GL/CC grid information")
-    info.add_argument("input", help="input dataset readable by xarray")
+    info.add_argument("input", help="input readable by an installed xarray backend")
 
     filtered = subparsers.add_parser("filter", help="spectrally filter one variable")
     _input_output_arguments(filtered)
@@ -108,8 +110,8 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("input", help="input dataset readable by xarray")
-    parser.add_argument("output", help="output .nc or .zarr dataset")
+    parser.add_argument("input", help="input readable by an installed xarray backend")
+    parser.add_argument("output", help="output NetCDF file or .zarr store")
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
@@ -124,16 +126,6 @@ def _wind_input_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--u", help="eastward-wind input variable")
     parser.add_argument("--v", help="northward-wind input variable")
     parser.add_argument("--nthreads", type=int, help="DUCC threads per transform")
-
-
-def _is_zarr_path(path: str) -> bool:
-    return path.rstrip("/\\").lower().endswith(".zarr")
-
-
-def _open_dataset(path: str) -> xr.Dataset:
-    if _is_zarr_path(path):
-        return xr.open_zarr(path)
-    return xr.open_dataset(path)
 
 
 def _info(arguments: argparse.Namespace) -> int:
@@ -233,14 +225,23 @@ def _wind(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _is_zarr_path(path: str) -> bool:
+    return Path(path).suffix.lower() == ".zarr"
+
+
+def _open_dataset(path: str) -> xr.Dataset:
+    """Open a dataset through xarray, dispatching Zarr stores by suffix."""
+    if _is_zarr_path(path):
+        return xr.open_zarr(path)
+    return xr.open_dataset(path)
+
+
 def _write_dataset(dataset: xr.Dataset, output: str) -> None:
+    """Write Zarr by suffix and otherwise write NetCDF with an installed engine."""
     if _is_zarr_path(output):
         dataset.to_zarr(output, mode="w")
         return
-    _write_netcdf(dataset, output)
 
-
-def _write_netcdf(dataset: xr.Dataset, output: str) -> None:
     engines = xr.backends.list_engines()
     if "netcdf4" in engines:
         dataset.to_netcdf(output, engine="netcdf4")
