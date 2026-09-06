@@ -8,30 +8,37 @@ Supported grids are full rectangular Gauss–Legendre (GL) and pole-including Cl
 
 ## Install
 
+Install with either pip or uv:
+
 ```bash
 pip install spharmgrid
+```
+
+```bash
 uv add spharmgrid
 ```
 
-The core `spharmgrid` install contains the numerical Python/xarray API.
 Optional capabilities are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
-
-Dask-backed transforms execute lazily. DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid defaults to roughly one concurrent transform per four available CPUs unless `num_workers` is already configured.
 - `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
-For a standalone command-line installation, use the isolated tool environment:
+Dask-backed transforms execute lazily. DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid defaults to roughly one concurrent transform per four available CPUs unless `num_workers` is already configured.
+
+For a standalone command-line installation:
 
 ```bash
 uv tool install "spharmgrid[cli]"
 ```
 
-For a normal project environment, use either:
+For a project environment, install the CLI extra with either:
 
 ```bash
 uv add "spharmgrid[cli]"
+```
+
+```bash
 pip install "spharmgrid[cli]"
 ```
 
@@ -78,12 +85,7 @@ recovered_field = gradient.gradient_eastward.sg.inverse_gradient(
 wind_laplacian = ds.sg.vector_laplacian()
 ```
 
-The command-line interface is an optional file-I/O capability. Install
-`spharmgrid[cli]` for NetCDF and Zarr read/write plus GRIB read support. File
-decoding and encoding use xarray and its installed backend packages; GRIB
-output is not supported. The core-installed `spharmgrid` executable still
-supports `spharmgrid --help` and `spharmgrid --version`; file processing
-reports how to install the CLI extra when its backends are absent.
+The optional CLI reads NetCDF, Zarr, and GRIB and writes NetCDF and Zarr. See the [CLI documentation](https://spharmgrid.readthedocs.io/en/latest/cli.html) for installation and usage.
 
 `inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector harmonic slots to zero. See the operator documentation for these conventions.
 
