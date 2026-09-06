@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.12.10"
+
+jobs:
+  code-quality:
+    name: Code quality (Python 3.14)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+      - run: uv sync --extra cf --extra dask --frozen
+      - run: uv run --no-sync ruff check src tests
+      - run: uv run --no-sync ruff format --check src tests
+      - run: uv run --no-sync ty check
+
+  tests:
+    name: Unit tests (${{ matrix.name }}, Python ${{ matrix.python }})
+    needs: code-quality
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            name: Ubuntu
+            python: "3.12"
+          - os: ubuntu-26.04
+            name: Ubuntu
+            python: "3.13"
+          - os: ubuntu-26.04
+            name: Ubuntu
+            python: "3.14"
+          - os: windows-2025
+            name: Windows
+            python: "3.13"
+          - os: macos-26
+            name: macOS
+            python: "3.14"
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: ${{ matrix.python }}
+      - run: uv sync --no-default-groups --group test --extra cf --extra dask --frozen
+      - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
+
+  file-backends:
+    name: Optional file backends (Python 3.14)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.14"
+      - run: uv sync --no-default-groups --group test --extra cli --frozen
+      - run: >-
+          uv run --no-sync pytest
+          tests/optional/test_file_backends.py
+          tests/optional/test_cli_file_backends.py
+
+  free-threaded:
+    name: Free-threaded tests (Python 3.14t)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14t"
+      - run: uv sync --no-default-groups --frozen
+      - name: Check core free-threaded imports
+        shell: bash
+        run: |
+          check_import() {
+            local module="$1"
+            uv run --no-sync python - "$module" <<'PY'
+          import importlib
+          import sys
+
+          module = sys.argv[1]
+          try:
+              importlib.import_module(module)
+          except Exception as exc:
+              print(f"::warning::{module} failed to import on free-threaded Python: {exc}")
+              raise SystemExit(0)
+
+          gil_enabled = sys._is_gil_enabled()
+          print(f"{module:12}: GIL {'ON' if gil_enabled else 'OFF'}")
+          if gil_enabled:
+              print(f"::warning::{module} enables the GIL on free-threaded Python")
+          PY
+          }
+
+          check_import numpy
+          check_import xarray
+          check_import ducc0
+
+  minimum-dependencies:
+    name: Minimum dependencies (Python 3.12)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.12"
+      - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
+      - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
+
+  docs:
+    name: Documentation (Python 3.14)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.14"
+      - run: uv sync --no-default-groups --group docs --frozen
+      - run: uv run --no-sync sphinx-build -W --keep-going -b html docs docs/_build/html
+
+  parity:
+    name: Parity tests (Python 3.13)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.13"
+      - run: uv sync --no-default-groups --group test --group parity --frozen
+      - run: uv run --no-sync pytest tests/parity
