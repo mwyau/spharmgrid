@@ -35,9 +35,14 @@ import spharmgrid as sg
 ```{eval-rst}
 .. autofunction:: spharmgrid.filter
 
-.. autofunction:: spharmgrid.regrid
+.. py:function:: spharmgrid.regrid(field, target_grid, spectral=None, *, lmin=None, lmax=None, taper=None, nthreads=None)
 
-.. autofunction:: spharmgrid.gradient
+   Spectrally regrid a GL or CC field. A spectral range and taper can be
+   applied during regridding.
+
+.. py:function:: spharmgrid.gradient(field, *, eastward="gradient_eastward", northward="gradient_northward", radius=EARTH_RADIUS_M, nthreads=None)
+
+   Compute the physical eastward and northward horizontal gradient.
 
 .. autofunction:: spharmgrid.laplacian
 
@@ -51,13 +56,17 @@ import spharmgrid as sg
 
 .. autofunction:: spharmgrid.divergence
 
-.. autofunction:: spharmgrid.kinematics
+.. py:function:: spharmgrid.kinematics(u, v, *, vorticity="vo", divergence="d", radius=EARTH_RADIUS_M, nthreads=None)
+
+   Compute relative vorticity and horizontal divergence.
 
 .. autofunction:: spharmgrid.streamfunction
 
 .. autofunction:: spharmgrid.velocity_potential
 
-.. autofunction:: spharmgrid.potentials
+.. py:function:: spharmgrid.potentials(u, v, *, streamfunction="strf", velocity_potential="vp", radius=EARTH_RADIUS_M, nthreads=None)
+
+   Compute streamfunction and velocity potential.
 
 .. autofunction:: spharmgrid.rotational_wind
 
