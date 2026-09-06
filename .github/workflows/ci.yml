@@ -45,7 +45,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --group dev --extra cf --extra dask --frozen
+      - run: uv sync --extra cf --extra dask --frozen
       - run: uv run --no-sync pytest
 
   free-threaded:
@@ -61,7 +61,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --frozen
+      - run: uv sync --no-default-groups --frozen
       - name: Check free-threaded imports independently
         shell: bash
         run: |
@@ -120,7 +120,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --group test --extra cf --extra dask --resolution lowest-direct
+      - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
       - run: uv run --no-sync pytest
 
   code-quality:
@@ -136,7 +136,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - run: uv sync --group dev --extra cf --extra dask --frozen
+      - run: uv sync --extra cf --extra dask --frozen
       - run: uv run --no-sync ruff check src tests
       - run: uv run --no-sync ruff format --check src tests
       - run: uv run --no-sync ty check
@@ -154,7 +154,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - run: uv sync --group docs --frozen
+      - run: uv sync --no-default-groups --group docs --frozen
       - run: uv run --no-sync sphinx-build -W --keep-going -b html docs docs/_build/html
 
   parity:
@@ -170,5 +170,5 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.13"
-      - run: uv sync --group test --group parity --extra dask --frozen
+      - run: uv sync --no-default-groups --group test --group parity --extra dask --frozen
       - run: uv run --no-sync pytest tests/parity
