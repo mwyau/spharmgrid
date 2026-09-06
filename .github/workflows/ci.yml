@@ -46,7 +46,7 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - run: uv sync --group dev --all-extras --frozen
-      - run: uv run --no-sync pytest -s
+      - run: uv run --no-sync pytest
 
   minimum-dependencies:
     name: Minimum direct dependencies
@@ -62,7 +62,7 @@ jobs:
           enable-cache: true
           python-version: "3.12"
       - run: uv sync --group test --all-extras --resolution lowest-direct
-      - run: uv run --no-sync pytest -s
+      - run: uv run --no-sync pytest
 
   code-quality:
     name: Code quality
@@ -112,7 +112,7 @@ jobs:
           enable-cache: true
           python-version: "3.13"
       - run: uv sync --group test --group parity --all-extras --frozen
-      - run: uv run --no-sync pytest -s tests/parity
+      - run: uv run --no-sync pytest tests/parity
 
   package:
     name: Package distributions
