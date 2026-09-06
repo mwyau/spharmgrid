@@ -35,7 +35,7 @@ Optional groups are:
 - `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
-Dask-backed transforms execute lazily. DUCC uses four threads per transform. For the local Dask scheduler, spharmgrid sets `num_workers=max(1, os.cpu_count() // 4)` unless `num_workers` is configured.
+Without Dask installed, spharmgrid lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid sets `num_workers=max(1, os.cpu_count() // 4)` unless `num_workers` is configured.
 
 For a standalone command-line installation:
 

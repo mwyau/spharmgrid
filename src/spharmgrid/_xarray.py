@@ -9,7 +9,7 @@ from typing import Literal, NotRequired, TypedDict
 
 import xarray as xr
 
-from ._ducc import DUCC_THREADS
+from ._ducc import DASK_DUCC_THREADS
 from .grids import (
     Grid,
     GridLayout,
@@ -177,7 +177,7 @@ def _configure_local_dask_workers() -> None:
     if dask.config.get("num_workers", default=None) is not None:
         return
     available_cpus = os.cpu_count() or 1
-    dask.config.set(num_workers=max(1, available_cpus // DUCC_THREADS))
+    dask.config.set(num_workers=max(1, available_cpus // DASK_DUCC_THREADS))
 
 
 def restore_output(

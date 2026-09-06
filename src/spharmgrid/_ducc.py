@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cache
+from importlib.util import find_spec
 from typing import Literal, cast
 
 import numpy as np
@@ -13,7 +14,8 @@ from .grids import Grid
 
 Geometry = Literal["CC", "GL"]
 
-DUCC_THREADS = 4
+DASK_DUCC_THREADS = 4
+DUCC_THREADS = DASK_DUCC_THREADS if find_spec("dask") is not None else 0
 
 
 @dataclass(frozen=True, slots=True)
