@@ -84,7 +84,6 @@ class DataArrayAccessor:
         lmin: int | None = None,
         lmax: int | None = None,
         taper: float | None = None,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Filter this field by total wavenumber."""
         return calculate_filter(
@@ -93,7 +92,6 @@ class DataArrayAccessor:
             lmin=lmin,
             lmax=lmax,
             taper=taper,
-            nthreads=nthreads,
         )
 
     def regrid(
@@ -104,7 +102,6 @@ class DataArrayAccessor:
         lmin: int | None = None,
         lmax: int | None = None,
         taper: float | None = None,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Regrid this field, optionally filtering in the same transform cycle."""
         return calculate_regrid(
@@ -114,7 +111,6 @@ class DataArrayAccessor:
             lmin=lmin,
             lmax=lmax,
             taper=taper,
-            nthreads=nthreads,
         )
 
     def regrid_vector(
@@ -128,7 +124,6 @@ class DataArrayAccessor:
         taper: float | None = None,
         eastward: str = "u",
         northward: str = "v",
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Regrid this eastward component and ``v`` through one vector SHT."""
         return calculate_regrid_vector(
@@ -141,7 +136,6 @@ class DataArrayAccessor:
             taper=taper,
             eastward=eastward,
             northward=northward,
-            nthreads=nthreads,
         )
 
     def gradient(
@@ -150,7 +144,6 @@ class DataArrayAccessor:
         eastward: str = "gradient_eastward",
         northward: str = "gradient_northward",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Compute this scalar field's physical horizontal gradient."""
         return calculate_gradient(
@@ -158,20 +151,15 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
-    def laplacian(
-        self, *, radius: float = EARTH_RADIUS_M, nthreads: int | None = None
-    ) -> xr.DataArray:
+    def laplacian(self, *, radius: float = EARTH_RADIUS_M) -> xr.DataArray:
         """Compute this scalar field's physical spherical Laplacian."""
-        return calculate_laplacian(self._obj, radius=radius, nthreads=nthreads)
+        return calculate_laplacian(self._obj, radius=radius)
 
-    def inverse_laplacian(
-        self, *, radius: float = EARTH_RADIUS_M, nthreads: int | None = None
-    ) -> xr.DataArray:
+    def inverse_laplacian(self, *, radius: float = EARTH_RADIUS_M) -> xr.DataArray:
         """Compute this field's zero-mean inverse spherical Laplacian."""
-        return calculate_inverse_laplacian(self._obj, radius=radius, nthreads=nthreads)
+        return calculate_inverse_laplacian(self._obj, radius=radius)
 
     def inverse_gradient(
         self,
@@ -179,7 +167,6 @@ class DataArrayAccessor:
         *,
         output: str | None = None,
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Treat this field as eastward gradient and recover its scalar potential."""
         return calculate_inverse_gradient(
@@ -187,7 +174,6 @@ class DataArrayAccessor:
             northward,
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def vorticity(
@@ -196,12 +182,9 @@ class DataArrayAccessor:
         *,
         output: str = "vo",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Treat this field as eastward wind and compute relative vorticity."""
-        return calculate_vorticity(
-            self._obj, v, output=output, radius=radius, nthreads=nthreads
-        )
+        return calculate_vorticity(self._obj, v, output=output, radius=radius)
 
     def divergence(
         self,
@@ -209,12 +192,9 @@ class DataArrayAccessor:
         *,
         output: str = "d",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Treat this field as eastward wind and compute divergence."""
-        return calculate_divergence(
-            self._obj, v, output=output, radius=radius, nthreads=nthreads
-        )
+        return calculate_divergence(self._obj, v, output=output, radius=radius)
 
     def kinematics(
         self,
@@ -223,7 +203,6 @@ class DataArrayAccessor:
         vorticity: str = "vo",
         divergence: str = "d",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Treat this field as eastward wind and compute both diagnostics."""
         return calculate_kinematics(
@@ -232,7 +211,6 @@ class DataArrayAccessor:
             vorticity=vorticity,
             divergence=divergence,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def streamfunction(
@@ -241,12 +219,9 @@ class DataArrayAccessor:
         *,
         output: str = "strf",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Treat this field as eastward wind and calculate streamfunction."""
-        return calculate_streamfunction(
-            self._obj, v, output=output, radius=radius, nthreads=nthreads
-        )
+        return calculate_streamfunction(self._obj, v, output=output, radius=radius)
 
     def velocity_potential(
         self,
@@ -254,12 +229,9 @@ class DataArrayAccessor:
         *,
         output: str = "vp",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Treat this field as eastward wind and calculate velocity potential."""
-        return calculate_velocity_potential(
-            self._obj, v, output=output, radius=radius, nthreads=nthreads
-        )
+        return calculate_velocity_potential(self._obj, v, output=output, radius=radius)
 
     def potentials(
         self,
@@ -268,7 +240,6 @@ class DataArrayAccessor:
         streamfunction: str = "strf",
         velocity_potential: str = "vp",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Treat this field as eastward wind and calculate both potentials."""
         return calculate_potentials(
@@ -277,7 +248,6 @@ class DataArrayAccessor:
             streamfunction=streamfunction,
             velocity_potential=velocity_potential,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def helmholtz(
@@ -289,7 +259,6 @@ class DataArrayAccessor:
         rotational_eastward: str = "u_rotational",
         rotational_northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Split this eastward wind and ``v`` into divergent and rotational wind."""
         return calculate_helmholtz(
@@ -300,7 +269,6 @@ class DataArrayAccessor:
             rotational_eastward=rotational_eastward,
             rotational_northward=rotational_northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def vector_laplacian(
@@ -310,7 +278,6 @@ class DataArrayAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Apply the vector Laplacian to this eastward component and ``v``."""
         return calculate_vector_laplacian(
@@ -319,7 +286,6 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def inverse_vector_laplacian(
@@ -329,7 +295,6 @@ class DataArrayAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Apply the zero-mode-defined inverse vector Laplacian to this vector."""
         return calculate_inverse_vector_laplacian(
@@ -338,7 +303,6 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def rotational_wind(
@@ -348,7 +312,6 @@ class DataArrayAccessor:
         eastward: str = "u_rotational",
         northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Recover rotational wind from this vorticity or streamfunction field."""
         return calculate_rotational_wind(
@@ -357,7 +320,6 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def divergent_wind(
@@ -367,7 +329,6 @@ class DataArrayAccessor:
         eastward: str = "u_divergent",
         northward: str = "v_divergent",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Recover divergent wind from this divergence or potential field."""
         return calculate_divergent_wind(
@@ -376,7 +337,6 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def wind(
@@ -387,7 +347,6 @@ class DataArrayAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Reconstruct wind using this field as the first scalar source."""
         return calculate_wind(
@@ -397,7 +356,6 @@ class DataArrayAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
 
@@ -434,7 +392,6 @@ class DatasetAccessor:
         taper: float | None = None,
         eastward: str = "u",
         northward: str = "v",
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and spectrally regrid them as one vector field."""
         return calculate_regrid_vector(
@@ -447,7 +404,6 @@ class DatasetAccessor:
             taper=taper,
             eastward=eastward,
             northward=northward,
-            nthreads=nthreads,
         )
 
     def inverse_gradient(
@@ -457,7 +413,6 @@ class DatasetAccessor:
         northward: str = "gradient_northward",
         output: str | None = None,
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Recover a scalar potential from named horizontal-gradient components."""
         if eastward not in self._obj.data_vars or northward not in self._obj.data_vars:
@@ -470,7 +425,6 @@ class DatasetAccessor:
             self._obj[northward],
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def vorticity(
@@ -480,7 +434,6 @@ class DatasetAccessor:
         v: str | None = None,
         output: str = "vo",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Find wind components and compute relative vorticity."""
         return calculate_vorticity(
@@ -488,7 +441,6 @@ class DatasetAccessor:
             find_variable(self._obj, "v", v),
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def divergence(
@@ -498,7 +450,6 @@ class DatasetAccessor:
         v: str | None = None,
         output: str = "d",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Find wind components and compute divergence."""
         return calculate_divergence(
@@ -506,7 +457,6 @@ class DatasetAccessor:
             find_variable(self._obj, "v", v),
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def kinematics(
@@ -517,7 +467,6 @@ class DatasetAccessor:
         vorticity: str = "vo",
         divergence: str = "d",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and compute vorticity plus divergence."""
         return calculate_kinematics(
@@ -526,7 +475,6 @@ class DatasetAccessor:
             vorticity=vorticity,
             divergence=divergence,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def streamfunction(
@@ -536,7 +484,6 @@ class DatasetAccessor:
         v: str | None = None,
         output: str = "strf",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Find wind components and compute streamfunction."""
         return calculate_streamfunction(
@@ -544,7 +491,6 @@ class DatasetAccessor:
             find_variable(self._obj, "v", v),
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def velocity_potential(
@@ -554,7 +500,6 @@ class DatasetAccessor:
         v: str | None = None,
         output: str = "vp",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.DataArray:
         """Find wind components and compute velocity potential."""
         return calculate_velocity_potential(
@@ -562,7 +507,6 @@ class DatasetAccessor:
             find_variable(self._obj, "v", v),
             output=output,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def potentials(
@@ -573,7 +517,6 @@ class DatasetAccessor:
         streamfunction: str = "strf",
         velocity_potential: str = "vp",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and compute both scalar potentials."""
         return calculate_potentials(
@@ -582,7 +525,6 @@ class DatasetAccessor:
             streamfunction=streamfunction,
             velocity_potential=velocity_potential,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def helmholtz(
@@ -595,7 +537,6 @@ class DatasetAccessor:
         rotational_eastward: str = "u_rotational",
         rotational_northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and split them into divergent and rotational wind."""
         return calculate_helmholtz(
@@ -606,7 +547,6 @@ class DatasetAccessor:
             rotational_eastward=rotational_eastward,
             rotational_northward=rotational_northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def vector_laplacian(
@@ -617,7 +557,6 @@ class DatasetAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and apply the vector Laplacian."""
         return calculate_vector_laplacian(
@@ -626,7 +565,6 @@ class DatasetAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def inverse_vector_laplacian(
@@ -637,7 +575,6 @@ class DatasetAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find wind components and apply the inverse vector Laplacian."""
         return calculate_inverse_vector_laplacian(
@@ -646,7 +583,6 @@ class DatasetAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def rotational_wind(
@@ -657,7 +593,6 @@ class DatasetAccessor:
         eastward: str = "u_rotational",
         northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find a vorticity or streamfunction field and recover rotational wind."""
         selected, inferred = _find_single_source(
@@ -673,7 +608,6 @@ class DatasetAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def divergent_wind(
@@ -684,7 +618,6 @@ class DatasetAccessor:
         eastward: str = "u_divergent",
         northward: str = "v_divergent",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Find divergence or velocity potential and recover divergent wind."""
         selected, inferred = _find_single_source(
@@ -700,7 +633,6 @@ class DatasetAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
     def wind(
@@ -714,7 +646,6 @@ class DatasetAccessor:
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
-        nthreads: int | None = None,
     ) -> xr.Dataset:
         """Reconstruct wind from the Dataset's one complete scalar representation."""
         resolved = _resolve_dataset_wind_source(
@@ -732,7 +663,6 @@ class DatasetAccessor:
             eastward=eastward,
             northward=northward,
             radius=radius,
-            nthreads=nthreads,
         )
 
 

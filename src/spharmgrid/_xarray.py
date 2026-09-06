@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Hashable
 from dataclasses import dataclass
 from typing import Any, Literal, NotRequired, TypedDict, TypeVar
 
 import xarray as xr
 
+from ._ducc import DUCC_THREADS
 from .grids import (
     Grid,
     GridLayout,
@@ -161,12 +163,23 @@ def apply_ufunc_options(
     """Return Dask options that keep horizontal transforms lazy when possible."""
     if field.chunks is None:
         return {"dask": "forbidden"}
+    _configure_local_dask_workers()
     # xarray's public ``dask_gufunc_kwargs`` annotation accepts
     # heterogeneous values. Keep that third-party boundary localized here.
     gufunc_kwargs: dict[str, Any] = {"allow_rechunk": True}
     if output_sizes is not None:
         gufunc_kwargs["output_sizes"] = output_sizes
     return {"dask": "parallelized", "dask_gufunc_kwargs": gufunc_kwargs}
+
+
+def _configure_local_dask_workers() -> None:
+    """Limit default local Dask parallelism for internally threaded DUCC tasks."""
+    import dask
+
+    if dask.config.get("num_workers", default=None) is not None:
+        return
+    available_cpus = os.cpu_count() or 1
+    dask.config.set(num_workers=max(1, available_cpus // DUCC_THREADS))
 
 
 def restore_output(
@@ -191,17 +204,6 @@ def restore_output(
             "target horizontal dimensions conflict with a non-spatial input dimension"
         )
     return output.transpose(*desired_dims)
-
-
-def resolve_nthreads(nthreads: int | None, *, dask_backed: bool) -> int:
-    """Resolve DUCC threads while avoiding default nested parallelism under Dask."""
-    if nthreads is None:
-        # Let eager transforms use DUCC's all-thread mode, but keep each Dask
-        # task single-threaded so parallel tasks do not oversubscribe the host.
-        return 1 if dask_backed else 0
-    if isinstance(nthreads, bool) or not isinstance(nthreads, int) or nthreads < 0:
-        raise ValueError("nthreads must be a non-negative integer or None")
-    return nthreads
 
 
 def require_dataarray(field: xr.DataArray, name: str = "field") -> xr.DataArray:

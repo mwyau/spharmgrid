@@ -35,7 +35,6 @@ def regrid(
     lmin: int | None = None,
     lmax: int | None = None,
     taper: float | None = None,
-    nthreads: int | None = None,
 ) -> xr.DataArray:
     """Spectrally regrid a GL or CC field, optionally filtering in one cycle.
 
@@ -51,13 +50,12 @@ def regrid(
     retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
 
-    def transform(frame: NDArray[np.generic], threads: int) -> NDArray[np.float64]:
+    def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
             frame,
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         if selection is not None or taper is not None:
             alm = apply_spectral_selection(alm, spec, retained, taper)
@@ -68,10 +66,9 @@ def regrid(
             ntheta=target.grid.nlat,
             nphi=target.grid.nlon,
             phi0=target.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
-    result = scalar_transform(field, source, target, transform, nthreads=nthreads)
+    result = scalar_transform(field, source, target, transform)
     return preserve_quantity_metadata(result, field)
 
 
@@ -86,7 +83,6 @@ def regrid_vector(
     taper: float | None = None,
     eastward: str = "u",
     northward: str = "v",
-    nthreads: int | None = None,
 ) -> xr.Dataset:
     """Spectrally regrid geographic vector components in one spin-1 cycle.
 
@@ -108,7 +104,7 @@ def regrid_vector(
     _validate_taper(taper)
 
     def transform(
-        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic], threads: int
+        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         alm = vector_analysis(
             frame_u,
@@ -116,7 +112,6 @@ def regrid_vector(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         if selection is not None or taper is not None:
             alm = apply_spectral_selection(alm, spec, retained, taper)
@@ -128,7 +123,6 @@ def regrid_vector(
             ntheta=target.grid.nlat,
             nphi=target.grid.nlon,
             phi0=target.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
     output_u, output_v = vector_pair_transform(
@@ -138,7 +132,6 @@ def regrid_vector(
         canonical_u,
         canonical_v,
         transform,
-        nthreads=nthreads,
     )
     output_u = _preserve_component_metadata(output_u, u, eastward)
     output_v = _preserve_component_metadata(output_v, v, northward)

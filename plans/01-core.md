@@ -297,9 +297,7 @@ representation; spharmgrid does not convert or normalize time.
 Dask remains optional. Dask-backed xarray inputs should remain lazy through the
 horizontal transform graph. Do not introduce a spharmgrid backend selector.
 
-`nthreads` is the only DUCC execution control. With Dask-backed input and no
-explicit value, use one DUCC thread per task to avoid nested oversubscription.
-Do not add thread/process pools around DUCC without measured need.
+DUCC uses four threads per transform internally. For Dask-backed arrays, the default local scheduler worker count is `max(1, os.cpu_count() // 4)` unless the application already configured `num_workers`. Do not expose backend thread tuning in the public API.
 
 ---
 

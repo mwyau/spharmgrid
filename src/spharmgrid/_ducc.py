@@ -13,6 +13,8 @@ from .grids import Grid
 
 Geometry = Literal["CC", "GL"]
 
+DUCC_THREADS = 4
+
 
 @dataclass(frozen=True, slots=True)
 class TransformSpec:
@@ -47,7 +49,6 @@ def scalar_analysis(
     spec: TransformSpec,
     geometry: Geometry,
     phi0: float,
-    nthreads: int,
 ) -> NDArray[np.complex128]:
     """Analyze one north-to-south, cyclic-eastward scalar map."""
     _require_frame(frame)
@@ -61,7 +62,7 @@ def scalar_analysis(
         mmax=spec.mmax,
         geometry=geometry,
         phi0=phi0,
-        nthreads=nthreads,
+        nthreads=DUCC_THREADS,
     )
     return cast(NDArray[np.complex128], result)
 
@@ -74,7 +75,6 @@ def scalar_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
-    nthreads: int,
 ) -> NDArray[np.float64]:
     """Synthesize one scalar map on a north-to-south DUCC geometry."""
     import ducc0
@@ -89,7 +89,7 @@ def scalar_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=nthreads,
+        nthreads=DUCC_THREADS,
     )
     return cast(NDArray[np.float64], result[0])
 
@@ -102,7 +102,6 @@ def scalar_derivative_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
-    nthreads: int,
 ) -> NDArray[np.float64]:
     """Synthesize theta and eastward angular derivatives of a scalar field.
 
@@ -121,7 +120,7 @@ def scalar_derivative_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=nthreads,
+        nthreads=DUCC_THREADS,
         mode="DERIV1",
     )
     return cast(NDArray[np.float64], result)
@@ -134,7 +133,6 @@ def vector_analysis(
     spec: TransformSpec,
     geometry: Geometry,
     phi0: float,
-    nthreads: int,
 ) -> NDArray[np.complex128]:
     """Analyze geographic eastward/northward wind into DUCC E/B coefficients.
 
@@ -160,7 +158,7 @@ def vector_analysis(
         mmax=spec.mmax,
         geometry=geometry,
         phi0=phi0,
-        nthreads=nthreads,
+        nthreads=DUCC_THREADS,
     )
     return cast(NDArray[np.complex128], result)
 
@@ -174,7 +172,6 @@ def vector_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
-    nthreads: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Synthesize DUCC E/B coefficients into geographic eastward/northward wind."""
     import ducc0
@@ -189,7 +186,7 @@ def vector_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=nthreads,
+        nthreads=DUCC_THREADS,
     )
     # This is the inverse of ``(-v, u)`` in ``vector_analysis``.
     return (
