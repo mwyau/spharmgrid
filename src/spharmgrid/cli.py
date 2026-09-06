@@ -61,7 +61,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="spharmgrid",
         description=(
-            "DUCC0-backed spherical-harmonic operations for xarray files. "
+            "DUCC-backed spherical-harmonic operations for xarray files. "
             "CLI I/O supports NetCDF and Zarr read/write plus GRIB input."
         ),
     )
@@ -147,7 +147,7 @@ def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--spectral", help="Tn or Tn-m retained range")
+    parser.add_argument("--truncation", help="Tn or Tn-m retained range")
     parser.add_argument("--lmin", type=int, help="explicit lower retained degree")
     parser.add_argument("--lmax", type=int, help="explicit upper retained degree")
     parser.add_argument("--taper", type=float, help="response at upper retained degree")
@@ -174,7 +174,7 @@ def _filter(arguments: argparse.Namespace) -> int:
         field = _select_variable(dataset, arguments.var)
         result = filter(
             field,
-            arguments.spectral,
+            arguments.truncation,
             lmin=arguments.lmin,
             lmax=arguments.lmax,
             taper=arguments.taper,
@@ -199,7 +199,7 @@ def _regrid(arguments: argparse.Namespace) -> int:
         result = regrid(
             field,
             target,
-            arguments.spectral,
+            arguments.truncation,
             lmin=arguments.lmin,
             lmax=arguments.lmax,
             taper=arguments.taper,
