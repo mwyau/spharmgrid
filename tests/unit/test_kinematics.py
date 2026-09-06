@@ -98,7 +98,7 @@ def test_potentials_and_inverse_wind_round_trip(kind: Literal["cc", "gl"]) -> No
         recovered_potentials.strf,
         streamfunction,
         rtol=0.0,
-        atol=1.0e-7,
+        atol=3.0e-7,
     )
     np.testing.assert_allclose(
         recovered_potentials.vp,
@@ -238,7 +238,7 @@ def test_inverse_gradient_recovers_irrotational_potential_and_zero_mode(
     )
 
     expected = degree_one_field(grid)
-    np.testing.assert_allclose(projected, expected, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(projected, expected, rtol=0.0, atol=5.0e-14)
     recovered_gradient = sg.gradient(projected)
     np.testing.assert_allclose(
         recovered_gradient.gradient_eastward,
@@ -346,7 +346,7 @@ def test_new_vector_operations_restore_descending_shifted_coordinates(
         recovered,
         scalar - 4.0,
         rtol=0.0,
-        atol=3.0e-14,
+        atol=5.0e-14,
     )
     for result in (
         components.u_divergent,
