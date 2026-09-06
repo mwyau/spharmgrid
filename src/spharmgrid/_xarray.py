@@ -194,18 +194,13 @@ def restore_output(
 
 
 def resolve_nthreads(nthreads: int | None, *, dask_backed: bool) -> int:
-    """Resolve DUCC threads, avoiding nested default parallelism under Dask."""
+    """Resolve DUCC threads while avoiding default nested parallelism under Dask."""
     if nthreads is None:
-        # DUCC's Python SHT functions currently default to one thread.  Keep
-        # that documented default for eager calls and use the same safe choice
-        # for independent Dask tasks.
-        return 1
+        # Let eager transforms use DUCC's all-thread mode, but keep each Dask
+        # task single-threaded so parallel tasks do not oversubscribe the host.
+        return 1 if dask_backed else 0
     if isinstance(nthreads, bool) or not isinstance(nthreads, int) or nthreads < 0:
         raise ValueError("nthreads must be a non-negative integer or None")
-    if dask_backed and nthreads == 0:
-        # Explicit zero is DUCC's documented request for all available threads;
-        # honor it because the caller has made that oversubscription choice.
-        return 0
     return nthreads
 
 
