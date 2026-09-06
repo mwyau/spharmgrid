@@ -8,11 +8,6 @@ authors:
     given-names: Albert M. W.
     orcid: "https://orcid.org/0009-0000-7825-9627"
 
-identifiers:
-  - type: doi
-    value: "10.5281/zenodo.22546616"
-    description: "Zenodo DOI for all versions of spharmgrid."
-
 repository-code: "https://github.com/mwyau/spharmgrid"
 url: "https://spharmgrid.readthedocs.io/"
 license: BSD-3-Clause
