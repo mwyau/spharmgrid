@@ -1,0 +1,21 @@
+[project]
+name = "spharmgrid-interactive-example"
+version = "0.0.0"
+description = "Self-contained interactive ERA5 example for spharmgrid"
+requires-python = ">=3.12"
+dependencies = [
+    "cartopy",
+    "geoviews",
+    "h5netcdf[h5py]",
+    "holoviews",
+    "jupyterlab",
+    "panel",
+    "pooch",
+    "spharmgrid",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+spharmgrid = { path = "../..", editable = true }
