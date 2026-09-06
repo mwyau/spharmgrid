@@ -12,12 +12,11 @@ Supported grids are full rectangular Gauss--Legendre (GL) and pole-including Cle
 uv add git+https://github.com/mwyau/spharmgrid.git
 ```
 
-Optional integrations can be installed separately:
+NetCDF support is included in the base install. Optional integrations can be installed separately:
 
 ```bash
 uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
 uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
-uv add "spharmgrid[netcdf] @ git+https://github.com/mwyau/spharmgrid.git"
 uv add "spharmgrid[zarr] @ git+https://github.com/mwyau/spharmgrid.git"
 uv add "spharmgrid[grib] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
@@ -65,7 +64,7 @@ recovered_field = gradient.gradient_eastward.sg.inverse_gradient(
 wind_laplacian = ds.sg.vector_laplacian()
 ```
 
-The command-line interface delegates file decoding to xarray. NetCDF and Zarr output are supported when their optional backends are installed; GRIB input is available through the optional `grib` extra.
+The command-line interface delegates file decoding to xarray. NetCDF input/output works in the base install. Zarr input/output and GRIB input are available through the optional `zarr` and `grib` extras.
 
 `inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector-harmonic slots to zero. See the operator documentation for these conventions.
 
