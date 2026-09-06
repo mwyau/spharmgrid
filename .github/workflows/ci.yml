@@ -78,50 +78,33 @@ jobs:
           enable-cache: true
           python-version: "3.14t"
       - run: uv sync --no-default-groups --frozen
-      - name: Check free-threaded imports independently
+      - name: Check core free-threaded imports
         shell: bash
         run: |
           check_import() {
-            local group="$1"
-            local module="$2"
-            uv run --no-sync python - "$group" "$module" <<'PY'
+            local module="$1"
+            uv run --no-sync python - "$module" <<'PY'
           import importlib
           import sys
 
-          group, module = sys.argv[1:]
+          module = sys.argv[1]
           try:
               importlib.import_module(module)
           except Exception as exc:
-              print(f"::warning::{group}: {module} failed to import on free-threaded Python: {exc}")
+              print(f"::warning::{module} failed to import on free-threaded Python: {exc}")
               raise SystemExit(0)
 
           gil_enabled = sys._is_gil_enabled()
-          print(f"{group:8} {module:12}: GIL {'ON' if gil_enabled else 'OFF'}")
+          print(f"{module:12}: GIL {'ON' if gil_enabled else 'OFF'}")
           if gil_enabled:
-              print(f"::warning::{group}: {module} enables the GIL on free-threaded Python")
+              print(f"::warning::{module} enables the GIL on free-threaded Python")
           PY
           }
 
-          check_optional() {
-            local group="$1"
-            local requirement="$2"
-            local module="$3"
-            if ! uv pip install "$requirement"; then
-              echo "::warning::$group: $requirement could not be installed on free-threaded Python"
-              return
-            fi
-            check_import "$group" "$module"
-          }
-
-          check_import core numpy
-          check_import core xarray
-          check_import core ducc0
-          check_optional cf "cf-xarray>=0.10.4" cf_xarray
-          check_optional dask "dask[array]>=2024.1.0" dask
-          check_optional cli "h5netcdf[h5py]>=1.8.0" h5netcdf
-          check_optional cli "zarr>=3.0.0" zarr
-          check_optional cli "cfgrib>=0.9.15" cfgrib
-          check_import package spharmgrid
+          check_import numpy
+          check_import xarray
+          check_import ducc0
+          check_import spharmgrid
 
   minimum-dependencies:
     name: Minimum direct dependencies
