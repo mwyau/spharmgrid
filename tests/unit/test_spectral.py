@@ -264,9 +264,7 @@ def test_inverse_laplacian_uses_zero_mean_solution(kind: Literal["cc", "gl"]) ->
     inverse = sg.inverse_laplacian(field)
     restored = sg.laplacian(inverse)
 
-    np.testing.assert_allclose(
-        restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12
-    )
+    np.testing.assert_allclose(restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12)
 
 
 def test_scalar_laplacian_units_simplify_operator_chains() -> None:
