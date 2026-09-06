@@ -4,6 +4,7 @@
 [![Documentation Status](https://readthedocs.org/projects/spharmgrid/badge/?version=latest)](https://spharmgrid.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://img.shields.io/pypi/v/spharmgrid)](https://pypi.org/project/spharmgrid/)
 [![PyPI Python Version](https://img.shields.io/pypi/pyversions/spharmgrid)](https://pypi.org/project/spharmgrid/)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/spharmgrid)](https://anaconda.org/channels/conda-forge/packages/spharmgrid/overview)
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22546616-blue.svg)](https://doi.org/10.5281/zenodo.22546616)
 
@@ -15,7 +16,7 @@ Supported grids are full rectangular Gauss–Legendre (GL) and pole-including Cl
 
 ## Install
 
-Install with either pip or uv:
+Install with either `pip`, `uv`, or `conda`:
 
 ```bash
 pip install spharmgrid
@@ -23,6 +24,10 @@ pip install spharmgrid
 
 ```bash
 uv add spharmgrid
+```
+
+```bash
+conda install -c conda-forge spharmgrid
 ```
 
 Optional groups are:
