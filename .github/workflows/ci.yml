@@ -152,17 +152,3 @@ jobs:
           python-version: "3.13"
       - run: uv sync --group test --group parity --all-extras --frozen
       - run: uv run --no-sync pytest tests/parity
-
-  release:
-    name: Release
-    if: github.ref_type == 'tag'
-    needs: [tests, minimum-dependencies, code-quality, docs, parity]
-    uses: ./.github/workflows/python-publish.yml
-    with:
-      source_sha: ${{ github.sha }}
-      source_tag: ${{ github.ref_name }}
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
-      attestations: write
