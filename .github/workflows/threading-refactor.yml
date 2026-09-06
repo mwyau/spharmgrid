@@ -1,0 +1,17 @@
+name: Threading refactor
+
+on:
+  push:
+    branches: [fix/automatic-ducc-threading]
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Inspect threading references
+        run: |
+          rg -n "nthreads|resolve_nthreads|threads_per_worker|num_workers|DUCC_THREADS" src tests docs README.md PLAN.md plans AGENTS.md || true
