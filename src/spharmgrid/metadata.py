@@ -179,6 +179,26 @@ def gradient_metadata(
     return attrs
 
 
+def inverse_gradient_metadata(
+    eastward: xr.DataArray, northward: xr.DataArray
+) -> dict[str, str]:
+    """Metadata for a potential reconstructed from horizontal derivatives."""
+    attrs = {
+        "long_name": (
+            "Scalar potential of the irrotational component of a horizontal vector"
+        )
+    }
+    eastward_units = eastward.attrs.get("units")
+    northward_units = northward.attrs.get("units")
+    if (
+        isinstance(eastward_units, str)
+        and eastward_units == northward_units
+        and eastward_units.endswith(" m-1")
+    ):
+        attrs["units"] = eastward_units.removesuffix(" m-1")
+    return attrs
+
+
 def operator_metadata(
     source: xr.DataArray, operation: Literal["laplacian", "inverse_laplacian"]
 ) -> dict[str, str]:
@@ -186,6 +206,25 @@ def operator_metadata(
     readable = "Laplacian" if operation == "laplacian" else "Inverse Laplacian"
     source_name = source.attrs.get("long_name") or source.name or "field"
     attrs = {"long_name": f"{readable} of {source_name}"}
+    units = source.attrs.get("units")
+    if isinstance(units, str) and units:
+        suffix = "m-2" if operation == "laplacian" else "m2"
+        attrs["units"] = f"{units} {suffix}"
+    return attrs
+
+
+def vector_operator_metadata(
+    source: xr.DataArray,
+    component: Literal["eastward", "northward"],
+    operation: Literal["laplacian", "inverse_laplacian"],
+) -> dict[str, str]:
+    """Metadata for a vector differential operator component."""
+    direction = "Eastward" if component == "eastward" else "Northward"
+    readable = (
+        "vector Laplacian" if operation == "laplacian" else "inverse vector Laplacian"
+    )
+    source_name = source.attrs.get("long_name") or source.name or "vector field"
+    attrs = {"long_name": f"{direction} component of {readable} of {source_name}"}
     units = source.attrs.get("units")
     if isinstance(units, str) and units:
         suffix = "m-2" if operation == "laplacian" else "m2"

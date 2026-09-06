@@ -15,7 +15,9 @@ from ._ducc import (
     scalar_analysis,
     scalar_derivative_synthesis,
     scalar_synthesis,
+    vector_analysis,
 )
+from ._vector import vector_inputs, vector_scalar_transform
 from ._xarray import (
     FieldLayout,
     apply_ufunc_options,
@@ -24,7 +26,7 @@ from ._xarray import (
     resolve_nthreads,
     restore_output,
 )
-from .metadata import gradient_metadata, operator_metadata
+from .metadata import gradient_metadata, inverse_gradient_metadata, operator_metadata
 from .spectral import scalar_transform, transform_spec
 
 EARTH_RADIUS_M = 6_371_220.0
@@ -77,6 +79,69 @@ def gradient(
     east.attrs = gradient_metadata(field, "eastward")
     north.attrs = gradient_metadata(field, "northward")
     return xr.Dataset({eastward: east, northward: north})
+
+
+def inverse_gradient(
+    eastward: xr.DataArray,
+    northward: xr.DataArray,
+    *,
+    output: str | None = None,
+    radius: float = EARTH_RADIUS_M,
+    nthreads: int | None = None,
+) -> xr.DataArray:
+    """Recover a scalar potential from a horizontal gradient vector field.
+
+    The degree-zero scalar coefficient is set to zero because an additive
+    constant cannot be recovered.  As in SPHEREPACK's inverse-gradient
+    routines, rotational input is projected away: the returned potential has
+    a gradient equal to the input field's irrotational component.
+    """
+    _validate_radius(radius)
+    _validate_output_name(output)
+    source, canonical_eastward, canonical_northward = vector_inputs(eastward, northward)
+    spec = transform_spec(source.grid, source.grid, None)
+    if spec.lmax < 1:
+        raise ValueError("inverse gradient requires a grid supporting total degree l=1")
+    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
+    scale = np.sqrt(degrees * (degrees + 1.0)) / radius
+
+    def transform(
+        frame_eastward: NDArray[np.generic],
+        frame_northward: NDArray[np.generic],
+        threads: int,
+    ) -> NDArray[np.float64]:
+        vector_alm = vector_analysis(
+            frame_eastward,
+            frame_northward,
+            spec=spec,
+            geometry=geometry_for(source.grid),
+            phi0=source.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+        potential_alm = np.zeros_like(vector_alm[0])
+        nonzero = scale > 0.0
+        potential_alm[nonzero] = vector_alm[0, nonzero] / scale[nonzero]
+        return scalar_synthesis(
+            potential_alm[np.newaxis, :],
+            spec=spec,
+            geometry=geometry_for(source.grid),
+            ntheta=source.grid.nlat,
+            nphi=source.grid.nlon,
+            phi0=source.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+
+    result = vector_scalar_transform(
+        eastward,
+        source,
+        canonical_eastward,
+        canonical_northward,
+        transform,
+        nthreads=nthreads,
+    )
+    result.name = output
+    result.attrs = inverse_gradient_metadata(eastward, northward)
+    return result
 
 
 def laplacian(
@@ -228,3 +293,12 @@ def _validate_component_names(eastward: str, northward: str) -> None:
         raise ValueError("gradient output names must be non-empty")
     if eastward == northward:
         raise ValueError("gradient output names must be distinct")
+
+
+def _validate_output_name(output: str | None) -> None:
+    if output is None:
+        return
+    if not isinstance(output, str):
+        raise TypeError("output must be a string or None")
+    if not output:
+        raise ValueError("output must be non-empty when provided")

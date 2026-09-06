@@ -12,6 +12,30 @@ import spharmgrid as sg
 from tests.conftest import degree_one_field, scalar_field, supported_grid
 
 
+def _axisymmetric_vector_field(grid: sg.Grid) -> tuple[xr.DataArray, xr.DataArray]:
+    """Return degree-one and degree-two tangent-vector harmonics."""
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    sine = np.sin(latitude)
+    cosine = np.cos(latitude)
+    coordinates = {"lat": grid.latitude, "lon": grid.longitude}
+    shape = (1, grid.nlon)
+    u = xr.DataArray(
+        (5.0 * cosine + 3.0 * sine * cosine) * np.ones(shape),
+        dims=("lat", "lon"),
+        coords=coordinates,
+        name="u",
+        attrs={"standard_name": "eastward_wind", "units": "m s-1"},
+    )
+    v = xr.DataArray(
+        (-7.0 * cosine + 2.0 * sine * cosine) * np.ones(shape),
+        dims=("lat", "lon"),
+        coords=coordinates,
+        name="v",
+        attrs={"standard_name": "northward_wind", "units": "m s-1"},
+    )
+    return u, v
+
+
 @pytest.mark.parametrize(
     ("notation", "expected"),
     [("T42", (0, 42)), ("t6-42", (6, 42)), ("T6–42", (6, 42))],
@@ -89,6 +113,84 @@ def test_regridding_low_degree_field_all_supported_pairs(
     np.testing.assert_allclose(result, expected, rtol=2.0e-11, atol=2.0e-11)
     np.testing.assert_allclose(result.lat, target.latitude)
     np.testing.assert_allclose(result.lon, target.longitude)
+
+
+@pytest.mark.parametrize(
+    ("source_kind", "target_kind"),
+    [("cc", "gl"), ("gl", "cc"), ("cc", "cc"), ("gl", "gl")],
+)
+def test_vector_regridding_low_degree_field_all_supported_pairs(
+    source_kind: Literal["cc", "gl"], target_kind: Literal["cc", "gl"]
+) -> None:
+    source = supported_grid(source_kind)
+    target = supported_grid(target_kind)
+    u, v = _axisymmetric_vector_field(source)
+
+    result = sg.regrid_vector(u, v, target)
+    expected_u, expected_v = _axisymmetric_vector_field(target)
+
+    np.testing.assert_allclose(result.u, expected_u, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(result.v, expected_v, rtol=2.0e-11, atol=2.0e-11)
+    assert result.u.attrs == u.attrs
+    assert result.v.attrs == v.attrs
+
+
+def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
+    source = supported_grid("cc", latitude_order="descending", lon0=-180.0)
+    target = supported_grid("gl", latitude_order="descending", lon0=-180.0)
+    u, v = _axisymmetric_vector_field(source)
+    latitude = np.deg2rad(source.latitude)[:, None]
+    degree_two_u = 3.0 * np.sin(latitude) * np.cos(latitude)
+    degree_two_v = 2.0 * np.sin(latitude) * np.cos(latitude)
+    u = u.copy(data=degree_two_u * np.ones((1, source.nlon)))
+    v = v.copy(data=degree_two_v * np.ones((1, source.nlon)))
+
+    direct = sg.regrid_vector(u, v, target, spectral="T2", taper=0.1)
+    dataarray_accessor = u.sg.regrid_vector(v, target, spectral="T2", taper=0.1)
+    dataset_accessor = xr.Dataset({"u": u, "v": v}).sg.regrid_vector(
+        target,
+        spectral="T2",
+        taper=0.1,
+    )
+    target_latitude = np.deg2rad(target.latitude)[:, None]
+    expected_u = (
+        0.1
+        * 3.0
+        * np.sin(target_latitude)
+        * np.cos(target_latitude)
+        * np.ones((1, target.nlon))
+    )
+    expected_v = (
+        0.1
+        * 2.0
+        * np.sin(target_latitude)
+        * np.cos(target_latitude)
+        * np.ones((1, target.nlon))
+    )
+
+    np.testing.assert_allclose(direct.u, expected_u, atol=2.0e-11)
+    np.testing.assert_allclose(direct.v, expected_v, atol=2.0e-11)
+    xr.testing.assert_identical(dataarray_accessor, direct)
+    xr.testing.assert_identical(dataset_accessor, direct)
+    np.testing.assert_allclose(direct.lat, target.latitude)
+    np.testing.assert_allclose(direct.lon, target.longitude)
+
+
+def test_vector_regridding_round_trip_is_band_limited() -> None:
+    source = supported_grid("cc")
+    intermediate = supported_grid("gl")
+    u, v = _axisymmetric_vector_field(source)
+
+    regridded = sg.regrid_vector(u, v, intermediate, spectral="T2")
+    restored = sg.regrid_vector(
+        regridded.u,
+        regridded.v,
+        source,
+        spectral="T2",
+    )
+
+    np.testing.assert_allclose(restored.u, u, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(restored.v, v, rtol=2.0e-11, atol=2.0e-11)
 
 
 def test_combined_filter_and_regrid_matches_single_spectral_cycle_result() -> None:

@@ -6,6 +6,7 @@ from typing import Literal, Protocol, cast
 
 import numpy as np
 import pytest
+import xarray as xr
 
 import spharmgrid as sg
 from tests.conftest import scalar_field, solid_body_wind
@@ -60,6 +61,42 @@ def _reference_transform() -> _SpharmTransform:
 
 def _north_to_south(values: np.ndarray) -> np.ndarray:
     return values[::-1, :]
+
+
+def _smooth_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]:
+    """Construct low-degree E/B content without spharmgrid transforms."""
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    longitude = np.deg2rad(grid.longitude)[None, :]
+    sine = np.sin(latitude)
+    cosine = np.cos(latitude)
+    u = (
+        10.0 * cosine
+        + 3.0 * sine * cosine * np.sin(2.0 * longitude)
+        - 4.0 * cosine * np.sin(2.0 * longitude)
+    )
+    v = (
+        7.0 * cosine
+        + 3.0 * cosine * np.cos(2.0 * longitude)
+        - 4.0 * sine * cosine * np.cos(2.0 * longitude)
+    )
+    return u, v
+
+
+def _pure_divergent_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]:
+    """Return the gradient of a degree-one scalar potential."""
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    eastward = np.zeros((grid.nlat, grid.nlon))
+    northward = 7.0 * np.cos(latitude) * np.ones((1, grid.nlon))
+    return eastward, northward
+
+
+def _dataarray(values: np.ndarray, grid: sg.Grid, name: str) -> xr.DataArray:
+    return xr.DataArray(
+        values,
+        dims=("lat", "lon"),
+        coords={"lat": grid.latitude, "lon": grid.longitude},
+        name=name,
+    )
 
 
 def test_gaussian_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
@@ -267,6 +304,193 @@ def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
     np.testing.assert_allclose(
         _north_to_south(np.asarray(reconstructed.v.values)),
         reference_v_reconstructed,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+
+
+@pytest.mark.parametrize(
+    ("kind", "gridtype", "potential_atol"),
+    [
+        ("gaussian", "gaussian", 3.0e-4),
+        ("cc", "regular", 20.0),
+    ],
+)
+def test_vector_sht_suite_matches_independent_spherepack(
+    kind: Literal["cc", "gaussian"],
+    gridtype: Literal["gaussian", "regular"],
+    potential_atol: float,
+) -> None:
+    """Compare vector analysis/synthesis-derived Phase-2 operations directly."""
+    grid = (
+        _gaussian_grid()
+        if kind == "gaussian"
+        else sg.clenshaw_curtis_grid(17, 36, latitude_order="ascending")
+    )
+    target = (
+        sg.gaussian_grid(12, 24, latitude_order="ascending")
+        if kind == "gaussian"
+        else sg.clenshaw_curtis_grid(13, 24, latitude_order="ascending")
+    )
+    reference = (
+        _reference_transform()
+        if gridtype == "gaussian"
+        else cast(
+            _SpharmTransform,
+            spharm.Spharmt(
+                grid.nlon,
+                grid.nlat,
+                rsphere=sg.EARTH_RADIUS_M,
+                gridtype="regular",
+                legfunc="stored",
+            ),
+        )
+    )
+    target_reference = cast(
+        _SpharmTransform,
+        spharm.Spharmt(
+            target.nlon,
+            target.nlat,
+            rsphere=sg.EARTH_RADIUS_M,
+            gridtype=gridtype,
+            legfunc="stored",
+        ),
+    )
+    u_values, v_values = _smooth_vector_field(grid)
+    u = _dataarray(u_values, grid, "u")
+    v = _dataarray(v_values, grid, "v")
+    reference_u = _north_to_south(u_values)
+    reference_v = _north_to_south(v_values)
+    regrid_vorticity, regrid_divergence = reference.getvrtdivspec(
+        reference_u,
+        reference_v,
+        ntrunc=7,
+    )
+    reference_target_u, reference_target_v = target_reference.getuv(
+        regrid_vorticity,
+        regrid_divergence,
+    )
+    reference_vorticity, reference_divergence = reference.getvrtdivspec(
+        reference_u,
+        reference_v,
+        ntrunc=15,
+    )
+    reference_divergent_u, reference_divergent_v = reference.getuv(
+        np.zeros_like(reference_vorticity),
+        reference_divergence,
+    )
+    reference_rotational_u, reference_rotational_v = reference.getuv(
+        reference_vorticity,
+        np.zeros_like(reference_divergence),
+    )
+    inverse_gradient_u, inverse_gradient_v = _pure_divergent_vector_field(grid)
+    reference_inverse_gradient_u = _north_to_south(inverse_gradient_u)
+    reference_inverse_gradient_v = _north_to_south(inverse_gradient_v)
+    _, inverse_gradient_divergence = reference.getvrtdivspec(
+        reference_inverse_gradient_u,
+        reference_inverse_gradient_v,
+        ntrunc=15,
+    )
+    reference_potential = np.squeeze(
+        reference.spectogrd(
+            spharm._spherepack.invlap(
+                inverse_gradient_divergence,
+                sg.EARTH_RADIUS_M,
+            )
+        )
+    )
+    reference_lap_vorticity = spharm._spherepack.lap(
+        reference_vorticity,
+        sg.EARTH_RADIUS_M,
+    )
+    reference_lap_divergence = spharm._spherepack.lap(
+        reference_divergence,
+        sg.EARTH_RADIUS_M,
+    )
+    reference_lap_u, reference_lap_v = reference.getuv(
+        reference_lap_vorticity,
+        reference_lap_divergence,
+    )
+    reference_lap_u = np.squeeze(reference_lap_u)
+    reference_lap_v = np.squeeze(reference_lap_v)
+
+    regridded = sg.regrid_vector(u, v, target, spectral="T7")
+    decomposed = sg.helmholtz(u, v)
+    potential = sg.inverse_gradient(
+        _dataarray(inverse_gradient_u, grid, "eastward"),
+        _dataarray(inverse_gradient_v, grid, "northward"),
+    )
+    laplacian = sg.vector_laplacian(u, v)
+    inverse_laplacian = sg.inverse_vector_laplacian(
+        _dataarray(_north_to_south(reference_lap_u), grid, "u"),
+        _dataarray(_north_to_south(reference_lap_v), grid, "v"),
+    )
+
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(regridded.u.values)),
+        reference_target_u,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(regridded.v.values)),
+        reference_target_v,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(decomposed.u_divergent.values)),
+        reference_divergent_u,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(decomposed.v_divergent.values)),
+        reference_divergent_v,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(decomposed.u_rotational.values)),
+        reference_rotational_u,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(decomposed.v_rotational.values)),
+        reference_rotational_v,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(potential.values)),
+        reference_potential,
+        rtol=3.0e-6,
+        atol=potential_atol,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(laplacian.u.values)),
+        reference_lap_u,
+        rtol=3.0e-6,
+        # SPHEREPACK's wrapper returns these physical-laplacian maps as
+        # float32.  Their O(1e-12) signal has an O(1e-18) rounding floor.
+        atol=1.0e-17,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(laplacian.v.values)),
+        reference_lap_v,
+        rtol=3.0e-6,
+        atol=1.0e-17,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(inverse_laplacian.u.values)),
+        reference_u,
+        rtol=3.0e-6,
+        atol=3.0e-6,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(inverse_laplacian.v.values)),
+        reference_v,
         rtol=3.0e-6,
         atol=3.0e-6,
     )

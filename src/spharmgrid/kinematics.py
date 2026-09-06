@@ -18,6 +18,7 @@ from ._ducc import (
     vector_analysis,
     vector_synthesis,
 )
+from ._vector import vector_inputs, vector_pair_transform, vector_quad_transform
 from ._xarray import (
     FieldLayout,
     apply_ufunc_options,
@@ -31,6 +32,7 @@ from .grids import grids_equivalent
 from .metadata import (
     ScalarSource,
     identify_scalar_source,
+    vector_operator_metadata,
     wind_component_metadata,
     with_output_metadata,
 )
@@ -132,6 +134,168 @@ def potentials(
     return xr.Dataset({streamfunction: psi, velocity_potential: chi})
 
 
+def helmholtz(
+    u: xr.DataArray,
+    v: xr.DataArray,
+    *,
+    divergent_eastward: str = "u_divergent",
+    divergent_northward: str = "v_divergent",
+    rotational_eastward: str = "u_rotational",
+    rotational_northward: str = "v_rotational",
+    radius: float = EARTH_RADIUS_M,
+    nthreads: int | None = None,
+) -> xr.Dataset:
+    """Split a wind field into divergent and rotational components.
+
+    One spin-1 analysis separates DUCC E and B coefficients.  The E-only and
+    B-only vector syntheses return the divergent and rotational components,
+    respectively.  The decomposition is independent of the numerical value
+    of ``radius`` because the physical radius factors cancel between the
+    forward and inverse vector relationships.
+    """
+    _validate_radius(radius)
+    _validate_distinct_names(
+        divergent_eastward,
+        divergent_northward,
+        rotational_eastward,
+        rotational_northward,
+    )
+    layout, canonical_u, canonical_v = vector_inputs(u, v)
+    spec = _vector_spec(layout)
+
+    def transform(
+        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic], threads: int
+    ) -> tuple[
+        NDArray[np.float64],
+        NDArray[np.float64],
+        NDArray[np.float64],
+        NDArray[np.float64],
+    ]:
+        vector_alm = vector_analysis(
+            frame_u,
+            frame_v,
+            spec=spec,
+            geometry=geometry_for(layout.grid),
+            phi0=layout.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+        zeros = np.zeros_like(vector_alm[0])
+        divergent_u, divergent_v = vector_synthesis(
+            vector_alm[0],
+            zeros,
+            spec=spec,
+            geometry=geometry_for(layout.grid),
+            ntheta=layout.grid.nlat,
+            nphi=layout.grid.nlon,
+            phi0=layout.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+        rotational_u, rotational_v = vector_synthesis(
+            zeros,
+            vector_alm[1],
+            spec=spec,
+            geometry=geometry_for(layout.grid),
+            ntheta=layout.grid.nlat,
+            nphi=layout.grid.nlon,
+            phi0=layout.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+        return divergent_u, divergent_v, rotational_u, rotational_v
+
+    divergent_u, divergent_v, rotational_u, rotational_v = vector_quad_transform(
+        u,
+        layout,
+        canonical_u,
+        canonical_v,
+        transform,
+        nthreads=nthreads,
+    )
+    divergent = _wind_dataset(
+        divergent_u,
+        divergent_v,
+        divergent_eastward,
+        divergent_northward,
+        "divergent",
+    )
+    rotational = _wind_dataset(
+        rotational_u,
+        rotational_v,
+        rotational_eastward,
+        rotational_northward,
+        "rotational",
+    )
+    return xr.merge((divergent, rotational))
+
+
+def vector_laplacian(
+    u: xr.DataArray,
+    v: xr.DataArray,
+    *,
+    eastward: str = "u",
+    northward: str = "v",
+    radius: float = EARTH_RADIUS_M,
+    nthreads: int | None = None,
+) -> xr.Dataset:
+    """Apply the SPHEREPACK vector Laplacian to a tangent vector field.
+
+    The operation analyzes the vector into E/B vector-harmonic coefficients,
+    multiplies each degree by ``-l(l+1)/radius**2``, then performs vector
+    synthesis.  This is not a scalar Laplacian applied independently to the
+    two geographic components.
+    """
+    _validate_distinct_names(eastward, northward)
+    output_u, output_v = _vector_laplacian_fields(
+        u,
+        v,
+        inverse=False,
+        radius=radius,
+        nthreads=nthreads,
+    )
+    return _vector_operator_dataset(
+        output_u,
+        output_v,
+        u,
+        v,
+        eastward,
+        northward,
+        operation="laplacian",
+    )
+
+
+def inverse_vector_laplacian(
+    u: xr.DataArray,
+    v: xr.DataArray,
+    *,
+    eastward: str = "u",
+    northward: str = "v",
+    radius: float = EARTH_RADIUS_M,
+    nthreads: int | None = None,
+) -> xr.Dataset:
+    """Solve the vector inverse Laplacian with degree-zero coefficients zeroed.
+
+    The vector-harmonic degree-zero slots do not represent a tangent vector
+    mode.  spharmgrid sets them to zero and applies
+    ``-radius**2/(l(l+1))`` to every positive-degree E/B coefficient.
+    """
+    _validate_distinct_names(eastward, northward)
+    output_u, output_v = _vector_laplacian_fields(
+        u,
+        v,
+        inverse=True,
+        radius=radius,
+        nthreads=nthreads,
+    )
+    return _vector_operator_dataset(
+        output_u,
+        output_v,
+        u,
+        v,
+        eastward,
+        northward,
+        operation="inverse_laplacian",
+    )
+
+
 def rotational_wind(
     field: xr.DataArray,
     *,
@@ -229,7 +393,7 @@ def _kinematic_fields(
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Compute vorticity then divergence while sharing vector analysis."""
     _validate_radius(radius)
-    layout, canonical_u, canonical_v = _wind_inputs(u, v)
+    layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
@@ -267,8 +431,9 @@ def _kinematic_fields(
         )
         return vorticity_map, divergence_map
 
-    return _two_wind_to_scalar_outputs(
+    return vector_pair_transform(
         u,
+        layout,
         layout,
         canonical_u,
         canonical_v,
@@ -286,7 +451,7 @@ def _potential_fields(
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Compute streamfunction then velocity potential from one vector analysis."""
     _validate_radius(radius)
-    layout, canonical_u, canonical_v = _wind_inputs(u, v)
+    layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
@@ -327,8 +492,9 @@ def _potential_fields(
         )
         return streamfunction_map, velocity_potential_map
 
-    return _two_wind_to_scalar_outputs(
+    return vector_pair_transform(
         u,
+        layout,
         layout,
         canonical_u,
         canonical_v,
@@ -387,6 +553,57 @@ def _single_source_wind(
         )
 
     return _single_scalar_to_wind(field, layout, transform, nthreads=nthreads)
+
+
+def _vector_laplacian_fields(
+    u: xr.DataArray,
+    v: xr.DataArray,
+    *,
+    inverse: bool,
+    radius: float,
+    nthreads: int | None,
+) -> tuple[xr.DataArray, xr.DataArray]:
+    _validate_radius(radius)
+    layout, canonical_u, canonical_v = vector_inputs(u, v)
+    spec = _vector_spec(layout)
+    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
+    if inverse:
+        multiplier = _inverse_laplacian_multiplier(degrees, radius)
+    else:
+        multiplier = -(degrees * (degrees + 1.0)) / radius**2
+
+    def transform(
+        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic], threads: int
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        vector_alm = vector_analysis(
+            frame_u,
+            frame_v,
+            spec=spec,
+            geometry=geometry_for(layout.grid),
+            phi0=layout.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+        transformed_alm = vector_alm * multiplier[np.newaxis, :]
+        return vector_synthesis(
+            transformed_alm[0],
+            transformed_alm[1],
+            spec=spec,
+            geometry=geometry_for(layout.grid),
+            ntheta=layout.grid.nlat,
+            nphi=layout.grid.nlon,
+            phi0=layout.transform_layout.phi0_radians,
+            nthreads=threads,
+        )
+
+    return vector_pair_transform(
+        u,
+        layout,
+        layout,
+        canonical_u,
+        canonical_v,
+        transform,
+        nthreads=nthreads,
+    )
 
 
 def _two_source_wind(
@@ -454,19 +671,6 @@ def _two_source_wind(
     )
 
 
-def _wind_inputs(
-    u: xr.DataArray, v: xr.DataArray
-) -> tuple[FieldLayout, xr.DataArray, xr.DataArray]:
-    u = require_dataarray(u, "u")
-    v = require_dataarray(v, "v")
-    layout = field_layout(u)
-    v_layout = field_layout(v)
-    _require_matching_layouts(layout, v_layout, "u", "v")
-    canonical_u = layout.canonicalize(u)
-    canonical_v = v_layout.canonicalize(v)
-    return layout, *exact_align(canonical_u, canonical_v, names=("u", "v"))
-
-
 def _paired_scalar_inputs(
     first: xr.DataArray, second: xr.DataArray
 ) -> tuple[FieldLayout, xr.DataArray, xr.DataArray]:
@@ -506,53 +710,6 @@ def _vector_spec(layout: FieldLayout) -> TransformSpec:
     if spec.lmax < 1:
         raise ValueError("wind transforms require a grid supporting total degree l=1")
     return spec
-
-
-def _two_wind_to_scalar_outputs(
-    original: xr.DataArray,
-    layout: FieldLayout,
-    canonical_u: xr.DataArray,
-    canonical_v: xr.DataArray,
-    transform: Callable[
-        [NDArray[np.generic], NDArray[np.generic], int],
-        tuple[NDArray[np.float64], NDArray[np.float64]],
-    ],
-    *,
-    nthreads: int | None,
-) -> tuple[xr.DataArray, xr.DataArray]:
-    dask_field = canonical_u if canonical_u.chunks is not None else canonical_v
-    threads = resolve_nthreads(nthreads, dask_backed=dask_field.chunks is not None)
-
-    def kernel(
-        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        return transform(frame_u, frame_v, threads)
-
-    outputs = xr.apply_ufunc(
-        kernel,
-        canonical_u,
-        canonical_v,
-        input_core_dims=[
-            [layout.latitude_dim, layout.longitude_dim],
-            [layout.latitude_dim, layout.longitude_dim],
-        ],
-        output_core_dims=[
-            [layout.latitude_dim, layout.longitude_dim],
-            [layout.latitude_dim, layout.longitude_dim],
-        ],
-        vectorize=True,
-        output_dtypes=[np.float64, np.float64],
-        **apply_ufunc_options(dask_field),
-    )
-    first, second = cast(tuple[xr.DataArray, xr.DataArray], outputs)
-    return (
-        restore_output(
-            first, source=layout, target=layout, original_dims=original.dims
-        ),
-        restore_output(
-            second, source=layout, target=layout, original_dims=original.dims
-        ),
-    )
 
 
 def _single_scalar_to_wind(
@@ -702,6 +859,25 @@ def _wind_dataset(
     return xr.Dataset({eastward: u, northward: v})
 
 
+def _vector_operator_dataset(
+    output_u: xr.DataArray,
+    output_v: xr.DataArray,
+    source_u: xr.DataArray,
+    source_v: xr.DataArray,
+    eastward: str,
+    northward: str,
+    *,
+    operation: Literal["laplacian", "inverse_laplacian"],
+) -> xr.Dataset:
+    output_u = output_u.copy(deep=False)
+    output_v = output_v.copy(deep=False)
+    output_u.name = eastward
+    output_v.name = northward
+    output_u.attrs = vector_operator_metadata(source_u, "eastward", operation)
+    output_v.attrs = vector_operator_metadata(source_v, "northward", operation)
+    return xr.Dataset({eastward: output_u, northward: output_v})
+
+
 def _validate_radius(radius: float) -> None:
     if isinstance(radius, bool) or not isinstance(radius, (int, float)):
         raise TypeError("radius must be a positive finite number in metres")
@@ -709,8 +885,10 @@ def _validate_radius(radius: float) -> None:
         raise ValueError("radius must be a positive finite number in metres")
 
 
-def _validate_distinct_names(first: str, second: str) -> None:
-    if not first or not second:
+def _validate_distinct_names(*names: str) -> None:
+    if not all(isinstance(name, str) for name in names):
+        raise TypeError("output names must be strings")
+    if not all(names):
         raise ValueError("output names must be non-empty")
-    if first == second:
-        raise ValueError("two output names must be distinct")
+    if len(set(names)) != len(names):
+        raise ValueError("output names must be distinct")

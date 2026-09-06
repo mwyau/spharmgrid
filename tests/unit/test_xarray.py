@@ -75,6 +75,60 @@ def test_mixed_eager_and_dask_wind_inputs_stay_lazy() -> None:
     xr.testing.assert_allclose(result.compute(), expected)
 
 
+def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
+    grid = supported_grid("cc")
+    target = supported_grid("gl")
+    eager_u, eager_v = solid_body_wind(grid)
+    member = xr.DataArray(["first", "second"], dims="member")
+    eager_u = xr.concat([eager_u, 2.0 * eager_u], dim=member)
+    eager_v = xr.concat([eager_v, 2.0 * eager_v], dim=member)
+    u = eager_u.chunk({"member": 1, "lat": 8, "lon": 12})
+    v = eager_v.chunk({"member": 1, "lat": 8, "lon": 12})
+
+    regridded = sg.regrid_vector(u, v, target)
+    decomposed = sg.helmholtz(u, v)
+    laplacian = sg.vector_laplacian(u, v)
+    restored = sg.inverse_vector_laplacian(laplacian.u, laplacian.v)
+    scalar = scalar_field(grid, leading=True)
+    eager_gradient = sg.gradient(scalar)
+    dask_gradient = sg.gradient(scalar.chunk({"member": 1, "lat": 8, "lon": 12}))
+    inverse_gradient = sg.inverse_gradient(
+        dask_gradient.gradient_eastward,
+        dask_gradient.gradient_northward,
+    )
+
+    assert all(
+        hasattr(variable.data, "dask") for variable in regridded.data_vars.values()
+    )
+    assert all(
+        hasattr(variable.data, "dask") for variable in decomposed.data_vars.values()
+    )
+    assert all(
+        hasattr(variable.data, "dask") for variable in laplacian.data_vars.values()
+    )
+    assert all(
+        hasattr(variable.data, "dask") for variable in restored.data_vars.values()
+    )
+    assert hasattr(inverse_gradient.data, "dask")
+    xr.testing.assert_allclose(
+        regridded.compute(), sg.regrid_vector(eager_u, eager_v, target)
+    )
+    xr.testing.assert_allclose(decomposed.compute(), sg.helmholtz(eager_u, eager_v))
+    eager_laplacian = sg.vector_laplacian(eager_u, eager_v)
+    xr.testing.assert_allclose(laplacian.compute(), eager_laplacian)
+    xr.testing.assert_allclose(
+        restored.compute(),
+        sg.inverse_vector_laplacian(eager_laplacian.u, eager_laplacian.v),
+    )
+    xr.testing.assert_allclose(
+        inverse_gradient.compute(),
+        sg.inverse_gradient(
+            eager_gradient.gradient_eastward,
+            eager_gradient.gradient_northward,
+        ),
+    )
+
+
 def test_filter_and_regrid_preserve_data_variable_semantics() -> None:
     field = scalar_field(supported_grid("cc"), name="air_temperature")
     field.attrs.update(

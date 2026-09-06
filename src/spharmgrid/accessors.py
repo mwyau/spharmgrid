@@ -14,6 +14,12 @@ from .kinematics import (
     divergent_wind as calculate_divergent_wind,
 )
 from .kinematics import (
+    helmholtz as calculate_helmholtz,
+)
+from .kinematics import (
+    inverse_vector_laplacian as calculate_inverse_vector_laplacian,
+)
+from .kinematics import (
     kinematics as calculate_kinematics,
 )
 from .kinematics import (
@@ -24,6 +30,9 @@ from .kinematics import (
 )
 from .kinematics import (
     streamfunction as calculate_streamfunction,
+)
+from .kinematics import (
+    vector_laplacian as calculate_vector_laplacian,
 )
 from .kinematics import (
     velocity_potential as calculate_velocity_potential,
@@ -37,9 +46,11 @@ from .kinematics import (
 from .metadata import Quantity, ScalarSource, find_variable, try_find_variable
 from .operators import EARTH_RADIUS_M
 from .operators import gradient as calculate_gradient
+from .operators import inverse_gradient as calculate_inverse_gradient
 from .operators import inverse_laplacian as calculate_inverse_laplacian
 from .operators import laplacian as calculate_laplacian
 from .regrid import regrid as calculate_regrid
+from .regrid import regrid_vector as calculate_regrid_vector
 from .spectral import SpectralRange
 from .spectral import filter as calculate_filter
 
@@ -106,6 +117,33 @@ class DataArrayAccessor:
             nthreads=nthreads,
         )
 
+    def regrid_vector(
+        self,
+        v: xr.DataArray,
+        target_grid: Grid | xr.DataArray | xr.Dataset,
+        spectral: str | SpectralRange | None = None,
+        *,
+        lmin: int | None = None,
+        lmax: int | None = None,
+        taper: float | None = None,
+        eastward: str = "u",
+        northward: str = "v",
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Regrid this eastward component and ``v`` through one vector SHT."""
+        return calculate_regrid_vector(
+            self._obj,
+            v,
+            target_grid,
+            spectral,
+            lmin=lmin,
+            lmax=lmax,
+            taper=taper,
+            eastward=eastward,
+            northward=northward,
+            nthreads=nthreads,
+        )
+
     def gradient(
         self,
         *,
@@ -134,6 +172,23 @@ class DataArrayAccessor:
     ) -> xr.DataArray:
         """Compute this field's zero-mean inverse spherical Laplacian."""
         return calculate_inverse_laplacian(self._obj, radius=radius, nthreads=nthreads)
+
+    def inverse_gradient(
+        self,
+        northward: xr.DataArray,
+        *,
+        output: str | None = None,
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.DataArray:
+        """Treat this field as eastward gradient and recover its scalar potential."""
+        return calculate_inverse_gradient(
+            self._obj,
+            northward,
+            output=output,
+            radius=radius,
+            nthreads=nthreads,
+        )
 
     def vorticity(
         self,
@@ -225,6 +280,67 @@ class DataArrayAccessor:
             nthreads=nthreads,
         )
 
+    def helmholtz(
+        self,
+        v: xr.DataArray,
+        *,
+        divergent_eastward: str = "u_divergent",
+        divergent_northward: str = "v_divergent",
+        rotational_eastward: str = "u_rotational",
+        rotational_northward: str = "v_rotational",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Split this eastward wind and ``v`` into divergent and rotational wind."""
+        return calculate_helmholtz(
+            self._obj,
+            v,
+            divergent_eastward=divergent_eastward,
+            divergent_northward=divergent_northward,
+            rotational_eastward=rotational_eastward,
+            rotational_northward=rotational_northward,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
+    def vector_laplacian(
+        self,
+        v: xr.DataArray,
+        *,
+        eastward: str = "u",
+        northward: str = "v",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Apply the vector Laplacian to this eastward component and ``v``."""
+        return calculate_vector_laplacian(
+            self._obj,
+            v,
+            eastward=eastward,
+            northward=northward,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
+    def inverse_vector_laplacian(
+        self,
+        v: xr.DataArray,
+        *,
+        eastward: str = "u",
+        northward: str = "v",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Apply the zero-mode-defined inverse vector Laplacian to this vector."""
+        return calculate_inverse_vector_laplacian(
+            self._obj,
+            v,
+            eastward=eastward,
+            northward=northward,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
     def rotational_wind(
         self,
         *,
@@ -305,6 +421,57 @@ class DatasetAccessor:
     def grid_type(self) -> Literal["gl", "cc"]:
         """The lowercase detected grid family."""
         return self.grid.kind
+
+    def regrid_vector(
+        self,
+        target_grid: Grid | xr.DataArray | xr.Dataset,
+        spectral: str | SpectralRange | None = None,
+        *,
+        u: str | None = None,
+        v: str | None = None,
+        lmin: int | None = None,
+        lmax: int | None = None,
+        taper: float | None = None,
+        eastward: str = "u",
+        northward: str = "v",
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Find wind components and spectrally regrid them as one vector field."""
+        return calculate_regrid_vector(
+            find_variable(self._obj, "u", u),
+            find_variable(self._obj, "v", v),
+            target_grid,
+            spectral,
+            lmin=lmin,
+            lmax=lmax,
+            taper=taper,
+            eastward=eastward,
+            northward=northward,
+            nthreads=nthreads,
+        )
+
+    def inverse_gradient(
+        self,
+        *,
+        eastward: str = "gradient_eastward",
+        northward: str = "gradient_northward",
+        output: str | None = None,
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.DataArray:
+        """Recover a scalar potential from named horizontal-gradient components."""
+        if eastward not in self._obj.data_vars or northward not in self._obj.data_vars:
+            raise ValueError(
+                "inverse_gradient requires explicit gradient component variables; "
+                "pass eastward= and northward="
+            )
+        return calculate_inverse_gradient(
+            self._obj[eastward],
+            self._obj[northward],
+            output=output,
+            radius=radius,
+            nthreads=nthreads,
+        )
 
     def vorticity(
         self,
@@ -414,6 +581,70 @@ class DatasetAccessor:
             find_variable(self._obj, "v", v),
             streamfunction=streamfunction,
             velocity_potential=velocity_potential,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
+    def helmholtz(
+        self,
+        *,
+        u: str | None = None,
+        v: str | None = None,
+        divergent_eastward: str = "u_divergent",
+        divergent_northward: str = "v_divergent",
+        rotational_eastward: str = "u_rotational",
+        rotational_northward: str = "v_rotational",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Find wind components and split them into divergent and rotational wind."""
+        return calculate_helmholtz(
+            find_variable(self._obj, "u", u),
+            find_variable(self._obj, "v", v),
+            divergent_eastward=divergent_eastward,
+            divergent_northward=divergent_northward,
+            rotational_eastward=rotational_eastward,
+            rotational_northward=rotational_northward,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
+    def vector_laplacian(
+        self,
+        *,
+        u: str | None = None,
+        v: str | None = None,
+        eastward: str = "u",
+        northward: str = "v",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Find wind components and apply the vector Laplacian."""
+        return calculate_vector_laplacian(
+            find_variable(self._obj, "u", u),
+            find_variable(self._obj, "v", v),
+            eastward=eastward,
+            northward=northward,
+            radius=radius,
+            nthreads=nthreads,
+        )
+
+    def inverse_vector_laplacian(
+        self,
+        *,
+        u: str | None = None,
+        v: str | None = None,
+        eastward: str = "u",
+        northward: str = "v",
+        radius: float = EARTH_RADIUS_M,
+        nthreads: int | None = None,
+    ) -> xr.Dataset:
+        """Find wind components and apply the inverse vector Laplacian."""
+        return calculate_inverse_vector_laplacian(
+            find_variable(self._obj, "u", u),
+            find_variable(self._obj, "v", v),
+            eastward=eastward,
+            northward=northward,
             radius=radius,
             nthreads=nthreads,
         )

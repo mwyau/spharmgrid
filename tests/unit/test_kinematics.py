@@ -179,6 +179,165 @@ def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
     assert "standard_name" not in divergent.v_divergent.attrs
 
 
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_helmholtz_recovers_analytic_rotational_and_divergent_parts(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    scalar = degree_one_field(grid)
+    streamfunction = (3.0 * sg.EARTH_RADIUS_M * scalar).rename("strf")
+    velocity_potential = (-2.0 * sg.EARTH_RADIUS_M * scalar).rename("vp")
+    rotational = sg.rotational_wind(streamfunction)
+    divergent = sg.divergent_wind(velocity_potential)
+    u = (rotational.u_rotational + divergent.u_divergent).rename("u")
+    v = (rotational.v_rotational + divergent.v_divergent).rename("v")
+
+    result = sg.helmholtz(u, v)
+
+    np.testing.assert_allclose(result.u_divergent, divergent.u_divergent, atol=3e-15)
+    np.testing.assert_allclose(result.v_divergent, divergent.v_divergent, atol=3e-15)
+    np.testing.assert_allclose(result.u_rotational, rotational.u_rotational, atol=3e-15)
+    np.testing.assert_allclose(result.v_rotational, rotational.v_rotational, atol=3e-15)
+    np.testing.assert_allclose(
+        result.u_divergent + result.u_rotational,
+        u,
+        atol=3e-15,
+    )
+    np.testing.assert_allclose(
+        result.v_divergent + result.v_rotational,
+        v,
+        atol=3e-15,
+    )
+    assert "standard_name" not in result.u_divergent.attrs
+    assert result.u_rotational.attrs["long_name"] == "Eastward rotational wind"
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_inverse_gradient_recovers_irrotational_potential_and_zero_mode(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    field = degree_one_field(grid) + 4.0
+    field.attrs["units"] = "K"
+    gradient = sg.gradient(field)
+    rotational_u, rotational_v = solid_body_wind(grid)
+    projected = sg.inverse_gradient(
+        gradient.gradient_eastward + rotational_u / sg.EARTH_RADIUS_M,
+        gradient.gradient_northward + rotational_v / sg.EARTH_RADIUS_M,
+        output="potential",
+    )
+
+    expected = degree_one_field(grid)
+    np.testing.assert_allclose(projected, expected, atol=3e-15)
+    recovered_gradient = sg.gradient(projected)
+    np.testing.assert_allclose(
+        recovered_gradient.gradient_eastward,
+        gradient.gradient_eastward,
+        atol=3e-22,
+    )
+    np.testing.assert_allclose(
+        recovered_gradient.gradient_northward,
+        gradient.gradient_northward,
+        atol=3e-22,
+    )
+    assert projected.name == "potential"
+    assert projected.attrs["units"] == "K"
+    assert "standard_name" not in projected.attrs
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    u, _ = solid_body_wind(grid)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    v = xr.DataArray(
+        7.0 * np.cos(latitude) * np.ones((1, grid.nlon)),
+        dims=("lat", "lon"),
+        coords={"lat": grid.latitude, "lon": grid.longitude},
+        name="v",
+        attrs={"standard_name": "northward_wind", "units": "m s-1"},
+    )
+    u.attrs = {"standard_name": "eastward_wind", "units": "m s-1"}
+
+    laplacian = sg.vector_laplacian(u, v)
+    restored = sg.inverse_vector_laplacian(laplacian.u, laplacian.v)
+    eigenvalue = -2.0 / sg.EARTH_RADIUS_M**2
+
+    np.testing.assert_allclose(laplacian.u, eigenvalue * u, atol=2e-25)
+    np.testing.assert_allclose(laplacian.v, eigenvalue * v, atol=2e-25)
+    np.testing.assert_allclose(restored.u, u, atol=2e-11)
+    np.testing.assert_allclose(restored.v, v, atol=2e-11)
+    assert "standard_name" not in laplacian.u.attrs
+    assert laplacian.u.attrs["units"] == "m s-1 m-2"
+    assert restored.v.attrs["units"] == "m s-1 m-2 m2"
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_new_vector_operations_restore_descending_shifted_coordinates(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    longitude = np.deg2rad(grid.longitude)[None, :]
+    coordinates = {"lat": grid.latitude, "lon": grid.longitude}
+    streamfunction = xr.DataArray(
+        3.0 * sg.EARTH_RADIUS_M * np.cos(latitude) * np.cos(longitude),
+        dims=("lat", "lon"),
+        coords=coordinates,
+        name="strf",
+    )
+    velocity_potential = xr.DataArray(
+        2.0 * sg.EARTH_RADIUS_M * np.cos(latitude) * np.sin(longitude),
+        dims=("lat", "lon"),
+        coords=coordinates,
+        name="vp",
+    )
+    wind = sg.wind(streamfunction, velocity_potential)
+    components = sg.helmholtz(wind.u, wind.v)
+    laplacian = sg.vector_laplacian(wind.u, wind.v)
+    restored = sg.inverse_vector_laplacian(laplacian.u, laplacian.v)
+    scalar = xr.DataArray(
+        4.0 + np.cos(latitude) * np.cos(longitude),
+        dims=("lat", "lon"),
+        coords=coordinates,
+    )
+    gradient = sg.gradient(scalar)
+    recovered = sg.inverse_gradient(
+        gradient.gradient_eastward,
+        gradient.gradient_northward,
+    )
+
+    np.testing.assert_allclose(
+        components.u_divergent + components.u_rotational,
+        wind.u,
+        atol=3e-15,
+    )
+    np.testing.assert_allclose(
+        components.v_divergent + components.v_rotational,
+        wind.v,
+        atol=3e-15,
+    )
+    np.testing.assert_allclose(restored.u, wind.u, atol=2e-11)
+    np.testing.assert_allclose(restored.v, wind.v, atol=2e-11)
+    np.testing.assert_allclose(
+        recovered,
+        scalar - 4.0,
+        rtol=2e-11,
+        atol=2e-11,
+    )
+    for result in (
+        components.u_divergent,
+        components.v_rotational,
+        laplacian.u,
+        restored.v,
+        recovered,
+    ):
+        xr.testing.assert_identical(result.lat, wind.lat)
+        xr.testing.assert_identical(result.lon, wind.lon)
+
+
 def test_dataset_discovery_output_overrides_and_direct_accessor_equivalence() -> None:
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)
@@ -226,6 +385,33 @@ def test_dataarray_inverse_wind_accessors_delegate_to_direct_functions() -> None
     )
     xr.testing.assert_identical(
         potential.strf.sg.wind(potential.vp), sg.wind(potential.strf, potential.vp)
+    )
+
+
+def test_new_vector_accessors_delegate_to_direct_functions() -> None:
+    grid = supported_grid("cc")
+    u, v = solid_body_wind(grid)
+    gradient = sg.gradient(degree_one_field(grid))
+    dataset = xr.Dataset({"u": u, "v": v, **gradient.data_vars})
+
+    xr.testing.assert_identical(u.sg.helmholtz(v), sg.helmholtz(u, v))
+    xr.testing.assert_identical(dataset.sg.helmholtz(), sg.helmholtz(u, v))
+    xr.testing.assert_identical(
+        gradient.gradient_eastward.sg.inverse_gradient(gradient.gradient_northward),
+        sg.inverse_gradient(gradient.gradient_eastward, gradient.gradient_northward),
+    )
+    xr.testing.assert_identical(
+        dataset.sg.inverse_gradient(),
+        sg.inverse_gradient(gradient.gradient_eastward, gradient.gradient_northward),
+    )
+    xr.testing.assert_identical(u.sg.vector_laplacian(v), sg.vector_laplacian(u, v))
+    xr.testing.assert_identical(
+        dataset.sg.vector_laplacian(), sg.vector_laplacian(u, v)
+    )
+    laplacian = sg.vector_laplacian(u, v)
+    xr.testing.assert_identical(
+        laplacian.u.sg.inverse_vector_laplacian(laplacian.v),
+        sg.inverse_vector_laplacian(laplacian.u, laplacian.v),
     )
 
 
