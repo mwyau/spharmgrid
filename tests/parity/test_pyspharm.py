@@ -7,6 +7,7 @@ from typing import Literal, Protocol, cast
 import numpy as np
 import pytest
 import xarray as xr
+from numpy.typing import NDArray
 
 import spharmgrid as sg
 from tests.conftest import scalar_field, solid_body_wind
@@ -16,6 +17,9 @@ spharm = pytest.importorskip(
     "spharm",
     reason="run with uv --group parity on a supported Python version",
 )
+
+type _GridArray = NDArray[np.float32] | NDArray[np.float64]
+type _SpectralArray = NDArray[np.complex64] | NDArray[np.complex128]
 
 # pyspharm-syl exposes synthesized maps at float32 precision.  These absolute
 # tolerances are calibrated from the maximum errors of the parity fixtures.
@@ -32,24 +36,26 @@ class _SpharmTransform(Protocol):
     """Subset of pyspharm-syl's SPHEREPACK wrapper used in this suite."""
 
     def grdtospec(
-        self, values: np.ndarray, ntrunc: int | None = None
-    ) -> np.ndarray: ...
+        self, values: _GridArray, ntrunc: int | None = None
+    ) -> _SpectralArray: ...
 
-    def spectogrd(self, coefficients: np.ndarray) -> np.ndarray: ...
+    def spectogrd(self, coefficients: _SpectralArray) -> _GridArray: ...
 
-    def getgrad(self, coefficients: np.ndarray) -> tuple[np.ndarray, np.ndarray]: ...
+    def getgrad(
+        self, coefficients: _SpectralArray
+    ) -> tuple[_GridArray, _GridArray]: ...
 
     def getvrtdivspec(
-        self, u: np.ndarray, v: np.ndarray, ntrunc: int | None = None
-    ) -> tuple[np.ndarray, np.ndarray]: ...
+        self, u: _GridArray, v: _GridArray, ntrunc: int | None = None
+    ) -> tuple[_SpectralArray, _SpectralArray]: ...
 
     def getpsichi(
-        self, u: np.ndarray, v: np.ndarray, ntrunc: int | None = None
-    ) -> tuple[np.ndarray, np.ndarray]: ...
+        self, u: _GridArray, v: _GridArray, ntrunc: int | None = None
+    ) -> tuple[_GridArray, _GridArray]: ...
 
     def getuv(
-        self, vorticity: np.ndarray, divergence: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]: ...
+        self, vorticity: _SpectralArray, divergence: _SpectralArray
+    ) -> tuple[_GridArray, _GridArray]: ...
 
 
 def _gaussian_grid() -> sg.Grid:
@@ -69,11 +75,13 @@ def _reference_transform() -> _SpharmTransform:
     )
 
 
-def _north_to_south(values: np.ndarray) -> np.ndarray:
+def _north_to_south(values: _GridArray) -> _GridArray:
     return values[::-1, :]
 
 
-def _smooth_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]:
+def _smooth_vector_field(
+    grid: sg.Grid,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Construct low-degree E/B content without spharmgrid transforms."""
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
@@ -92,7 +100,9 @@ def _smooth_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]:
     return u, v
 
 
-def _pure_divergent_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]:
+def _pure_divergent_vector_field(
+    grid: sg.Grid,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Return the gradient of a degree-one scalar potential."""
     latitude = np.deg2rad(grid.latitude)[:, None]
     eastward = np.zeros((grid.nlat, grid.nlon))
@@ -100,7 +110,7 @@ def _pure_divergent_vector_field(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray]
     return eastward, northward
 
 
-def _dataarray(values: np.ndarray, grid: sg.Grid, name: str) -> xr.DataArray:
+def _dataarray(values: _GridArray, grid: sg.Grid, name: str) -> xr.DataArray:
     return xr.DataArray(
         values,
         dims=("lat", "lon"),
@@ -134,25 +144,29 @@ def test_gaussian_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
     regridded = sg.regrid(source, target, truncation="T7")
 
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(filtered.values)),
+        _north_to_south(np.asarray(filtered.values, dtype=np.float64)),
         reference_filtered,
         rtol=0.0,
         atol=_SCALAR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(gradient.gradient_eastward.values)),
+        _north_to_south(
+            np.asarray(gradient.gradient_eastward.values, dtype=np.float64)
+        ),
         reference_east,
         rtol=0.0,
         atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(gradient.gradient_northward.values)),
+        _north_to_south(
+            np.asarray(gradient.gradient_northward.values, dtype=np.float64)
+        ),
         reference_north,
         rtol=0.0,
         atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(regridded.values)),
+        _north_to_south(np.asarray(regridded.values, dtype=np.float64)),
         reference_regridded,
         rtol=0.0,
         atol=_SCALAR_MAP_ATOL,
@@ -199,25 +213,29 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
     # The regular-grid wrapper returns scalar maps at float32 precision; the
     # measured cross-backend field error is below 5e-7.
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(filtered.values)),
+        _north_to_south(np.asarray(filtered.values, dtype=np.float64)),
         reference_filtered,
         rtol=0.0,
         atol=_SCALAR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(gradient.gradient_eastward.values)),
+        _north_to_south(
+            np.asarray(gradient.gradient_eastward.values, dtype=np.float64)
+        ),
         reference_east,
         rtol=0.0,
         atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(gradient.gradient_northward.values)),
+        _north_to_south(
+            np.asarray(gradient.gradient_northward.values, dtype=np.float64)
+        ),
         reference_north,
         rtol=0.0,
         atol=_GRADIENT_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(regridded.values)),
+        _north_to_south(np.asarray(regridded.values, dtype=np.float64)),
         reference_regridded,
         rtol=0.0,
         atol=_SCALAR_MAP_ATOL,
@@ -278,37 +296,37 @@ def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
     reconstructed = sg.wind(diagnostics.vo, diagnostics.d)
 
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(diagnostics.vo.values)),
+        _north_to_south(np.asarray(diagnostics.vo.values, dtype=np.float64)),
         reference_vo,
         rtol=0.0,
         atol=_KINEMATIC_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(diagnostics.d.values)),
+        _north_to_south(np.asarray(diagnostics.d.values, dtype=np.float64)),
         reference_d,
         rtol=0.0,
         atol=_KINEMATIC_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(potential.strf.values)),
+        _north_to_south(np.asarray(potential.strf.values, dtype=np.float64)),
         reference_psi,
         rtol=0.0,
         atol=_WIND_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(potential.vp.values)),
+        _north_to_south(np.asarray(potential.vp.values, dtype=np.float64)),
         reference_chi,
         rtol=0.0,
         atol=_WIND_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(reconstructed.u.values)),
+        _north_to_south(np.asarray(reconstructed.u.values, dtype=np.float64)),
         reference_u_reconstructed,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(reconstructed.v.values)),
+        _north_to_south(np.asarray(reconstructed.v.values, dtype=np.float64)),
         reference_v_reconstructed,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
@@ -432,67 +450,67 @@ def test_vector_sht_suite_matches_independent_spherepack(
     )
 
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(regridded.u.values)),
+        _north_to_south(np.asarray(regridded.u.values, dtype=np.float64)),
         reference_target_u,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(regridded.v.values)),
+        _north_to_south(np.asarray(regridded.v.values, dtype=np.float64)),
         reference_target_v,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(decomposed.u_divergent.values)),
+        _north_to_south(np.asarray(decomposed.u_divergent.values, dtype=np.float64)),
         reference_divergent_u,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(decomposed.v_divergent.values)),
+        _north_to_south(np.asarray(decomposed.v_divergent.values, dtype=np.float64)),
         reference_divergent_v,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(decomposed.u_rotational.values)),
+        _north_to_south(np.asarray(decomposed.u_rotational.values, dtype=np.float64)),
         reference_rotational_u,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(decomposed.v_rotational.values)),
+        _north_to_south(np.asarray(decomposed.v_rotational.values, dtype=np.float64)),
         reference_rotational_v,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(potential.values)),
+        _north_to_south(np.asarray(potential.values, dtype=np.float64)),
         reference_potential,
         rtol=0.0,
         atol=_INVERSE_GRADIENT_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(laplacian.u.values)),
+        _north_to_south(np.asarray(laplacian.u.values, dtype=np.float64)),
         reference_lap_u,
         rtol=0.0,
         atol=_VECTOR_LAPLACIAN_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(laplacian.v.values)),
+        _north_to_south(np.asarray(laplacian.v.values, dtype=np.float64)),
         reference_lap_v,
         rtol=0.0,
         atol=_VECTOR_LAPLACIAN_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(inverse_laplacian.u.values)),
+        _north_to_south(np.asarray(inverse_laplacian.u.values, dtype=np.float64)),
         reference_u,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
     np.testing.assert_allclose(
-        _north_to_south(np.asarray(inverse_laplacian.v.values)),
+        _north_to_south(np.asarray(inverse_laplacian.v.values, dtype=np.float64)),
         reference_v,
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,

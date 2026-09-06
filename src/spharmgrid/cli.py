@@ -272,7 +272,9 @@ def _open_dataset(path: str) -> xr.Dataset:
         if find_spec("zarr") is None:
             raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
         try:
-            return xr.open_zarr(path)
+            dataset = xr.open_zarr(path)
+            assert isinstance(dataset, xr.Dataset)
+            return dataset
         except ImportError as error:
             raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
     if _is_grib_path(path) and _grib_is_unsupported():

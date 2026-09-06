@@ -145,10 +145,17 @@ jobs:
                   f"source tag {tag!r} does not match artifact version {version!r}"
               )
 
+          wheel = next(path for path in distributions if path.name.endswith(".whl"))
+          with zipfile.ZipFile(wheel) as archive:
+              if "spharmgrid/py.typed" not in archive.namelist():
+                  raise SystemExit("wheel is missing spharmgrid/py.typed")
+
           sdist = next(path for path in distributions if path.name.endswith(".tar.gz"))
           excluded = (".github/", "plans/", "skills/", "AGENTS.md")
           with tarfile.open(sdist, mode="r:gz") as archive:
               members = archive.getnames()
+          if not any(name.endswith("/src/spharmgrid/py.typed") for name in members):
+              raise SystemExit("source distribution is missing src/spharmgrid/py.typed")
           relative_members = [
               name.split("/", 1)[1] if "/" in name else name for name in members
           ]
