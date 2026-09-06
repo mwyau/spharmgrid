@@ -1,8 +1,7 @@
 # Quick start
 
-Import spharmgrid once to register `.sg` on xarray `DataArray` and `Dataset`
-objects. The accessor is the primary interface, and each operation also has a
-direct function.
+Import spharmgrid to register `.sg` on xarray `DataArray` and `Dataset`
+objects.
 
 ## Filtering and regridding
 
@@ -21,7 +20,7 @@ regridded = field.sg.regrid(target)
 combined = field.sg.regrid(target, spectral="T6-42", taper=0.1)
 ```
 
-Direct functions are available for the same operations:
+Direct calls use the top-level functions:
 
 ```python
 filtered = sg.filter(field, "T6-42", taper=0.1)
@@ -43,10 +42,9 @@ pot = wind.sg.potentials()  # strf: streamfunction; vp: velocity potential
 reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
 ```
 
-The individual diagnostics are also available directly as `vorticity()`,
-`divergence()`, `streamfunction()`, and `velocity_potential()`. See
-{doc}`kinematics` for rotational/divergent wind reconstruction and sign
-conventions.
+The individual diagnostics are also available as `vorticity()`, `divergence()`,
+`streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind
+reconstruction and sign conventions.
 
-All operations preserve non-spatial dimensions and their xarray coordinates.
-See {doc}`grids` for supported sampling geometries and coordinate requirements.
+All operations preserve non-spatial dimensions and xarray coordinates. See
+{doc}`grids` for supported sampling geometries and coordinate requirements.
