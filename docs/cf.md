@@ -30,50 +30,46 @@ kin = ds.sg.kinematics()
 ```
 
 If more than one variable matches the same quantity, spharmgrid lists the
-candidates and requires an explicit argument. It does not maintain a broad
-heuristic alias list such as `UGRD` or `uwnd`.
+candidates and requires an explicit argument.
 
-## Output semantics
+## Output metadata
 
-Derived wind diagnostics carry the exact CF metadata in the table. Renaming an
-output does not change its semantic attributes:
+Derived wind diagnostics use the CF metadata in the table. Renaming an output
+does not change its physical metadata:
 
 ```python
 vo = ds.sg.vorticity(output="vort")
 assert vo.attrs["standard_name"] == "atmosphere_relative_vorticity"
 ```
 
-Filtering and regridding preserve the input variable name and attributes
-because they retain the same physical quantity. Generated target coordinates
-carry ordinary CF latitude/longitude metadata; GL and CC are numerical
-sampling properties, not CF standard names.
+Filtering and regridding preserve the input variable name and attributes.
+Generated target coordinates carry CF latitude/longitude metadata.
 
-## Dimensions, time, and optional cf-xarray
+## Dimensions and time
 
-Transforms operate only on detected horizontal dimensions. They preserve
-arbitrary leading dimensions and coordinate alignment, including shapes such
-as `(time, level, lat, lon)`. xarray remains responsible for CF time decoding
-and encoding, so NumPy datetimes and `cftime` calendar objects pass through
-unchanged.
+Transforms preserve arbitrary leading dimensions and coordinate alignment,
+including shapes such as `(time, level, lat, lon)`. NumPy datetimes and
+`cftime` calendar objects remain xarray coordinates through the operation.
 
-`cf-xarray` is optional. spharmgrid does not need it for exact CF metadata or
-canonical coordinate names, but consults it as a later coordinate-discovery
-aid when installed:
+## cf-xarray
+
+Install the optional `cf-xarray` extra with:
 
 ```bash
 uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
+When installed, `cf-xarray` can assist latitude/longitude discovery after exact
+CF metadata and canonical coordinate names are checked.
+
 ## Dask
 
-Dask is optional as well:
+Install Dask support with:
 
 ```bash
 uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
-For Dask-backed xarray fields, transforms remain lazy. Horizontal core
-dimensions are rechunked only when xarray needs that to invoke a gufunc. The
-default uses one DUCC thread per Dask task to avoid nested oversubscription;
-pass `nthreads=` to make an explicit choice. Eager calls also use DUCC's
-documented one-thread Python default when `nthreads=None`.
+Dask-backed xarray fields remain lazy. Horizontal core dimensions are rechunked
+when required by xarray's generalized ufunc execution. The default is one DUCC
+thread per Dask task; pass `nthreads=` to choose another value.
