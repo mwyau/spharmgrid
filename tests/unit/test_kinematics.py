@@ -263,6 +263,8 @@ def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
 
     laplacian = sg.vector_laplacian(u, v)
     restored = sg.inverse_vector_laplacian(laplacian.u, laplacian.v)
+    inverse = sg.inverse_vector_laplacian(u, v)
+    inverse_restored = sg.vector_laplacian(inverse.u, inverse.v)
     eigenvalue = -2.0 / sg.EARTH_RADIUS_M**2
 
     np.testing.assert_allclose(laplacian.u, eigenvalue * u, atol=2e-25)
@@ -271,7 +273,12 @@ def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
     np.testing.assert_allclose(restored.v, v, atol=2e-11)
     assert "standard_name" not in laplacian.u.attrs
     assert laplacian.u.attrs["units"] == "m s-1 m-2"
-    assert restored.v.attrs["units"] == "m s-1 m-2 m2"
+    assert restored.u.attrs["units"] == "m s-1"
+    assert restored.v.attrs["units"] == "m s-1"
+    assert inverse.u.attrs["units"] == "m s-1 m2"
+    assert inverse.v.attrs["units"] == "m s-1 m2"
+    assert inverse_restored.u.attrs["units"] == "m s-1"
+    assert inverse_restored.v.attrs["units"] == "m s-1"
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])

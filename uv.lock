@@ -1000,13 +1000,13 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cf-xarray", marker = "extra == 'cf'", specifier = ">=0.10.0" },
+    { name = "cf-xarray", marker = "extra == 'cf'", specifier = ">=0.10.4" },
     { name = "dask", extras = ["array"], marker = "extra == 'dask'", specifier = ">=2024.1.0" },
     { name = "ducc0", specifier = ">=0.39.0" },
     { name = "h5netcdf", marker = "extra == 'io'", specifier = ">=1.8.0" },
     { name = "h5py", marker = "extra == 'io'", specifier = ">=3.11.0" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "xarray", specifier = ">=2024.9.0" },
+    { name = "xarray", specifier = ">=2025.11.0" },
 ]
 provides-extras = ["cf", "dask", "io"]
 

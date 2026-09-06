@@ -264,6 +264,21 @@ def test_inverse_laplacian_uses_zero_mean_solution(kind: Literal["cc", "gl"]) ->
     np.testing.assert_allclose(restored, degree_one_field(grid), atol=2.0e-11)
 
 
+def test_scalar_laplacian_units_simplify_operator_chains() -> None:
+    field = degree_one_field(supported_grid("cc"))
+    field.attrs["units"] = "K"
+
+    laplacian = sg.laplacian(field)
+    restored = sg.inverse_laplacian(laplacian)
+    inverse = sg.inverse_laplacian(field)
+    inverse_restored = sg.laplacian(inverse)
+
+    assert laplacian.attrs["units"] == "K m-2"
+    assert restored.attrs["units"] == "K"
+    assert inverse.attrs["units"] == "K m2"
+    assert inverse_restored.attrs["units"] == "K"
+
+
 def test_accessor_and_direct_scalar_paths_are_identical() -> None:
     field = scalar_field(supported_grid("cc"), leading=True)
     target = supported_grid("gl")

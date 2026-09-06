@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "ducc0>=0.39.0",
     "numpy>=2.0.0",
-    "xarray>=2024.9.0",
+    "xarray>=2025.11.0",
 ]
 
 [project.scripts]
@@ -34,7 +34,7 @@ Documentation = "https://spharmgrid.readthedocs.io/"
 Repository = "https://github.com/mwyau/spharmgrid"
 
 [project.optional-dependencies]
-cf = ["cf-xarray>=0.10.0"]
+cf = ["cf-xarray>=0.10.4"]
 dask = ["dask[array]>=2024.1.0"]
 io = ["h5netcdf>=1.8.0", "h5py>=3.11.0"]
 
