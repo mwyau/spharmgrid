@@ -6,7 +6,6 @@
 [![PyPI Python Version](https://img.shields.io/pypi/pyversions/spharmgrid)](https://pypi.org/project/spharmgrid/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/spharmgrid)](https://anaconda.org/channels/conda-forge/packages/spharmgrid/overview)
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22546616-blue.svg)](https://doi.org/10.5281/zenodo.22546616)
 
 Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
 
