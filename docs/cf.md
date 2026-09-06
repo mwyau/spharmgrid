@@ -40,7 +40,7 @@ Filtering and regridding preserve the input variable name and attributes. Genera
 
 ## Dimensions and time
 
-Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects remain xarray coordinates through the operation.
+Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects pass through as xarray coordinates.
 
 ## cf-xarray
 
@@ -60,4 +60,4 @@ Install Dask support with:
 uv add "spharmgrid[dask]"
 ```
 
-Dask-backed xarray fields remain lazy. Horizontal core dimensions are rechunked when required by xarray generalized ufunc execution. DUCC uses four threads per transform. When the local Dask scheduler has no explicit `num_workers` setting, spharmgrid sets it to `max(1, os.cpu_count() // 4)` to limit nested CPU oversubscription. Existing Dask configuration and distributed cluster topology are left unchanged.
+Dask-backed xarray fields execute lazily. Horizontal core dimensions are rechunked when required by xarray generalized ufunc execution. DUCC uses four threads per transform. When the local Dask scheduler has no explicit `num_workers` setting, spharmgrid sets it to `max(1, os.cpu_count() // 4)` to limit nested CPU oversubscription. Existing Dask configuration and distributed cluster topology are left unchanged.
