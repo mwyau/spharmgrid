@@ -25,6 +25,7 @@ kinematics
 operators
 grids
 cf
+comparison
 cli
 api
 references
