@@ -62,7 +62,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14t"
-      - run: uv sync --group dev --all-extras --frozen
+      - run: uv sync --extra cf --frozen
       - name: Verify imports keep the GIL disabled
         run: |
           uv run --no-sync python - <<'PY'
