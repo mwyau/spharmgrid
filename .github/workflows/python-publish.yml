@@ -69,7 +69,18 @@ jobs:
         run: .wheel-venv/bin/python -c 'import spharmgrid; print("wheel import success")'
 
       - name: Test installed CLI
-        run: .wheel-venv/bin/spharmgrid --help
+        run: |
+          .wheel-venv/bin/spharmgrid --help
+          .wheel-venv/bin/spharmgrid --version
+          set +e
+          output="$(.wheel-venv/bin/spharmgrid filter missing.zarr missing.nc --var field 2>&1)"
+          status=$?
+          set -e
+          test "$status" -ne 0
+          printf '%s\n' "$output"
+          grep -F 'CLI dependencies are not installed.' <<<"$output"
+          grep -F 'pip install "spharmgrid[cli]"' <<<"$output"
+          ! grep -F 'Traceback' <<<"$output"
 
       - name: Check distributions
         run: uvx --from twine==7.0.0 twine check --strict dist/*

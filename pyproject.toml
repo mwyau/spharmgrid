@@ -22,7 +22,6 @@ classifiers = [
 ]
 dependencies = [
     "ducc0>=0.39.0",
-    "h5netcdf[h5py]>=1.8.0",
     "numpy>=2.0.0",
     "xarray>=2025.11.0",
 ]
@@ -37,8 +36,11 @@ Repository = "https://github.com/mwyau/spharmgrid"
 [project.optional-dependencies]
 cf = ["cf-xarray>=0.10.4"]
 dask = ["dask[array]>=2024.1.0"]
-grib = ["cfgrib>=0.9.15.1"]
-zarr = ["zarr>=3.0.0"]
+cli = [
+    "h5netcdf[h5py]>=1.8.0",
+    "zarr>=3.0.0",
+    "cfgrib>=0.9.15",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spharmgrid"]
@@ -64,6 +66,8 @@ docs = [
     "sphinx-rtd-theme>=3.1.0",
 ]
 test = [
+    "cftime>=1.6.5",
+    "h5netcdf[h5py]>=1.8.0",
     "pytest>=9.1.1",
     "zarr>=3.0.0",
 ]

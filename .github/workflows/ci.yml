@@ -49,7 +49,7 @@ jobs:
       - run: uv run --no-sync pytest
 
   file-backends:
-    name: Optional file backends
+    name: Optional GRIB backend
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -61,8 +61,8 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - run: uv sync --extra grib --extra zarr --frozen
-      - run: uv run --no-sync pytest tests/unit/test_cli.py tests/optional/test_file_backends.py
+      - run: uv sync --no-default-groups --group test --extra cli --frozen
+      - run: uv run --no-sync pytest tests/optional/test_file_backends.py
 
   free-threaded:
     name: Free-threaded Python 3.14 compatibility
@@ -116,12 +116,11 @@ jobs:
           check_import core numpy
           check_import core xarray
           check_import core ducc0
-          check_import core h5netcdf
-          check_import core h5py
           check_optional cf "cf-xarray>=0.10.4" cf_xarray
           check_optional dask "dask[array]>=2024.1.0" dask
-          check_optional grib "cfgrib>=0.9.15.1" cfgrib
-          check_optional zarr "zarr>=3.0.0" zarr
+          check_optional cli "h5netcdf[h5py]>=1.8.0" h5netcdf
+          check_optional cli "zarr>=3.0.0" zarr
+          check_optional cli "cfgrib>=0.9.15" cfgrib
           check_import package spharmgrid
 
   minimum-dependencies:
@@ -187,5 +186,5 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.13"
-      - run: uv sync --no-default-groups --group test --group parity --extra dask --frozen
+      - run: uv sync --no-default-groups --group test --group parity --frozen
       - run: uv run --no-sync pytest tests/parity

@@ -47,7 +47,7 @@ Transforms preserve leading dimensions and coordinate alignment, including array
 Install the optional `cf-xarray` extra with:
 
 ```bash
-uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
+uv add "spharmgrid[cf]"
 ```
 
 When installed, `cf-xarray` provides an additional latitude/longitude discovery path after exact CF metadata and canonical coordinate names are checked.
@@ -57,7 +57,7 @@ When installed, `cf-xarray` provides an additional latitude/longitude discovery 
 Install Dask support with:
 
 ```bash
-uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
+uv add "spharmgrid[dask]"
 ```
 
 Dask-backed xarray fields remain lazy. Horizontal core dimensions are rechunked when required by xarray generalized ufunc execution. The default is one DUCC thread per Dask task; pass `nthreads=` to use another value.

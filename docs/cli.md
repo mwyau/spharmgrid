@@ -2,14 +2,31 @@
 
 The `spharmgrid` command applies filtering, regridding, and atmospheric wind diagnostics to xarray-supported files.
 
-NetCDF input/output is available in the base install. Install other file backends only when needed:
+The `spharmgrid` executable is installed with the core package, so
+`spharmgrid --help` and `spharmgrid --version` work without the CLI extra.
+File-processing commands require the optional CLI backends. If they are not
+installed, the command exits with an actionable installation message.
+
+Install the complete command-line I/O environment with:
 
 ```bash
-uv add "spharmgrid[zarr] @ git+https://github.com/mwyau/spharmgrid.git"
-uv add "spharmgrid[grib] @ git+https://github.com/mwyau/spharmgrid.git"
+uv tool install "spharmgrid[cli]"
 ```
 
-Input decoding is delegated to xarray and its installed backends. NetCDF input/output uses h5netcdf. Output paths ending in `.zarr` are written as Zarr stores when the `zarr` extra is installed. GRIB input is available through the `grib` extra.
+This installs the standalone `spharmgrid` executable in an isolated uv tool
+environment. In a normal project environment, use either:
+
+```bash
+uv add "spharmgrid[cli]"
+pip install "spharmgrid[cli]"
+```
+
+The CLI supports NetCDF read/write, Zarr read/write, and GRIB input. Actual
+decoding and encoding are delegated to xarray and the backend packages in the
+`cli` extra: `h5netcdf`, `zarr`, and `cfgrib`. A path ending in `.zarr` uses
+the Zarr path; other inputs use xarray's normal dataset-opening dispatch, and
+other outputs are written as NetCDF through `h5netcdf`. GRIB output is not
+supported.
 
 ```bash
 spharmgrid info input.nc

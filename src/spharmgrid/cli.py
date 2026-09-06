@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Sequence
+from importlib.metadata import PackageNotFoundError, version
+from importlib.util import find_spec
 from pathlib import Path
 
 import xarray as xr
@@ -13,6 +16,15 @@ from .kinematics import kinematics, potentials, wind
 from .metadata import Quantity, find_variable
 from .regrid import regrid
 from .spectral import filter
+
+_CLI_INSTALL_MESSAGE = (
+    "CLI dependencies are not installed.\n\n"
+    'Install them with:\n    pip install "spharmgrid[cli]"'
+)
+
+
+class _CLIDependencyError(RuntimeError):
+    """Raised when a file operation needs the optional CLI dependencies."""
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -32,6 +44,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _potentials(arguments)
         if arguments.command == "wind":
             return _wind(arguments)
+    except _CLIDependencyError as error:
+        print(str(error), file=sys.stderr)
+        return 2
     except (ImportError, OSError, ValueError, TypeError) as error:
         parser.error(str(error))
     parser.error(f"unknown command {arguments.command!r}")
@@ -41,7 +56,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="spharmgrid",
-        description="DUCC0-backed spherical-harmonic operations for xarray files.",
+        description=(
+            "DUCC0-backed spherical-harmonic operations for xarray files. "
+            "CLI I/O supports NetCDF and Zarr read/write plus GRIB input."
+        ),
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s " + _package_version(),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -109,8 +132,14 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("input", help="input readable by an installed xarray backend")
-    parser.add_argument("output", help="output NetCDF file or .zarr store")
+    parser.add_argument(
+        "input",
+        help="input NetCDF, Zarr, or GRIB path handled by an installed xarray backend",
+    )
+    parser.add_argument(
+        "output",
+        help="output NetCDF file or .zarr store (GRIB is input-only)",
+    )
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
@@ -229,18 +258,61 @@ def _is_zarr_path(path: str) -> bool:
 
 
 def _open_dataset(path: str) -> xr.Dataset:
-    """Open a dataset through xarray, dispatching Zarr stores by suffix."""
+    """Open NetCDF, Zarr, or another xarray-supported input path."""
     if _is_zarr_path(path):
-        return xr.open_zarr(path)
-    return xr.open_dataset(path)
+        if find_spec("zarr") is None:
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
+        try:
+            return xr.open_zarr(path)
+        except ImportError as error:
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+    if not _input_backend_available(path):
+        raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
+    try:
+        return xr.open_dataset(path)
+    except ImportError as error:
+        raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+    except ValueError as error:
+        if not _input_backend_available(path):
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+        raise
 
 
 def _write_dataset(dataset: xr.Dataset, output: str) -> None:
-    """Write Zarr by suffix and NetCDF through the bundled h5netcdf backend."""
+    """Write a Zarr store or NetCDF through the CLI h5netcdf backend."""
     if _is_zarr_path(output):
-        dataset.to_zarr(output, mode="w")
+        if find_spec("zarr") is None:
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
+        try:
+            dataset.to_zarr(output, mode="w")
+        except ImportError as error:
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
         return
-    dataset.to_netcdf(output, engine="h5netcdf")
+    if find_spec("h5netcdf") is None:
+        raise _CLIDependencyError(_CLI_INSTALL_MESSAGE)
+    try:
+        dataset.to_netcdf(output, engine="h5netcdf")
+    except ImportError as error:
+        raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+    except ValueError as error:
+        if find_spec("h5netcdf") is None:
+            raise _CLIDependencyError(_CLI_INSTALL_MESSAGE) from error
+        raise
+
+
+def _input_backend_available(path: str) -> bool:
+    """Check the CLI backend expected for a failed generic input dispatch."""
+    if Path(path).suffix.lower() in {".grib", ".grib1", ".grib2", ".grb"}:
+        return find_spec("cfgrib") is not None
+    return find_spec("h5netcdf") is not None
+
+
+def _package_version() -> str:
+    """Return the installed package version without importing optional I/O."""
+    try:
+        return version("spharmgrid")
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def _select_variable(dataset: xr.Dataset, name: str | None) -> xr.DataArray:

@@ -9,16 +9,28 @@ Supported grids are full rectangular Gauss--Legendre (GL) and pole-including Cle
 ## Install
 
 ```bash
-uv add git+https://github.com/mwyau/spharmgrid.git
+pip install spharmgrid
+uv add spharmgrid
 ```
 
-NetCDF support is included in the base install. Optional integrations can be installed separately:
+The core `spharmgrid` install provides the numerical Python/xarray API.
+Optional capabilities are:
+
+- `spharmgrid[dask]` — Dask-backed lazy execution;
+- `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
+- `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
+
+For a standalone command-line installation, use the isolated tool environment:
 
 ```bash
-uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
-uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
-uv add "spharmgrid[zarr] @ git+https://github.com/mwyau/spharmgrid.git"
-uv add "spharmgrid[grib] @ git+https://github.com/mwyau/spharmgrid.git"
+uv tool install "spharmgrid[cli]"
+```
+
+For a normal project environment, use either:
+
+```bash
+uv add "spharmgrid[cli]"
+pip install "spharmgrid[cli]"
 ```
 
 ## Quick start
@@ -64,7 +76,12 @@ recovered_field = gradient.gradient_eastward.sg.inverse_gradient(
 wind_laplacian = ds.sg.vector_laplacian()
 ```
 
-The command-line interface delegates file decoding to xarray. NetCDF input/output works in the base install. Zarr input/output and GRIB input are available through the optional `zarr` and `grib` extras.
+The command-line interface is an optional file-I/O capability. Install
+`spharmgrid[cli]` for NetCDF and Zarr read/write plus GRIB read support. File
+decoding and encoding are delegated to xarray and its installed backend
+packages; GRIB output is not supported. The core-installed `spharmgrid`
+executable still supports `spharmgrid --help` and `spharmgrid --version`; file
+processing reports how to install the CLI extra when its backends are absent.
 
 `inverse_gradient()` sets the scalar degree-zero coefficient to zero and returns the irrotational projection when the supplied vector contains a rotational component. `inverse_vector_laplacian()` sets its degree-zero vector-harmonic slots to zero. See the operator documentation for these conventions.
 

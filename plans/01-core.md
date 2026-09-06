@@ -317,19 +317,25 @@ spharmgrid potentials
 spharmgrid wind
 ```
 
-NetCDF is part of the base installation. `h5netcdf[h5py]` provides the bundled
-xarray NetCDF backend, and CLI NetCDF output is written explicitly through
-`engine="h5netcdf"`.
-
-Zarr and GRIB remain optional file-format integrations. A path ending in
-`.zarr` is opened with `xarray.open_zarr()` and written with
-`Dataset.to_zarr()` when the `zarr` extra is installed. Other input paths use
+The core runtime is limited to `numpy`, `xarray`, and `ducc0`. The CLI is an
+optional file-I/O capability with one user-facing `cli` extra containing
+`h5netcdf[h5py]`, `zarr`, and `cfgrib`. A path ending in `.zarr` is opened with
+`xarray.open_zarr()` and written with `Dataset.to_zarr()`. Other input paths use
 `xarray.open_dataset()`, allowing installed engines such as h5netcdf or cfgrib
-to handle them. GRIB is input-only through cfgrib.
+to handle them. Other outputs are written as NetCDF through
+`engine="h5netcdf"`; GRIB is input-only through cfgrib. Actual decoding and
+encoding remain delegated to xarray and its backend packages.
 
 The CLI should not introduce a separate file abstraction or numerical path.
 Python callers may still supply already-open xarray objects or use other xarray
 backends themselves.
+
+The `spharmgrid` console entry point remains available from a core-only install
+for `--help` and `--version`. File-processing commands require the optional
+`cli` backends and report an actionable `pip install "spharmgrid[cli]"`
+message when those imports are unavailable. Optional backend imports stay lazy;
+constructing the argument parser and importing `spharmgrid` do not require
+`h5netcdf`, `zarr`, or `cfgrib`.
 
 ---
 
@@ -341,30 +347,23 @@ Core runtime dependencies are:
 numpy
 xarray
 ducc0
-h5netcdf[h5py]
 ```
 
-NetCDF is core because the installed `spharmgrid` CLI is expected to read and
-write ordinary atmospheric NetCDF files without an additional package extra.
-Do not use xarray's broad `io` extra for this purpose; it brings unrelated I/O
-packages and calendar support that spharmgrid does not require.
-
-Keep optional concerns separate:
+Keep optional user-facing capabilities explicit:
 
 ```text
-cf-xarray       coordinate/CF integration aid
-Dask            lazy xarray execution
-cfgrib          GRIB input through xarray
-zarr            Zarr CLI input/output
-pyspharm-syl    independent SPHEREPACK parity environment
+cf              optional cf-xarray coordinate discovery
+dask            lazy Dask-backed xarray execution
+cli             NetCDF and Zarr read/write plus GRIB input for the CLI
 ```
 
-The ordinary test environment includes Zarr because the CLI Zarr read/write
-path is exercised directly. NetCDF tests use the core h5netcdf backend. GRIB
-remains an optional install extra and is checked in a dedicated backend lane
-because cfgrib/ecCodes have a heavier platform footprint. `cftime` is not a
-direct spharmgrid dependency unless a future test or feature explicitly uses
-cftime objects.
+The ordinary test environment directly declares cftime, h5netcdf, and Zarr:
+the calendar-preservation test imports cftime, and the CLI NetCDF and Zarr
+read/write paths are exercised directly. GRIB remains optional and is checked
+in a dedicated Linux backend lane because cfgrib/ecCodes have a heavier
+platform footprint. cftime is test-only rather than a direct spharmgrid
+runtime dependency. `pyspharm-syl` remains an independent parity-only
+dependency.
 
 uv's normal `dev` dependency group remains enabled so standard local commands
 such as `uv run ruff`, `uv run ty check`, and `uv run pytest` work without
@@ -375,11 +374,12 @@ Python 3.12--3.14 is the current supported matrix. The independent parity
 dependency may use a narrower interpreter range without narrowing production
 support.
 
-The free-threaded compatibility probe checks core modules independently,
-including h5netcdf and h5py, then installs and checks each optional integration
-separately. A package that cannot install or that enables the GIL is reported as
-a warning so one incompatibility does not prevent the remaining checks from
-running.
+The free-threaded compatibility probe checks each direct supported module in a
+fresh Python process: the three core dependencies, `cf_xarray`, `dask`, the
+three CLI backends, and `spharmgrid`. A package that cannot import or that
+enables the GIL is reported as a warning so one incompatibility does not
+prevent the remaining checks from running. Transitive implementation
+dependencies are not probed separately.
 
 ---
 
@@ -434,7 +434,8 @@ Documentation must state:
 - wind sign/component conventions;
 - CF discovery/metadata behavior;
 - Dask/thread behavior;
-- NetCDF CLI support in the base install, Zarr output, and optional GRIB input;
+- NetCDF and Zarr CLI read/write through the `cli` extra, plus optional GRIB
+  input;
 - NCL/SPHEREPACK's role as semantic/parity reference;
 - PyStormTracker's role as the source of the initial extracted implementation.
 
