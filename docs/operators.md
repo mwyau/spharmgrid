@@ -77,6 +77,4 @@ The vector Laplacian acts on tangent vector harmonics. For both E and B families
 -\frac{\ell(\ell+1)}{R^2}(E_{\ell m}, B_{\ell m}).
 ```
 
-This differs from applying the scalar Laplacian independently to eastward and northward geographic components.
-
 `inverse_vector_laplacian()` applies $-R^2/[\ell(\ell+1)]$ at positive degree. Degree-zero vector harmonic slots do not represent tangent-vector modes and are set to zero. Applying the inverse after the vector Laplacian therefore recovers all representable positive-degree modes.
