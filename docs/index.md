@@ -47,6 +47,7 @@ cf
 cli
 api
 comparison
+changelog
 references
 ```
 
