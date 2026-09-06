@@ -18,7 +18,7 @@ Optional capabilities are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 
-Dask-backed transforms remain lazy. DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid defaults to roughly one concurrent transform per four available CPUs unless `num_workers` is already configured.
+Dask-backed transforms execute lazily. DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid defaults to roughly one concurrent transform per four available CPUs unless `num_workers` is already configured.
 - `spharmgrid[cf]` — optional cf-xarray coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
