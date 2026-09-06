@@ -1,12 +1,10 @@
 # Atmospheric wind diagnostics and inverse transforms
 
-spharmgrid computes relative vorticity, horizontal divergence, streamfunction,
-and velocity potential from global wind fields. It can also reconstruct
-rotational, divergent, or full wind fields from those quantities.
+spharmgrid computes relative vorticity, horizontal divergence, streamfunction, and velocity potential from global wind fields. It also reconstructs rotational, divergent, or full wind fields from these quantities.
 
 ## Vorticity, divergence, streamfunction, and velocity potential
 
-Given geographic eastward `u` and northward `v` wind:
+For geographic eastward wind `u` and northward wind `v`:
 
 ```python
 vo = sg.vorticity(u, v)
@@ -18,8 +16,7 @@ vp = sg.velocity_potential(u, v)
 pot = sg.potentials(u, v)  # Dataset: strf, vp
 ```
 
-For a Dataset, `u` and `v` can be identified from exact CF standard names or
-canonical short names:
+Dataset accessors identify `u` and `v` from exact CF standard names or canonical short names:
 
 ```python
 kin = ds.sg.kinematics()
@@ -28,8 +25,7 @@ pot = ds.sg.potentials()
 
 ## Potentials and signs
 
-The returned streamfunction `strf` ($\psi$) and velocity potential `vp`
-($\chi$) use
+The returned streamfunction `strf` ($\psi$) and velocity potential `vp` ($\chi$) satisfy
 
 ```math
 \zeta=\nabla^2\psi,
@@ -45,9 +41,7 @@ For positive degree,
 \chi_{\ell m}=-\frac{R^2}{\ell(\ell+1)}\delta_{\ell m}.
 ```
 
-The degree-zero coefficients are set to zero. Input wind is expected in SI
-units of metres per second; relative vorticity and divergence are in `s-1`, and
-the potentials are in `m2 s-1`.
+Degree-zero coefficients are set to zero. Input wind is in metres per second. Relative vorticity and divergence are in `s-1`; streamfunction and velocity potential are in `m2 s-1`.
 
 ## Helmholtz decomposition
 
@@ -56,18 +50,12 @@ parts = u.sg.helmholtz(v)
 # Dataset variables: u_divergent, v_divergent, u_rotational, v_rotational
 
 parts = ds.sg.helmholtz()
-
-# Direct equivalent.
 parts = sg.helmholtz(u, v)
 ```
 
-`helmholtz()` separates one tangent wind field into its divergent and
-rotational components. For a representable field, each pair sums back to the
-corresponding input geographic component.
+`helmholtz()` separates a tangent wind field into divergent and rotational components. For a representable field, the two eastward components sum to the input eastward wind and the two northward components sum to the input northward wind.
 
-The radius factors cancel, so the numerical `radius` value does not change this
-decomposition. The four outputs use descriptive `long_name` metadata because
-CF has no exact standard names for divergent and rotational component winds.
+The radius factors cancel in this decomposition. The four output fields use `long_name` metadata because CF has no exact standard names for divergent and rotational wind components.
 
 ## Rotational and divergent wind
 
@@ -79,13 +67,7 @@ rot = sg.rotational_wind(field, quantity="streamfunction")
 div = sg.divergent_wind(field, quantity="divergence")
 ```
 
-`rotational_wind()` accepts relative vorticity or streamfunction.
-`divergent_wind()` accepts divergence or velocity potential. The returned
-Datasets contain `u_rotational`/`v_rotational` or
-`u_divergent`/`v_divergent`.
-
-CF has no exact standard names for these component fields, so the outputs use
-`long_name` metadata and `m s-1` units.
+`rotational_wind()` accepts relative vorticity or streamfunction. `divergent_wind()` accepts divergence or velocity potential. The returned Datasets contain `u_rotational`/`v_rotational` or `u_divergent`/`v_divergent`.
 
 ## Full inverse wind
 
@@ -96,7 +78,4 @@ from_potentials = sg.wind(strf, vp)
 from_dataset = xr.Dataset({"vo": vo, "d": d}).sg.wind()
 ```
 
-`wind()` identifies the source representation from exact CF metadata or
-canonical short names when possible. Use `source="vorticity_divergence"` or
-`source="potentials"` when the input fields cannot be identified. A Dataset
-containing both complete representations also requires `source=`.
+`wind()` identifies vorticity/divergence or streamfunction/velocity-potential inputs from exact CF metadata or canonical short names. Use `source="vorticity_divergence"` or `source="potentials"` when the input fields cannot be identified uniquely. A Dataset containing both complete representations also requires `source=`.
