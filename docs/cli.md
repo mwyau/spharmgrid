@@ -33,12 +33,12 @@ spharmgrid info input.nc
 
 spharmgrid filter input.nc output.nc \
   --var msl \
-  --spectral T6-42 \
+  --truncation T6-42 \
   --taper 0.1
 
 spharmgrid filter input.zarr output.zarr \
   --var msl \
-  --spectral T42
+  --truncation T42
 
 spharmgrid regrid input.grib output.zarr \
   --var msl \
