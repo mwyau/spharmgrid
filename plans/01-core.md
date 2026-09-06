@@ -130,7 +130,7 @@ T6-42     -> l = 6..42
 ```
 
 Parsing is case-insensitive and accepts an en dash. Explicit `lmin`/`lmax`
-bounds are equivalent. Do not mix `spectral=` with explicit bounds in one call.
+bounds are equivalent. Do not mix `truncation=` with explicit bounds in one call.
 
 ## Filtering
 
