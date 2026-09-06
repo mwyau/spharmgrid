@@ -1,6 +1,6 @@
 # Repository engineering
 
-Use this skill for package layout, `pyproject.toml`, dependency groups, uv, lint/type/test tooling, CLI packaging, documentation build configuration, and CI.
+Use this skill for package layout, `pyproject.toml`, dependency groups, uv, lint/type/test tooling, CLI packaging, documentation build configuration, CI, releases, and publishing.
 
 ## Package and environment
 
@@ -42,7 +42,7 @@ parity   pyspharm/SPHEREPACK comparison tooling
 
 The exact pyproject organization may use dependency groups versus package extras according to whether users need to request the dependency at install time. Do not expose a package extra solely for internal developer tooling.
 
-Do not add Pint, MPI, HEALPix, regional-grid libraries, or alternate SHT backends in the first implementation.
+Do not add Pint, MPI, HEALPix, regional-grid libraries, or alternate SHT backends until the relevant implementation phase requires them.
 
 ## uv workflow
 
@@ -56,7 +56,7 @@ Configure Ruff and typing once rather than scattering command flags across workf
 
 Use explicit type annotations for public functions and meaningful internal boundaries. Do not introduce `Any`, broad casts, compatibility aliases, or wrappers only to silence the type checker. Small targeted casts at third-party typing boundaries are acceptable when the runtime contract is verified.
 
-Keep the public top-level namespace limited to the API defined in `PLAN.md`.
+Keep the public top-level namespace limited to the implemented API defined by the current phase plans under `plans/` and documented in `docs/api.md`.
 
 ## Tests
 
@@ -84,7 +84,7 @@ Delegate file reading/writing to xarray and installed engines. Keep optional for
 
 ## Documentation build
 
-Follow `skills/documentation/SKILL.md`.
+Follow the repository-wide writing instructions in `AGENTS.md`, including `mwyau/write-like-a-scientist` for README, documentation, comments, docstrings, references, and technical/scientific prose.
 
 Use Sphinx + MyST + `sphinx_rtd_theme` with `.readthedocs.yaml`. Keep documentation dependencies in a lightweight `docs` group and use a strict local Sphinx build.
 
@@ -92,15 +92,34 @@ Do not copy PyStormTracker's Node/Mermaid/PDF setup unless spharmgrid documentat
 
 ## CI
 
-Add only CI needed to validate the package:
+Keep CI limited to checks that validate the supported package:
 
-- ordinary Python tests/lint/type checks across a reasonable supported matrix;
-- documentation build;
-- optional dedicated SPHEREPACK parity job on a Python version where the comparison dependency installs reliably.
+- ordinary Python tests across a reasonable supported matrix;
+- Ruff and configured type checks;
+- minimum-direct-dependency testing;
+- strict documentation build;
+- optional dedicated SPHEREPACK parity on a Python version where the comparison dependency installs reliably;
+- non-blocking compatibility probes only when they provide useful forward-looking information without weakening release gates.
 
-Do not add release or publishing workflows during the GitHub-only stage.
+Do not make ordinary branch CI build release distributions on every push. Release packaging belongs in the release/publish workflow after the release-tag CI has succeeded.
 
-Keep workflow YAML small. Prefer calling project commands/configuration over duplicating long shell logic inside workflows.
+## Release and publishing
+
+Preserve the tested-artifact publishing model.
+
+For a release tag:
+
+1. the normal CI workflow must complete successfully for the tagged commit;
+2. the publish workflow must build the wheel and source distribution from that exact tested commit;
+3. install/import/CLI smoke tests and strict distribution metadata checks must run on those artifacts before publishing;
+4. upload the validated distributions as a workflow artifact and publish those exact files rather than rebuilding them;
+5. require exact tag/package-version agreement for tagged releases;
+6. preserve Trusted Publishing/OIDC and build provenance attestations;
+7. route development prereleases such as `.devN` to TestPyPI and stable releases to PyPI unless the owner explicitly changes that policy.
+
+Normal pushes to `main` and pull requests should not create skipped publish workflow runs. Filter release workflow triggers before job creation where GitHub Actions supports it.
+
+Manual publishing should identify a successful CI run and build from that run's exact source commit. Manual runs remain TestPyPI-only unless the owner explicitly requests a different release policy.
 
 ## Completion check
 
@@ -112,5 +131,6 @@ Before repository-engineering work is complete:
 - tests, Ruff, and configured typing pass;
 - the strict docs build passes;
 - optional dependency absence is tested or handled clearly;
-- no release/tag/PyPI/Zenodo machinery was added;
-- no PyStormTracker dependency or source modification was introduced.
+- package metadata and supported Python classifiers match actual behavior;
+- release workflows, when changed, preserve tested-artifact publishing and tag/version agreement;
+- no unintended PyStormTracker dependency or sibling-repository modification is introduced.
