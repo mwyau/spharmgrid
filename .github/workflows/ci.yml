@@ -69,8 +69,8 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --extra cf --extra dask --frozen
-      - run: uv run --no-sync pytest
+      - run: uv sync --no-default-groups --group test --extra cf --extra dask --frozen
+      - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
 
   file-backends:
     name: Optional file backends (Python 3.14)
