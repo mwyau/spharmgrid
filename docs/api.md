@@ -1,7 +1,5 @@
 # API reference
 
-The top-level namespace is small. Import it as:
-
 ```python
 import spharmgrid as sg
 ```
@@ -68,9 +66,7 @@ import spharmgrid as sg
 
 ## xarray accessors
 
-Importing spharmgrid registers `.sg` on both xarray types. The accessor methods
-delegate to the direct operations above; they do not use separate numerical
-kernels.
+Importing spharmgrid registers `.sg` on xarray `DataArray` and `Dataset`.
 
 ```{eval-rst}
 .. autoclass:: spharmgrid.accessors.DataArrayAccessor
