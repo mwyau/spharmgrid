@@ -1,6 +1,6 @@
 # Command-line interface
 
-The `spharmgrid` command applies filtering, regridding, and atmospheric wind diagnostics to xarray-supported files.
+The `spharmgrid` command applies filtering, regridding, and atmospheric kinematics to xarray-supported files.
 
 The `spharmgrid` executable is installed with the core package, so
 `spharmgrid --help` and `spharmgrid --version` work without the CLI extra.
