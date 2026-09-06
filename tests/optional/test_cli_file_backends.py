@@ -11,6 +11,9 @@ import spharmgrid as sg
 from spharmgrid.cli import main
 from tests.conftest import scalar_field, solid_body_wind, supported_grid
 
+pytest.importorskip("h5netcdf")
+pytest.importorskip("zarr")
+
 
 def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
     dataset.to_netcdf(path, engine="h5netcdf")
