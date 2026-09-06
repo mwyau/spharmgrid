@@ -157,7 +157,7 @@ Therefore:
 
 - explicit `Tn` requests may map naturally when the backend can represent the
   same triangular band;
-- `spectral=None` must not silently claim identical retained bandwidth across
+- `truncation=None` must not silently claim identical retained bandwidth across
   backends when the underlying engines differ;
 - unsupported backend/grid/bandwidth combinations must fail clearly;
 - do not silently clamp a user's explicit spectral request.
@@ -445,10 +445,10 @@ The primary Phase-3 accelerator APIs should be tensor/array native:
 import spharmgrid.torch as sgt
 import spharmgrid.jax as sgj
 
-filtered = sgt.filter(x, grid=grid, spectral="T42")
+filtered = sgt.filter(x, grid=grid, truncation="T42")
 vo, div = sgt.kinematics(u, v, grid=grid)
 
-filtered = sgj.filter(x, grid=grid, spectral="T42")
+filtered = sgj.filter(x, grid=grid, truncation="T42")
 vo, div = sgj.kinematics(u, v, grid=grid)
 ```
 
@@ -467,8 +467,8 @@ strings in the scientific API:
 
 ```python
 grid = sg.gaussian_grid(128, 256)
-sgt.filter(x, grid=grid, spectral="T42")
-sgj.filter(x, grid=grid, spectral="T42")
+sgt.filter(x, grid=grid, truncation="T42")
+sgj.filter(x, grid=grid, truncation="T42")
 ```
 
 Each adapter translates that grid into its backend's sampling terminology and
