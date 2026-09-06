@@ -147,11 +147,11 @@ def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
     u = u.copy(data=degree_two_u * np.ones((1, source.nlon)))
     v = v.copy(data=degree_two_v * np.ones((1, source.nlon)))
 
-    direct = sg.regrid_vector(u, v, target, spectral="T2", taper=0.1)
-    dataarray_accessor = u.sg.regrid_vector(v, target, spectral="T2", taper=0.1)
+    direct = sg.regrid_vector(u, v, target, truncation="T2", taper=0.1)
+    dataarray_accessor = u.sg.regrid_vector(v, target, truncation="T2", taper=0.1)
     dataset_accessor = xr.Dataset({"u": u, "v": v}).sg.regrid_vector(
         target,
-        spectral="T2",
+        truncation="T2",
         taper=0.1,
     )
     target_latitude = np.deg2rad(target.latitude)[:, None]
@@ -183,12 +183,12 @@ def test_vector_regridding_round_trip_is_band_limited() -> None:
     intermediate = supported_grid("gl")
     u, v = _axisymmetric_vector_field(source)
 
-    regridded = sg.regrid_vector(u, v, intermediate, spectral="T2")
+    regridded = sg.regrid_vector(u, v, intermediate, truncation="T2")
     restored = sg.regrid_vector(
         regridded.u,
         regridded.v,
         source,
-        spectral="T2",
+        truncation="T2",
     )
 
     np.testing.assert_allclose(restored.u, u, rtol=0.0, atol=3.0e-14)
@@ -199,8 +199,8 @@ def test_combined_filter_and_regrid_matches_single_spectral_cycle_result() -> No
     source = scalar_field(supported_grid("cc"))
     target = supported_grid("gl")
 
-    result = sg.regrid(source, target, spectral="T2", taper=1.0)
-    expected = sg.regrid(sg.filter(source, "T2"), target, spectral="T2")
+    result = sg.regrid(source, target, truncation="T2", taper=1.0)
+    expected = sg.regrid(sg.filter(source, "T2"), target, truncation="T2")
 
     np.testing.assert_allclose(result, expected, rtol=0.0, atol=5.0e-15)
 
@@ -215,7 +215,7 @@ def test_regridding_restores_descending_and_shifted_target_coordinates() -> None
     )
     source = scalar_field(source_grid)
 
-    result = sg.regrid(source, target_grid, spectral="T3")
+    result = sg.regrid(source, target_grid, truncation="T3")
     expected = scalar_field(target_grid)
 
     np.testing.assert_allclose(result, expected, rtol=0.0, atol=1.0e-14)
@@ -286,8 +286,8 @@ def test_accessor_and_direct_scalar_paths_are_identical() -> None:
     field = scalar_field(supported_grid("cc"), leading=True)
     target = supported_grid("gl")
 
-    direct = sg.regrid(field, target, spectral="T2", taper=0.4)
-    accessor = field.sg.regrid(target, spectral="T2", taper=0.4)
+    direct = sg.regrid(field, target, truncation="T2", taper=0.4)
+    accessor = field.sg.regrid(target, truncation="T2", taper=0.4)
 
     xr.testing.assert_identical(direct, accessor)
 
@@ -305,7 +305,7 @@ def test_scalar_operator_accessors_delegate_to_direct_functions() -> None:
 def test_spectral_error_cases_are_explicit() -> None:
     field = scalar_field(supported_grid("cc"))
 
-    with pytest.raises(ValueError, match="either spectral"):
+    with pytest.raises(ValueError, match="either truncation"):
         sg.filter(field, "T2", lmin=0, lmax=2)
     with pytest.raises(ValueError, match="both lmin"):
         sg.filter(field, lmax=2)
@@ -314,6 +314,6 @@ def test_spectral_error_cases_are_explicit() -> None:
     with pytest.raises(ValueError, match="exceeds"):
         sg.filter(field, "T99")
     with pytest.raises(ValueError, match="exceeds"):
-        sg.regrid(field, sg.clenshaw_curtis_grid(9, 18), spectral="T8")
+        sg.regrid(field, sg.clenshaw_curtis_grid(9, 18), truncation="T8")
     with pytest.raises(ValueError, match="must be distinct"):
         sg.gradient(field, eastward="gradient", northward="gradient")
