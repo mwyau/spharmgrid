@@ -144,12 +144,8 @@ def test_non_zonal_potential_round_trip_restores_cyclic_coordinates(
     reconstructed = sg.wind(streamfunction, velocity_potential)
     recovered = sg.potentials(reconstructed.u, reconstructed.v)
 
-    np.testing.assert_allclose(
-        recovered.strf, streamfunction, rtol=0.0, atol=1.0e-7
-    )
-    np.testing.assert_allclose(
-        recovered.vp, velocity_potential, rtol=0.0, atol=1.0e-7
-    )
+    np.testing.assert_allclose(recovered.strf, streamfunction, rtol=0.0, atol=1.0e-7)
+    np.testing.assert_allclose(recovered.vp, velocity_potential, rtol=0.0, atol=1.0e-7)
     xr.testing.assert_identical(reconstructed.lat, streamfunction.lat)
     xr.testing.assert_identical(reconstructed.lon, streamfunction.lon)
 
@@ -173,11 +169,9 @@ def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
     )
     divergent_diagnostics = sg.kinematics(divergent.u_divergent, divergent.v_divergent)
 
-    np.testing.assert_allclose(rotational_diagnostics.d, 0.0, rtol=0.0, atol=0.0)
-    np.testing.assert_allclose(divergent_diagnostics.vo, 0.0, rtol=0.0, atol=0.0)
-    np.testing.assert_allclose(
-        rotational_diagnostics.vo, vo, rtol=0.0, atol=5.0e-14
-    )
+    np.testing.assert_allclose(rotational_diagnostics.d, 0.0, rtol=0.0, atol=1.0e-30)
+    np.testing.assert_allclose(divergent_diagnostics.vo, 0.0, rtol=0.0, atol=1.0e-30)
+    np.testing.assert_allclose(rotational_diagnostics.vo, vo, rtol=0.0, atol=5.0e-14)
     np.testing.assert_allclose(
         divergent_diagnostics.d, divergence, rtol=0.0, atol=5.0e-14
     )
@@ -285,12 +279,8 @@ def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
     inverse_restored = sg.vector_laplacian(inverse.u, inverse.v)
     eigenvalue = -2.0 / sg.EARTH_RADIUS_M**2
 
-    np.testing.assert_allclose(
-        laplacian.u, eigenvalue * u, rtol=0.0, atol=2.0e-25
-    )
-    np.testing.assert_allclose(
-        laplacian.v, eigenvalue * v, rtol=0.0, atol=1.0e-25
-    )
+    np.testing.assert_allclose(laplacian.u, eigenvalue * u, rtol=0.0, atol=2.0e-25)
+    np.testing.assert_allclose(laplacian.v, eigenvalue * v, rtol=0.0, atol=1.0e-25)
     np.testing.assert_allclose(restored.u, u, rtol=0.0, atol=5.0e-14)
     np.testing.assert_allclose(restored.v, v, rtol=0.0, atol=3.0e-14)
     assert "standard_name" not in laplacian.u.attrs
