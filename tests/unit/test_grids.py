@@ -24,8 +24,8 @@ def test_constructed_grid_is_detected(
     detected = sg.detect_grid(field)
 
     assert detected.kind == kind
-    np.testing.assert_allclose(detected.latitude, grid.latitude)
-    np.testing.assert_allclose(detected.longitude, grid.longitude)
+    np.testing.assert_array_equal(detected.latitude, grid.latitude)
+    np.testing.assert_array_equal(detected.longitude, grid.longitude)
     assert field.sg.grid_type == kind
 
 
@@ -39,8 +39,8 @@ def test_cyclic_longitude_conventions_preserve_the_physical_field(
 
     result = sg.filter(field, "T3")
 
-    np.testing.assert_allclose(result, field, rtol=2.0e-11, atol=2.0e-11)
-    np.testing.assert_allclose(result.lon, field.lon)
+    np.testing.assert_allclose(result, field, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_array_equal(result.lon, field.lon)
 
 
 def test_cf_coordinate_metadata_precedes_canonical_name() -> None:
