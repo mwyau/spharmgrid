@@ -63,7 +63,6 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          save-cache: false
           python-version: ${{ matrix.python }}
       - run: uv sync --extra cf --extra dask --frozen
       - run: uv run --no-sync pytest
@@ -99,7 +98,6 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          save-cache: false
           python-version: "3.14t"
       - run: uv sync --no-default-groups --frozen
       - name: Check core free-threaded imports
