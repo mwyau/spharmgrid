@@ -67,7 +67,6 @@ docs = [
     "sphinx-rtd-theme>=3.1.0",
 ]
 test = [
-    "cfgrib>=0.9.15.1",
     "h5netcdf>=1.8.0",
     "pytest>=9.1.1",
     "zarr>=3.0.0",
