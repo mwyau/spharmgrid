@@ -1,6 +1,6 @@
 # Spectral regridding
 
-`regrid()` supports every pairwise combination of GL and CC grids:
+`regrid()` supports all combinations of GL and CC grids:
 
 ```text
 GL -> GL    GL -> CC
@@ -15,13 +15,13 @@ result = field.sg.regrid(target)
 result = sg.regrid(field, reference_field)
 ```
 
-For a `Grid` target, spharmgrid uses the source horizontal dimension names and
-attaches generated CF coordinate metadata. For an xarray target, it uses the
-target's horizontal dimension and coordinate names.
+For a `Grid` target, spharmgrid keeps the source horizontal dimension names and
+adds CF latitude/longitude metadata. For an xarray target, the target's
+horizontal dimension and coordinate names are used.
 
-## One analysis and one synthesis
+## Filtering during regridding
 
-Filtering and regridding share one transform cycle:
+A spectral range and taper can be applied in the same call:
 
 ```python
 result = field.sg.regrid(
@@ -31,10 +31,6 @@ result = field.sg.regrid(
 )
 ```
 
-This performs one source analysis, applies the optional selection/taper to the
-coefficients, and performs one target synthesis. It does not call public
-`filter()` followed by public `regrid()`.
-
-Without a requested range, the operation uses content jointly representable by
-the source and target geometry. If an explicit `Tn` range cannot be represented
-on either grid, it raises instead of silently clamping the range.
+Without an explicit spectral range, regridding retains the content jointly
+representable by the source and target grids. An explicit `Tn` range must be
+representable by both grids.
