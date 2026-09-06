@@ -2,14 +2,12 @@
 
 ## Dataset variable discovery
 
-Dataset wind methods resolve each physical quantity in this order:
+Dataset wind methods identify each physical quantity in this order:
 
 1. an explicit argument, such as `u="ua"`;
 2. one unique exact CF `standard_name` match;
 3. the canonical short name;
 4. an error if no unique match exists.
-
-The canonical identities are:
 
 | Quantity | Short name | CF `standard_name` |
 | --- | --- | --- |
@@ -20,8 +18,6 @@ The canonical identities are:
 | Streamfunction | `strf` | `atmosphere_horizontal_streamfunction` |
 | Velocity potential | `vp` | `atmosphere_horizontal_velocity_potential` |
 
-For example:
-
 ```python
 ds["uwind"].attrs["standard_name"] = "eastward_wind"
 ds["vwind"].attrs["standard_name"] = "northward_wind"
@@ -29,27 +25,22 @@ ds["vwind"].attrs["standard_name"] = "northward_wind"
 kin = ds.sg.kinematics()
 ```
 
-If more than one variable matches the same quantity, spharmgrid lists the
-candidates and requires an explicit argument.
+If more than one variable matches the same quantity, spharmgrid reports the candidates and requires an explicit variable name.
 
 ## Output metadata
 
-Derived wind diagnostics use the CF metadata in the table. Renaming an output
-does not change its physical metadata:
+Derived wind diagnostics use the CF metadata in the table. Renaming an output does not change its physical metadata:
 
 ```python
 vo = ds.sg.vorticity(output="vort")
 assert vo.attrs["standard_name"] == "atmosphere_relative_vorticity"
 ```
 
-Filtering and regridding preserve the input variable name and attributes.
-Generated target coordinates carry CF latitude/longitude metadata.
+Filtering and regridding preserve the input variable name and attributes. Generated target coordinates include CF latitude and longitude metadata.
 
 ## Dimensions and time
 
-Transforms preserve arbitrary leading dimensions and coordinate alignment,
-including shapes such as `(time, level, lat, lon)`. NumPy datetimes and
-`cftime` calendar objects remain xarray coordinates through the operation.
+Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects remain xarray coordinates through the operation.
 
 ## cf-xarray
 
@@ -59,8 +50,7 @@ Install the optional `cf-xarray` extra with:
 uv add "spharmgrid[cf] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
-When installed, `cf-xarray` can assist latitude/longitude discovery after exact
-CF metadata and canonical coordinate names are checked.
+When installed, `cf-xarray` provides an additional latitude/longitude discovery path after exact CF metadata and canonical coordinate names are checked.
 
 ## Dask
 
@@ -70,6 +60,4 @@ Install Dask support with:
 uv add "spharmgrid[dask] @ git+https://github.com/mwyau/spharmgrid.git"
 ```
 
-Dask-backed xarray fields remain lazy. Horizontal core dimensions are rechunked
-when required by xarray's generalized ufunc execution. The default is one DUCC
-thread per Dask task; pass `nthreads=` to choose another value.
+Dask-backed xarray fields remain lazy. Horizontal core dimensions are rechunked when required by xarray generalized ufunc execution. The default is one DUCC thread per Dask task; pass `nthreads=` to use another value.
