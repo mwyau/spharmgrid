@@ -28,7 +28,7 @@ result = field.sg.regrid(
 )
 ```
 
-Without an explicit spectral range, regridding retains the spherical-harmonic content represented by both source and target grids. An explicit `Tn` range must be representable on both grids.
+Without an explicit spectral range, regridding retains the spherical harmonic content represented by both source and target grids. An explicit `Tn` range must be representable on both grids.
 
 ## Vector regridding
 
@@ -41,4 +41,4 @@ wind_on_target = sg.regrid_vector(u, v, target, spectral="T6-42", taper=0.1)
 
 Dataset accessors identify `u` and `v` from exact CF standard names or canonical short names.
 
-Vector regridding transforms the tangent wind field in vector spherical harmonics and applies the spectral selection or taper to both vector-harmonic families. The eastward and northward geographic components are not regridded independently as scalars. Output names default to `u` and `v`; use `eastward=` and `northward=` to change them.
+Vector regridding transforms the tangent wind field in vector spherical harmonics and applies the spectral selection or taper to both vector harmonic families. The eastward and northward geographic components are not regridded independently as scalars. Output names default to `u` and `v`; use `eastward=` and `northward=` to change them.
