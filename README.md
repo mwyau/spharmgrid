@@ -1,6 +1,6 @@
 # spharmgrid
 
-Spherical harmonics regridding tool for atmospheric science.
+Spherical-harmonic tools for filtering, regridding, and kinematics in atmospheric science with xarray.
 
 **spharmgrid** (**sp**herical **harm**onics **grid**ding) provides spherical-harmonic filtering, regridding, differential operators, and atmospheric wind diagnostics for global xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC0](https://gitlab.mpcdf.mpg.de/mtr/ducc) supplies the numerical spherical-harmonic transforms.
 
