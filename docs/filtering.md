@@ -1,6 +1,6 @@
 # Spectral filtering
 
-`DataArray.sg.filter()` and `sg.filter()` analyze a supported global field, select spherical-harmonic coefficients by total degree, and synthesize the filtered field on the same grid. The variable name and attributes are preserved.
+`DataArray.sg.filter()` and `sg.filter()` analyze a supported global field, select spherical harmonic coefficients by total degree, and synthesize the filtered field on the same grid. The variable name and attributes are preserved.
 
 ```python
 low_pass = field.sg.filter("T42")
