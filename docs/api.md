@@ -35,7 +35,7 @@ import spharmgrid as sg
 ```{eval-rst}
 .. autofunction:: spharmgrid.filter
 
-.. py:function:: spharmgrid.regrid(field, target_grid, spectral=None, *, lmin=None, lmax=None, taper=None, nthreads=None)
+.. py:function:: spharmgrid.regrid(field, target_grid, truncation=None, *, lmin=None, lmax=None, taper=None, nthreads=None)
 
    Spectrally regrid a GL or CC field. A spectral range and taper can be
    applied during regridding.
