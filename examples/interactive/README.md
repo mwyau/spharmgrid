@@ -7,6 +7,12 @@ timestamp. The application exposes wind speed and arrows, relative vorticity,
 divergence, streamfunction, velocity potential, rotational wind, and divergent
 wind.
 
+`Run All` renders the first ERA5 timestamp and stays on that frame. Time is a
+manual slider rather than an animation control, so no new spherical-harmonic
+transforms are started until a control is changed. Time, spectral-range, and
+taper-response sliders use throttled values and update after the slider is
+released.
+
 ## Run the example
 
 From the repository checkout:
@@ -75,9 +81,8 @@ GL target.
 
 `T0–42` retains total degrees 0 through 42; `T6–42` removes degrees 0 through
 5. With tapering enabled, `0.1` is the retained endpoint response, not a
-cutoff. Spectral controls use Panel's throttled slider values, and a small
-in-memory LRU cache avoids repeating the same processed-field computation for
-the two maps.
+cutoff. A small in-memory LRU cache avoids repeating the same processed-field
+computation for the two maps.
 
 The consistency-check card exercises wind reconstruction, Helmholtz
 decomposition, potential and Laplacian relationships, gradient and inverse
