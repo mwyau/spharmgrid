@@ -157,6 +157,10 @@ documentation describes implemented behavior; plans remain under `plans/`.
 ## Change control
 
 - Keep changes within the requested scope and preserve unrelated work.
+- Develop new features on a dedicated feature branch rather than directly on
+  `main`.
+- Use Conventional Commits-style subjects such as `feat: ...`, `fix: ...`,
+  `docs: ...`, `test: ...`, `ci: ...`, `refactor: ...`, or `chore: ...`.
 - Do not build abstractions or extension points for hypothetical future
   features. Add structure when current supported behavior needs it.
 - Do not force-push, reset shared history backwards, or overwrite newer unrelated
