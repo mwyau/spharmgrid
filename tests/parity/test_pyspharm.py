@@ -17,13 +17,15 @@ spharm = pytest.importorskip(
     reason="run with uv --group parity on a supported Python version",
 )
 
-# pyspharm-syl exposes synthesized maps at float32 precision.  Keep the
-# measured field-level floors explicit for map reconstruction comparisons.
+# pyspharm-syl exposes synthesized maps at float32 precision.  These absolute
+# tolerances are calibrated from the maximum errors of the parity fixtures.
 _SCALAR_MAP_ATOL = 1.0e-6
 _VECTOR_MAP_ATOL = 6.0e-6
-_GRADIENT_ATOL = 1.0e-12
-_KINEMATIC_ATOL = 5.0e-12
-_POTENTIAL_RTOL = 2.0e-6
+_GRADIENT_ATOL = 5.0e-13
+_KINEMATIC_ATOL = 3.0e-12
+_WIND_POTENTIAL_ATOL = 2.5e1
+_INVERSE_GRADIENT_POTENTIAL_ATOL = 1.2e1
+_VECTOR_LAPLACIAN_ATOL = 1.0e-17
 
 
 class _SpharmTransform(Protocol):
@@ -223,16 +225,15 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
 
 
 @pytest.mark.parametrize(
-    ("kind", "gridtype", "potential_atol"),
+    ("kind", "gridtype"),
     [
-        ("gaussian", "gaussian", 1.0e-5),
-        ("cc", "regular", 8.0),
+        ("gaussian", "gaussian"),
+        ("cc", "regular"),
     ],
 )
 def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
     kind: Literal["cc", "gaussian"],
     gridtype: Literal["gaussian", "regular"],
-    potential_atol: float,
 ) -> None:
     grid = (
         _gaussian_grid()
@@ -288,20 +289,17 @@ def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
         rtol=0.0,
         atol=_KINEMATIC_ATOL,
     )
-    # The potential fields are O(1e8 m2 s-1), so their float32 cross-backend
-    # difference is checked relatively.  The CC equatorial zero still needs
-    # an absolute floor; its measured residual is below 5 m2 s-1.
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.strf.values)),
         reference_psi,
-        rtol=_POTENTIAL_RTOL,
-        atol=potential_atol,
+        rtol=0.0,
+        atol=_WIND_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.vp.values)),
         reference_chi,
-        rtol=_POTENTIAL_RTOL,
-        atol=potential_atol,
+        rtol=0.0,
+        atol=_WIND_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(reconstructed.u.values)),
@@ -469,27 +467,23 @@ def test_vector_sht_suite_matches_independent_spherepack(
         rtol=0.0,
         atol=_VECTOR_MAP_ATOL,
     )
-    # This isolated degree-one inverse-gradient field has a much smaller
-    # measured zero-crossing residual than the full wind-potential case.
     np.testing.assert_allclose(
         _north_to_south(np.asarray(potential.values)),
         reference_potential,
-        rtol=_POTENTIAL_RTOL,
-        atol=1.0e-8,
+        rtol=0.0,
+        atol=_INVERSE_GRADIENT_POTENTIAL_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(laplacian.u.values)),
         reference_lap_u,
         rtol=0.0,
-        # SPHEREPACK's wrapper returns these physical-laplacian maps as
-        # float32.  Their O(1e-12) signal has an O(1e-18) rounding floor.
-        atol=1.0e-17,
+        atol=_VECTOR_LAPLACIAN_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(laplacian.v.values)),
         reference_lap_v,
         rtol=0.0,
-        atol=1.0e-17,
+        atol=_VECTOR_LAPLACIAN_ATOL,
     )
     np.testing.assert_allclose(
         _north_to_south(np.asarray(inverse_laplacian.u.values)),
