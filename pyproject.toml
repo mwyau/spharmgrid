@@ -44,6 +44,14 @@ default-groups = []
 [tool.hatch.build.targets.wheel]
 packages = ["src/spharmgrid"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/AGENTS.md",
+    "/plans",
+    "/skills",
+]
+
 [dependency-groups]
 dev = [
     { include-group = "docs" },
