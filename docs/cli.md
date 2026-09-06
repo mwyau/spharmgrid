@@ -42,4 +42,6 @@ spharmgrid wind diagnostics.nc wind.nc \
   --vorticity vo --divergence d
 ```
 
+For a development checkout, uv includes the `dev` dependency group by default, so commands such as `uv run pytest`, `uv run ruff check src tests`, and `uv run ty check` work directly after the lockfile is current.
+
 Use `spharmgrid --help` or `spharmgrid <command> --help` for all options.
