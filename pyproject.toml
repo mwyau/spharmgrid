@@ -36,7 +36,8 @@ Repository = "https://github.com/mwyau/spharmgrid"
 [project.optional-dependencies]
 cf = ["cf-xarray>=0.10.4"]
 dask = ["dask[array]>=2024.1.0"]
-io = ["h5netcdf>=1.8.0", "h5py>=3.11.0"]
+netcdf = ["h5netcdf>=1.8.0"]
+zarr = ["zarr>=3.0.0"]
 
 [tool.uv]
 default-groups = []
@@ -65,8 +66,9 @@ docs = [
     "sphinx-rtd-theme>=3.1.0",
 ]
 test = [
-    "cftime>=1.6.5",
+    "h5netcdf>=1.8.0",
     "pytest>=9.1.1",
+    "zarr>=3.0.0",
 ]
 # pyspharm-syl supplies the independent SPHEREPACK comparison implementation.
 # Keep it out of normal test environments because it currently supports
