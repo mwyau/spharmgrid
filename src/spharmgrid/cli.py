@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 import xarray as xr
 
@@ -237,20 +236,11 @@ def _open_dataset(path: str) -> xr.Dataset:
 
 
 def _write_dataset(dataset: xr.Dataset, output: str) -> None:
-    """Write Zarr by suffix and otherwise write NetCDF with an installed engine."""
+    """Write Zarr by suffix and NetCDF through the bundled h5netcdf backend."""
     if _is_zarr_path(output):
         dataset.to_zarr(output, mode="w")
         return
-
-    engines = xr.backends.list_engines()
-    if "netcdf4" in engines:
-        dataset.to_netcdf(output, engine="netcdf4")
-    elif "h5netcdf" in engines:
-        dataset.to_netcdf(output, engine="h5netcdf")
-    elif "scipy" in engines:
-        dataset.to_netcdf(output, engine="scipy")
-    else:
-        dataset.to_netcdf(output)
+    dataset.to_netcdf(output, engine="h5netcdf")
 
 
 def _select_variable(dataset: xr.Dataset, name: str | None) -> xr.DataArray:
