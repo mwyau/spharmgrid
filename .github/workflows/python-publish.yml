@@ -1,100 +1,43 @@
 name: Python Publish
 
 on:
-  workflow_call:
-    inputs:
-      source_sha:
-        description: Tested source commit to package
-        required: true
-        type: string
-      source_tag:
-        description: Release tag for the tested source commit
-        required: true
-        type: string
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: Successful CI run identifying the source commit
-        required: true
-        type: string
+
+concurrency:
+  group: python-publish-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 permissions:
   contents: read
 
+env:
+  UV_VERSION: "0.12.10"
+  PYTHON_VERSION: "3.14"
+
 jobs:
-  validate:
-    name: Validate source
-    runs-on: ubuntu-26.04
-    timeout-minutes: 10
-    permissions:
-      actions: read
-      contents: read
-    outputs:
-      source_sha: ${{ steps.source.outputs.source_sha }}
-      source_tag: ${{ steps.source.outputs.source_tag }}
-    steps:
-      - name: Resolve source
-        id: source
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          RUN_ID: ${{ inputs.run_id }}
-          SOURCE_SHA_INPUT: ${{ inputs.source_sha }}
-          SOURCE_TAG_INPUT: ${{ inputs.source_tag }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$EVENT_NAME" == "workflow_call" ]]; then
-            if [[ ! "$SOURCE_SHA_INPUT" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "source_sha must be a full Git commit SHA" >&2
-              exit 1
-            fi
-            if [[ ! "$SOURCE_TAG_INPUT" =~ ^v.+$ ]]; then
-              echo "source_tag must begin with v" >&2
-              exit 1
-            fi
-            echo "source_sha=$SOURCE_SHA_INPUT" >> "$GITHUB_OUTPUT"
-            echo "source_tag=$SOURCE_TAG_INPUT" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
-            echo "run_id must be a numeric GitHub Actions run ID" >&2
-            exit 1
-          fi
-
-          RUN_API="repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
-          test "$(gh api "$RUN_API" --jq '.name')" = "CI"
-          test "$(gh api "$RUN_API" --jq '.status')" = "completed"
-          test "$(gh api "$RUN_API" --jq '.conclusion')" = "success"
-          test "$(gh api "$RUN_API" --jq '.event')" = "push"
-
-          SOURCE_SHA="$(gh api "$RUN_API" --jq '.head_sha')"
-          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
-          echo "source_tag=" >> "$GITHUB_OUTPUT"
-
   package:
-    name: Build and validate distributions
-    needs: validate
+    name: Package tests
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ needs.validate.outputs.source_sha }}
 
       - uses: astral-sh/setup-uv@v10.0.1
         with:
-          version: "0.12.10"
-          python-version: "3.14"
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Verify release tag version
-        if: needs.validate.outputs.source_tag != ''
+        if: github.ref_type == 'tag'
         env:
-          TAG_NAME: ${{ needs.validate.outputs.source_tag }}
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           uv run --no-project python - <<'PY'
           import os
@@ -113,16 +56,27 @@ jobs:
               )
           PY
 
-      - run: uv build --wheel --sdist
-      - run: uv venv .wheel-venv
-      - run: uv pip install --python .wheel-venv/bin/python dist/*.whl
-      - run: .wheel-venv/bin/python -c 'import spharmgrid; print("wheel import success")'
-      - run: .wheel-venv/bin/spharmgrid --help
+      - name: Build wheel and source distribution
+        run: uv build --wheel --sdist
+
+      - name: Create wheel test environment
+        run: uv venv --seed .wheel-venv
+
+      - name: Install wheel using pip
+        run: .wheel-venv/bin/python -m pip install --no-cache-dir dist/*.whl
+
+      - name: Test wheel import
+        run: .wheel-venv/bin/python -c 'import spharmgrid; print("wheel import success")'
+
+      - name: Test installed CLI
+        run: .wheel-venv/bin/spharmgrid --help
+
       - name: Check distributions
         run: uvx --from twine==7.0.0 twine check --strict dist/*
-      - name: Verify artifact versions
+
+      - name: Verify distribution contents and versions
         env:
-          SOURCE_TAG: ${{ needs.validate.outputs.source_tag }}
+          SOURCE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
           uv run --no-project python - <<'PY'
           import os
@@ -167,6 +121,7 @@ jobs:
           )
           if not distributions:
               raise SystemExit("no wheel or source distribution found")
+
           versions = {metadata_version(path) for path in distributions}
           if len(versions) != 1:
               raise SystemExit(f"distribution versions do not agree: {versions}")
@@ -174,14 +129,29 @@ jobs:
           version = versions.pop()
           tag = os.environ["SOURCE_TAG"]
           print(f"artifact version: {version}")
-          if tag:
-              print(f"source tag:      {tag}")
-              if tag != f"v{version}":
-                  raise SystemExit(
-                      f"source tag {tag!r} does not match artifact version {version!r}"
-                  )
+          if tag and tag != f"v{version}":
+              raise SystemExit(
+                  f"source tag {tag!r} does not match artifact version {version!r}"
+              )
+
+          sdist = next(path for path in distributions if path.name.endswith(".tar.gz"))
+          excluded = (".github/", "plans/", "skills/", "AGENTS.md")
+          with tarfile.open(sdist, mode="r:gz") as archive:
+              members = archive.getnames()
+          relative_members = [
+              name.split("/", 1)[1] if "/" in name else name for name in members
+          ]
+          leaked = [
+              name
+              for name in relative_members
+              if any(name == item or name.startswith(item) for item in excluded)
+          ]
+          if leaked:
+              raise SystemExit(f"repository-only files leaked into sdist: {leaked}")
           PY
+
       - name: Upload release distributions
+        if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v7
         with:
           name: release-dists
@@ -190,21 +160,15 @@ jobs:
 
   publish:
     name: Publish distributions
-    needs: [validate, package]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: package
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment:
-      name: >-
-        ${{
-          needs.validate.outputs.source_tag != '' &&
-          !contains(needs.validate.outputs.source_tag, '.dev')
-          && 'pypi' || 'testpypi'
-        }}
+      name: ${{ contains(github.ref_name, '.dev') && 'testpypi' || 'pypi' }}
     permissions:
-      actions: read
       contents: read
       id-token: write
-      attestations: write
     steps:
       - name: Retrieve tested distributions
         uses: actions/download-artifact@v8.0.1
@@ -212,19 +176,13 @@ jobs:
           name: release-dists
           path: dist/
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4.2.2
-        with:
-          subject-path: dist/*
-
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@v1.14.2
         with:
           packages-dir: dist/
           repository-url: >-
             ${{
-              needs.validate.outputs.source_tag != '' &&
-              !contains(needs.validate.outputs.source_tag, '.dev')
-              && 'https://upload.pypi.org/legacy/'
-              || 'https://test.pypi.org/legacy/'
+              contains(github.ref_name, '.dev')
+              && 'https://test.pypi.org/legacy/'
+              || 'https://upload.pypi.org/legacy/'
             }}
