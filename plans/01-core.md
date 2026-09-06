@@ -2,16 +2,13 @@
 
 ## Status
 
-The initial spharmgrid implementation is in place. This file now records the
-current scientific/API contract and the boundaries for follow-up work rather
-than the step-by-step implementation instructions used to create the package.
+The initial spharmgrid implementation is in place. This file records the current
+scientific/API contract and the boundaries for follow-up work.
 
-The original design remains the basis of the package: a small xarray-first
-layer around DUCC0 for spherical-harmonic operations on full global rectangular
-Gauss--Legendre (GL) and Clenshaw--Curtis (CC) grids. The implementation review
-accepted one emphasis change: atmospheric wind diagnostics and inverse
-transforms are a first-class part of the package identity rather than a
-secondary extension of filtering/regridding.
+The package is an xarray-first layer around DUCC0 for spherical-harmonic
+operations on full global rectangular Gauss--Legendre (GL) and
+Clenshaw--Curtis (CC) grids. Atmospheric wind diagnostics and inverse
+transforms are part of the package's core scope.
 
 The package name is expanded as:
 
@@ -39,9 +36,8 @@ spharmgrid               xarray/CF atmospheric operations layer
 ```
 
 PyStormTracker remains useful source context for shared numerical behavior, but
-spharmgrid is now its own package contract. Changes to spharmgrid should be
-justified by spharmgrid's tests, numerical definitions, and user-facing API,
-not by mechanically mirroring later PyStormTracker architecture.
+spharmgrid is its own package contract. Changes should be justified by
+spharmgrid's tests, numerical definitions, and user-facing API.
 
 ---
 
@@ -153,9 +149,7 @@ degree is 0.1. Modes outside an explicit retained range are zero.
 
 When no explicit spectral range is supplied, the transform uses the complete
 bandwidth representable by the grid. A supplied taper then uses that transform
-`lmax` as its endpoint. This is accepted behavior; it should remain explicit in
-docstrings/user documentation rather than being treated as an implicit `Tn`
-request.
+`lmax` as its endpoint.
 
 ## Regridding
 
@@ -357,9 +351,16 @@ zarr            Zarr CLI input/output
 pyspharm-syl    independent SPHEREPACK parity environment
 ```
 
-The ordinary test environment includes cfgrib, h5netcdf, and zarr because CLI
-format behavior is part of the tested contract. `cftime` is not a test
-dependency unless a test directly exercises cftime objects.
+The ordinary test environment includes h5netcdf and zarr because their CLI
+read/write paths are exercised directly. GRIB remains an optional install extra
+and is checked separately because cfgrib/ecCodes have a heavier platform
+footprint. `cftime` is not a direct test dependency unless a test explicitly
+uses cftime objects.
+
+uv's normal `dev` dependency group remains enabled so standard local commands
+such as `uv run ruff`, `uv run ty check`, and `uv run pytest` work without
+additional group flags. CI lanes that intentionally need a smaller environment
+must use `--no-default-groups` explicitly.
 
 Python 3.12--3.14 is the current supported matrix. The independent parity
 dependency may use a narrower interpreter range without narrowing production
@@ -386,8 +387,8 @@ Dask laziness, arbitrary leading dimensions, CF metadata, and accessor/direct
 API equivalence.
 
 CLI tests should cover NetCDF and Zarr read/write paths. GRIB support should be
-covered by the cfgrib backend integration without making GRIB an unconditional
-runtime dependency.
+checked through the cfgrib backend without making GRIB an unconditional runtime
+or ordinary test dependency.
 
 External parity should cover operations where the external grid and convention
 can be aligned exactly. Do not weaken scientific tests merely to force equality
