@@ -23,7 +23,7 @@ A spectral range and taper can be applied during regridding:
 ```python
 result = field.sg.regrid(
     target,
-    spectral="T6-42",
+    truncation="T6-42",
     taper=0.1,
 )
 ```
@@ -32,11 +32,11 @@ Without an explicit spectral range, regridding retains the spherical harmonic co
 
 ## Vector regridding
 
-`regrid_vector()` uses the same GL/CC combinations and the same `spectral`, `lmin`, `lmax`, and `taper` arguments as scalar `regrid()`:
+`regrid_vector()` uses the same GL/CC combinations and the same `truncation`, `lmin`, `lmax`, and `taper` arguments as scalar `regrid()`:
 
 ```python
-wind_on_target = ds.sg.regrid_vector(target, spectral="T6-42", taper=0.1)
-wind_on_target = sg.regrid_vector(u, v, target, spectral="T6-42", taper=0.1)
+wind_on_target = ds.sg.regrid_vector(target, truncation="T6-42", taper=0.1)
+wind_on_target = sg.regrid_vector(u, v, target, truncation="T6-42", taper=0.1)
 ```
 
 Dataset accessors identify `u` and `v` from exact CF standard names or canonical short names.
