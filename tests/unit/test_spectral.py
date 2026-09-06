@@ -63,8 +63,10 @@ def test_hard_degree_selection_and_bandpass(kind: Literal["cc", "gl"]) -> None:
     band = sg.filter(field, "T2-2")
     explicit_band = sg.filter(field, lmin=2, lmax=2)
 
-    np.testing.assert_allclose(low, degree_zero + 2.0 * degree_one, atol=2.0e-11)
-    np.testing.assert_allclose(band, 3.0 * degree_two, atol=2.0e-11)
+    np.testing.assert_allclose(
+        low, degree_zero + 2.0 * degree_one, rtol=0.0, atol=5.0e-15
+    )
+    np.testing.assert_allclose(band, 3.0 * degree_two, rtol=0.0, atol=1.0e-14)
     xr.testing.assert_identical(explicit_band, band)
 
 
@@ -77,7 +79,7 @@ def test_t42_is_accepted_on_a_grid_that_represents_it(
 
     result = sg.filter(field, "T42")
 
-    np.testing.assert_allclose(result, field, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(result, field, rtol=0.0, atol=2.0e-13)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
@@ -93,7 +95,7 @@ def test_taper_response_at_upper_retained_degree(kind: Literal["cc", "gl"]) -> N
 
     tapered = sg.filter(field, "T2", taper=0.1)
 
-    np.testing.assert_allclose(tapered, 0.1 * field, atol=2.0e-11)
+    np.testing.assert_allclose(tapered, 0.1 * field, rtol=0.0, atol=5.0e-16)
 
 
 @pytest.mark.parametrize(
@@ -110,9 +112,9 @@ def test_regridding_low_degree_field_all_supported_pairs(
     result = sg.regrid(field, target)
     expected = scalar_field(target)
 
-    np.testing.assert_allclose(result, expected, rtol=2.0e-11, atol=2.0e-11)
-    np.testing.assert_allclose(result.lat, target.latitude)
-    np.testing.assert_allclose(result.lon, target.longitude)
+    np.testing.assert_allclose(result, expected, rtol=0.0, atol=2.0e-14)
+    np.testing.assert_array_equal(result.lat, target.latitude)
+    np.testing.assert_array_equal(result.lon, target.longitude)
 
 
 @pytest.mark.parametrize(
@@ -129,8 +131,8 @@ def test_vector_regridding_low_degree_field_all_supported_pairs(
     result = sg.regrid_vector(u, v, target)
     expected_u, expected_v = _axisymmetric_vector_field(target)
 
-    np.testing.assert_allclose(result.u, expected_u, rtol=2.0e-11, atol=2.0e-11)
-    np.testing.assert_allclose(result.v, expected_v, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(result.u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(result.v, expected_v, rtol=0.0, atol=3.0e-14)
     assert result.u.attrs == u.attrs
     assert result.v.attrs == v.attrs
 
@@ -168,12 +170,12 @@ def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
         * np.ones((1, target.nlon))
     )
 
-    np.testing.assert_allclose(direct.u, expected_u, atol=2.0e-11)
-    np.testing.assert_allclose(direct.v, expected_v, atol=2.0e-11)
+    np.testing.assert_allclose(direct.u, expected_u, rtol=0.0, atol=5.0e-16)
+    np.testing.assert_allclose(direct.v, expected_v, rtol=0.0, atol=5.0e-16)
     xr.testing.assert_identical(dataarray_accessor, direct)
     xr.testing.assert_identical(dataset_accessor, direct)
-    np.testing.assert_allclose(direct.lat, target.latitude)
-    np.testing.assert_allclose(direct.lon, target.longitude)
+    np.testing.assert_array_equal(direct.lat, target.latitude)
+    np.testing.assert_array_equal(direct.lon, target.longitude)
 
 
 def test_vector_regridding_round_trip_is_band_limited() -> None:
@@ -189,8 +191,8 @@ def test_vector_regridding_round_trip_is_band_limited() -> None:
         spectral="T2",
     )
 
-    np.testing.assert_allclose(restored.u, u, rtol=2.0e-11, atol=2.0e-11)
-    np.testing.assert_allclose(restored.v, v, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(restored.u, u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(restored.v, v, rtol=0.0, atol=3.0e-14)
 
 
 def test_combined_filter_and_regrid_matches_single_spectral_cycle_result() -> None:
@@ -200,7 +202,7 @@ def test_combined_filter_and_regrid_matches_single_spectral_cycle_result() -> No
     result = sg.regrid(source, target, spectral="T2", taper=1.0)
     expected = sg.regrid(sg.filter(source, "T2"), target, spectral="T2")
 
-    np.testing.assert_allclose(result, expected, rtol=2.0e-11, atol=2.0e-11)
+    np.testing.assert_allclose(result, expected, rtol=0.0, atol=5.0e-15)
 
 
 def test_regridding_restores_descending_and_shifted_target_coordinates() -> None:
@@ -216,9 +218,9 @@ def test_regridding_restores_descending_and_shifted_target_coordinates() -> None
     result = sg.regrid(source, target_grid, spectral="T3")
     expected = scalar_field(target_grid)
 
-    np.testing.assert_allclose(result, expected, rtol=2.0e-11, atol=2.0e-11)
-    np.testing.assert_allclose(result.lat, expected.lat)
-    np.testing.assert_allclose(result.lon, expected.lon)
+    np.testing.assert_allclose(result, expected, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_array_equal(result.lat, expected.lat)
+    np.testing.assert_array_equal(result.lon, expected.lon)
     assert result.lat.attrs["standard_name"] == "latitude"
     assert result.lon.attrs["standard_name"] == "longitude"
 
@@ -237,19 +239,20 @@ def test_gradient_laplacian_and_inverse_laplacian_of_degree_one(
     inverse = sg.inverse_laplacian(field)
 
     expected_north = np.cos(latitude) / radius * np.ones((1, grid.nlon))
-    np.testing.assert_allclose(gradient.gradient_eastward, 0.0, atol=2.0e-13)
+    np.testing.assert_allclose(gradient.gradient_eastward, 0.0, rtol=0.0, atol=0.0)
     np.testing.assert_allclose(
-        gradient.gradient_northward, expected_north, atol=2.0e-13
+        gradient.gradient_northward, expected_north, rtol=0.0, atol=1.0e-20
     )
-    np.testing.assert_allclose(laplacian, -2.0 * field / radius**2, atol=2.0e-24)
-    # The inverse multiplier is O(R**2), so double-precision coefficient
-    # roundoff appears as roughly 1e-3 in the exact nodal zero at the CC
-    # equator.  The nonzero field scale is O(1e13).
+    np.testing.assert_allclose(
+        laplacian, -2.0 * field / radius**2, rtol=0.0, atol=5.0e-26
+    )
+    # The inverse multiplier is O(R**2), so coefficient roundoff is amplified
+    # to a few 1e-3 in physical space across the supported platforms.
     np.testing.assert_allclose(
         inverse,
         -(radius**2) * field / 2.0,
-        rtol=2.0e-11,
-        atol=2.0e-3,
+        rtol=0.0,
+        atol=1.0e-2,
     )
 
 
@@ -261,7 +264,9 @@ def test_inverse_laplacian_uses_zero_mean_solution(kind: Literal["cc", "gl"]) ->
     inverse = sg.inverse_laplacian(field)
     restored = sg.laplacian(inverse)
 
-    np.testing.assert_allclose(restored, degree_one_field(grid), atol=2.0e-11)
+    np.testing.assert_allclose(
+        restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12
+    )
 
 
 def test_scalar_laplacian_units_simplify_operator_chains() -> None:
