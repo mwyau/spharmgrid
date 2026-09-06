@@ -23,7 +23,6 @@ from ._xarray import (
     apply_ufunc_options,
     field_layout,
     require_dataarray,
-    resolve_nthreads,
     restore_output,
 )
 from .metadata import gradient_metadata, inverse_gradient_metadata, operator_metadata
@@ -38,7 +37,6 @@ def gradient(
     eastward: str = "gradient_eastward",
     northward: str = "gradient_northward",
     radius: float = EARTH_RADIUS_M,
-    nthreads: int | None = None,
 ) -> xr.Dataset:
     """Return physical eastward and northward horizontal gradient components.
 
@@ -53,14 +51,13 @@ def gradient(
     spec = transform_spec(source.grid, source.grid, None)
 
     def transform(
-        frame: NDArray[np.generic], threads: int
+        frame: NDArray[np.generic],
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         alm = scalar_analysis(
             frame,
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         derivatives = scalar_derivative_synthesis(
             alm,
@@ -69,11 +66,10 @@ def gradient(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         return derivatives[1] / radius, -derivatives[0] / radius
 
-    east, north = _two_scalar_outputs(field, source, transform, nthreads=nthreads)
+    east, north = _two_scalar_outputs(field, source, transform)
     east.name = eastward
     north.name = northward
     east.attrs = gradient_metadata(field, "eastward")
@@ -87,7 +83,6 @@ def inverse_gradient(
     *,
     output: str | None = None,
     radius: float = EARTH_RADIUS_M,
-    nthreads: int | None = None,
 ) -> xr.DataArray:
     """Recover a scalar potential from a horizontal gradient vector field.
 
@@ -108,7 +103,6 @@ def inverse_gradient(
     def transform(
         frame_eastward: NDArray[np.generic],
         frame_northward: NDArray[np.generic],
-        threads: int,
     ) -> NDArray[np.float64]:
         vector_alm = vector_analysis(
             frame_eastward,
@@ -116,7 +110,6 @@ def inverse_gradient(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         potential_alm = np.zeros_like(vector_alm[0])
         nonzero = scale > 0.0
@@ -128,7 +121,6 @@ def inverse_gradient(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
     result = vector_scalar_transform(
@@ -137,7 +129,6 @@ def inverse_gradient(
         canonical_eastward,
         canonical_northward,
         transform,
-        nthreads=nthreads,
     )
     result.name = output
     result.attrs = inverse_gradient_metadata(eastward, northward)
@@ -148,7 +139,6 @@ def laplacian(
     field: xr.DataArray,
     *,
     radius: float = EARTH_RADIUS_M,
-    nthreads: int | None = None,
 ) -> xr.DataArray:
     """Apply the physical spherical Laplacian to a scalar field.
 
@@ -161,13 +151,12 @@ def laplacian(
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     multiplier = -(degrees * (degrees + 1.0)) / radius**2
 
-    def transform(frame: NDArray[np.generic], threads: int) -> NDArray[np.float64]:
+    def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
             frame,
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
@@ -177,10 +166,9 @@ def laplacian(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
-    result = scalar_transform(field, source, source, transform, nthreads=nthreads)
+    result = scalar_transform(field, source, source, transform)
     result.name = field.name
     result.attrs = operator_metadata(field, "laplacian")
     return result
@@ -190,7 +178,6 @@ def inverse_laplacian(
     field: xr.DataArray,
     *,
     radius: float = EARTH_RADIUS_M,
-    nthreads: int | None = None,
 ) -> xr.DataArray:
     """Solve the spherical inverse Laplacian with its degree-zero mode set to zero.
 
@@ -206,13 +193,12 @@ def inverse_laplacian(
     nonzero = degrees > 0.0
     multiplier[nonzero] = -(radius**2) / (degrees[nonzero] * (degrees[nonzero] + 1.0))
 
-    def transform(frame: NDArray[np.generic], threads: int) -> NDArray[np.float64]:
+    def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
             frame,
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
@@ -222,10 +208,9 @@ def inverse_laplacian(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
-    result = scalar_transform(field, source, source, transform, nthreads=nthreads)
+    result = scalar_transform(field, source, source, transform)
     result.name = field.name
     result.attrs = operator_metadata(field, "inverse_laplacian")
     return result
@@ -235,19 +220,16 @@ def _two_scalar_outputs(
     field: xr.DataArray,
     source: FieldLayout,
     transform: Callable[
-        [NDArray[np.generic], int], tuple[NDArray[np.float64], NDArray[np.float64]]
+        [NDArray[np.generic]], tuple[NDArray[np.float64], NDArray[np.float64]]
     ],
-    *,
-    nthreads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Apply one analysis-sharing scalar kernel with two map outputs."""
     canonical = source.canonicalize(field)
-    threads = resolve_nthreads(nthreads, dask_backed=canonical.chunks is not None)
 
     def kernel(
         frame: NDArray[np.generic],
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        return transform(frame, threads)
+        return transform(frame)
 
     result = xr.apply_ufunc(
         kernel,

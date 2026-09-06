@@ -131,7 +131,6 @@ def _parser() -> argparse.ArgumentParser:
     )
     inverse.add_argument("--eastward", default="u", help="eastward-wind output name")
     inverse.add_argument("--northward", default="v", help="northward-wind output name")
-    inverse.add_argument("--nthreads", type=int, help="DUCC threads per transform")
     return parser
 
 
@@ -151,13 +150,11 @@ def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lmin", type=int, help="explicit lower retained degree")
     parser.add_argument("--lmax", type=int, help="explicit upper retained degree")
     parser.add_argument("--taper", type=float, help="response at upper retained degree")
-    parser.add_argument("--nthreads", type=int, help="DUCC threads per transform")
 
 
 def _wind_input_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--u", help="eastward-wind input variable")
     parser.add_argument("--v", help="northward-wind input variable")
-    parser.add_argument("--nthreads", type=int, help="DUCC threads per transform")
 
 
 def _info(arguments: argparse.Namespace) -> int:
@@ -178,7 +175,6 @@ def _filter(arguments: argparse.Namespace) -> int:
             lmin=arguments.lmin,
             lmax=arguments.lmax,
             taper=arguments.taper,
-            nthreads=arguments.nthreads,
         )
         _write_dataset(
             result.to_dataset(name=result.name or "filtered"), arguments.output
@@ -203,7 +199,6 @@ def _regrid(arguments: argparse.Namespace) -> int:
             lmin=arguments.lmin,
             lmax=arguments.lmax,
             taper=arguments.taper,
-            nthreads=arguments.nthreads,
         )
         _write_dataset(
             result.to_dataset(name=result.name or "regridded"), arguments.output
@@ -218,7 +213,6 @@ def _kinematics(arguments: argparse.Namespace) -> int:
             _wind_variable(dataset, "v", arguments.v),
             vorticity=arguments.vorticity,
             divergence=arguments.divergence,
-            nthreads=arguments.nthreads,
         )
         _write_dataset(result, arguments.output)
     return 0
@@ -231,7 +225,6 @@ def _potentials(arguments: argparse.Namespace) -> int:
             _wind_variable(dataset, "v", arguments.v),
             streamfunction=arguments.streamfunction,
             velocity_potential=arguments.velocity_potential,
-            nthreads=arguments.nthreads,
         )
         _write_dataset(result, arguments.output)
     return 0
@@ -251,7 +244,6 @@ def _wind(arguments: argparse.Namespace) -> int:
             source=arguments.source,
             eastward=arguments.eastward,
             northward=arguments.northward,
-            nthreads=arguments.nthreads,
         )
         _write_dataset(result, arguments.output)
     return 0

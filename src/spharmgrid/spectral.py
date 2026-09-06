@@ -23,7 +23,6 @@ from ._xarray import (
     apply_ufunc_options,
     field_layout,
     require_dataarray,
-    resolve_nthreads,
     restore_output,
 )
 from .grids import Grid, grid_capabilities
@@ -74,7 +73,6 @@ def filter(
     lmin: int | None = None,
     lmax: int | None = None,
     taper: float | None = None,
-    nthreads: int | None = None,
 ) -> xr.DataArray:
     """Apply a hard or Sardeshmukh–Hoskins tapered spectral selection.
 
@@ -89,13 +87,12 @@ def filter(
     retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
 
-    def transform(frame: NDArray[np.generic], threads: int) -> NDArray[np.float64]:
+    def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
             frame,
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
         filtered = apply_spectral_selection(alm, spec, retained, taper)
         return scalar_synthesis(
@@ -105,10 +102,9 @@ def filter(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
-            nthreads=threads,
         )
 
-    result = scalar_transform(field, source, source, transform, nthreads=nthreads)
+    result = scalar_transform(field, source, source, transform)
     return preserve_quantity_metadata(result, field)
 
 
@@ -177,9 +173,7 @@ def scalar_transform(
     field: xr.DataArray,
     source: FieldLayout,
     target: FieldLayout,
-    transform: Callable[[NDArray[np.generic], int], NDArray[np.float64]],
-    *,
-    nthreads: int | None,
+    transform: Callable[[NDArray[np.generic]], NDArray[np.float64]],
 ) -> xr.DataArray:
     """Apply a two-dimensional scalar kernel over all xarray leading dimensions."""
     canonical = source.canonicalize(field)
@@ -194,10 +188,9 @@ def scalar_transform(
         if output_changes_shape
         else None
     )
-    threads = resolve_nthreads(nthreads, dask_backed=canonical.chunks is not None)
 
     def kernel(frame: NDArray[np.generic]) -> NDArray[np.float64]:
-        return transform(frame, threads)
+        return transform(frame)
 
     options = apply_ufunc_options(canonical, output_sizes=output_sizes)
     excluded_dimensions = (

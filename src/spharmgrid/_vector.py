@@ -15,20 +15,19 @@ from ._xarray import (
     exact_align,
     field_layout,
     require_dataarray,
-    resolve_nthreads,
     restore_output,
 )
 from .grids import grids_equivalent
 
 VectorScalarKernel = Callable[
-    [NDArray[np.generic], NDArray[np.generic], int], NDArray[np.float64]
+    [NDArray[np.generic], NDArray[np.generic]], NDArray[np.float64]
 ]
 VectorPairKernel = Callable[
-    [NDArray[np.generic], NDArray[np.generic], int],
+    [NDArray[np.generic], NDArray[np.generic]],
     tuple[NDArray[np.float64], NDArray[np.float64]],
 ]
 VectorQuadKernel = Callable[
-    [NDArray[np.generic], NDArray[np.generic], int],
+    [NDArray[np.generic], NDArray[np.generic]],
     tuple[
         NDArray[np.float64],
         NDArray[np.float64],
@@ -58,17 +57,14 @@ def vector_scalar_transform(
     canonical_u: xr.DataArray,
     canonical_v: xr.DataArray,
     transform: VectorScalarKernel,
-    *,
-    nthreads: int | None,
 ) -> xr.DataArray:
     """Apply one paired-vector kernel that returns a scalar map."""
     dask_field = _dask_input(canonical_u, canonical_v)
-    threads = resolve_nthreads(nthreads, dask_backed=dask_field.chunks is not None)
 
     def kernel(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
     ) -> NDArray[np.float64]:
-        return transform(frame_u, frame_v, threads)
+        return transform(frame_u, frame_v)
 
     output = xr.apply_ufunc(
         kernel,
@@ -98,12 +94,9 @@ def vector_pair_transform(
     canonical_u: xr.DataArray,
     canonical_v: xr.DataArray,
     transform: VectorPairKernel,
-    *,
-    nthreads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Apply one paired-vector kernel that returns two target-grid maps."""
     dask_field = _dask_input(canonical_u, canonical_v)
-    threads = resolve_nthreads(nthreads, dask_backed=dask_field.chunks is not None)
     output_changes_shape = _output_changes_shape(source, target)
     output_sizes = (
         {target.latitude_dim: target.grid.nlat, target.longitude_dim: target.grid.nlon}
@@ -114,7 +107,7 @@ def vector_pair_transform(
     def kernel(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        return transform(frame_u, frame_v, threads)
+        return transform(frame_u, frame_v)
 
     outputs = xr.apply_ufunc(
         kernel,
@@ -160,12 +153,9 @@ def vector_quad_transform(
     canonical_u: xr.DataArray,
     canonical_v: xr.DataArray,
     transform: VectorQuadKernel,
-    *,
-    nthreads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray, xr.DataArray]:
     """Apply one paired-vector kernel that returns four source-grid maps."""
     dask_field = _dask_input(canonical_u, canonical_v)
-    threads = resolve_nthreads(nthreads, dask_backed=dask_field.chunks is not None)
 
     def kernel(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
@@ -175,7 +165,7 @@ def vector_quad_transform(
         NDArray[np.float64],
         NDArray[np.float64],
     ]:
-        return transform(frame_u, frame_v, threads)
+        return transform(frame_u, frame_v)
 
     outputs = xr.apply_ufunc(
         kernel,

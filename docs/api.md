@@ -35,12 +35,12 @@ import spharmgrid as sg
 ```{eval-rst}
 .. autofunction:: spharmgrid.filter
 
-.. py:function:: spharmgrid.regrid(field, target_grid, truncation=None, *, lmin=None, lmax=None, taper=None, nthreads=None)
+.. py:function:: spharmgrid.regrid(field, target_grid, truncation=None, *, lmin=None, lmax=None, taper=None)
 
    Spectrally regrid a GL or CC field. A spectral range and taper can be
    applied during regridding.
 
-.. py:function:: spharmgrid.gradient(field, *, eastward="gradient_eastward", northward="gradient_northward", radius=EARTH_RADIUS_M, nthreads=None)
+.. py:function:: spharmgrid.gradient(field, *, eastward="gradient_eastward", northward="gradient_northward", radius=EARTH_RADIUS_M)
 
    Compute the physical eastward and northward horizontal gradient.
 
@@ -70,7 +70,7 @@ import spharmgrid as sg
 
 .. autofunction:: spharmgrid.divergence
 
-.. py:function:: spharmgrid.kinematics(u, v, *, vorticity="vo", divergence="d", radius=EARTH_RADIUS_M, nthreads=None)
+.. py:function:: spharmgrid.kinematics(u, v, *, vorticity="vo", divergence="d", radius=EARTH_RADIUS_M)
 
    Compute relative vorticity and horizontal divergence.
 
@@ -78,7 +78,7 @@ import spharmgrid as sg
 
 .. autofunction:: spharmgrid.velocity_potential
 
-.. py:function:: spharmgrid.potentials(u, v, *, streamfunction="strf", velocity_potential="vp", radius=EARTH_RADIUS_M, nthreads=None)
+.. py:function:: spharmgrid.potentials(u, v, *, streamfunction="strf", velocity_potential="vp", radius=EARTH_RADIUS_M)
 
    Compute streamfunction and velocity potential.
 
@@ -89,9 +89,9 @@ import spharmgrid as sg
 .. autofunction:: spharmgrid.wind
 ```
 
-## Threading
+## Execution
 
-For operations with `nthreads=`, `None` lets DUCC use all available threads for eager arrays and uses one DUCC thread per Dask task for Dask-backed arrays. An explicit non-negative integer is passed through to DUCC.
+DUCC transforms use four threads internally. For Dask-backed arrays, spharmgrid sets the default local Dask worker count to `max(1, os.cpu_count() // 4)` when `num_workers` has not already been configured. Existing Dask configuration and distributed cluster topology are left unchanged.
 
 ## xarray accessors
 

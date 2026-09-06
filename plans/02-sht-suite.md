@@ -97,7 +97,6 @@ sg.regrid_vector(
     taper=None,
     eastward="u",
     northward="v",
-    nthreads=None,
 ) -> xr.Dataset
 ```
 
@@ -159,7 +158,6 @@ sg.helmholtz(
     rotational_eastward="u_rotational",
     rotational_northward="v_rotational",
     radius=EARTH_RADIUS_M,
-    nthreads=None,
 ) -> xr.Dataset
 ```
 
@@ -212,7 +210,6 @@ sg.inverse_gradient(
     *,
     output=None,
     radius=EARTH_RADIUS_M,
-    nthreads=None,
 ) -> xr.DataArray
 ```
 
@@ -258,7 +255,6 @@ sg.vector_laplacian(
     eastward="u",
     northward="v",
     radius=EARTH_RADIUS_M,
-    nthreads=None,
 ) -> xr.Dataset
 
 sg.inverse_vector_laplacian(
@@ -268,7 +264,6 @@ sg.inverse_vector_laplacian(
     eastward="u",
     northward="v",
     radius=EARTH_RADIUS_M,
-    nthreads=None,
 ) -> xr.Dataset
 ```
 
