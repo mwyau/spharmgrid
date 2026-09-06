@@ -1,6 +1,6 @@
 # spharmgrid
 
-**spharmgrid (SPherical HARMonics GRIDding)** is an xarray-first
+**spharmgrid** (**sp**herical **harm**onics **grid**ding) is an xarray-first
 spherical-harmonic tool for global atmospheric fields. It provides spectral
 filtering, regridding, scalar operators, and atmospheric wind diagnostics and
 inverse transforms, including relative vorticity, divergence, streamfunction,
