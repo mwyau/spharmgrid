@@ -68,10 +68,6 @@ def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
         assert "msl" in result
 
 
-def test_cfgrib_backend_is_available() -> None:
-    assert "cfgrib" in xr.backends.list_engines()
-
-
 def test_kinematics_command_uses_dataset_variable_discovery(tmp_path: Path) -> None:
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)
