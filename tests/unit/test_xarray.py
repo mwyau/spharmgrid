@@ -125,9 +125,7 @@ def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
         atol=0.0,
     )
     eager_laplacian = sg.vector_laplacian(eager_u, eager_v)
-    xr.testing.assert_allclose(
-        laplacian.compute(), eager_laplacian, rtol=0.0, atol=0.0
-    )
+    xr.testing.assert_allclose(laplacian.compute(), eager_laplacian, rtol=0.0, atol=0.0)
     xr.testing.assert_allclose(
         restored.compute(),
         sg.inverse_vector_laplacian(eager_laplacian.u, eager_laplacian.v),
@@ -202,7 +200,7 @@ def test_equivalent_wind_longitude_conventions_align_with_their_data() -> None:
     velocity_potential = xr.DataArray(
         sg.EARTH_RADIUS_M * np.cos(latitude) * np.sin(longitude),
         dims=("lat", "lon"),
-        coords={"lat": grid.latitude, "lon": grid.longitude},
+        coords=coordinates if False else {"lat": grid.latitude, "lon": grid.longitude},
         name="vp",
     )
     components = sg.wind(streamfunction, velocity_potential)
