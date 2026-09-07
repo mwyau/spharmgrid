@@ -38,7 +38,7 @@ def test_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
 
 
 def test_dataarray_scalar_accessors() -> None:
-    field = scalar_field(supported_grid("cc"))
+    field = scalar_field(supported_grid("cc"), leading=True)
     target = supported_grid("gl")
     radius = 1.1 * sg.EARTH_RADIUS_M
 
@@ -550,6 +550,21 @@ def test_dataset_scalar_source_selection() -> None:
         northward="northward",
     )
     actual = sources.sg.wind(
+        source="potentials",
+        eastward="eastward",
+        northward="northward",
+    )
+    _assert_dataset_identical(actual, expected)
+
+    ambiguous_vorticity = sources.assign(other_vo=diagnostics.vo.rename("other_vo"))
+    expected = sg.wind(
+        potentials.strf,
+        potentials.vp,
+        source="potentials",
+        eastward="eastward",
+        northward="northward",
+    )
+    actual = ambiguous_vorticity.sg.wind(
         source="potentials",
         eastward="eastward",
         northward="northward",
