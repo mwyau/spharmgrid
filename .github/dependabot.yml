@@ -5,11 +5,9 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    versioning-strategy: lockfile-only
     groups:
-      python-minor-and-patch:
+      python-dependencies:
         patterns: ["*"]
-        update-types: [minor, patch]
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -17,4 +15,12 @@ updates:
       interval: daily
     groups:
       github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pre-commit
+    directory: "/"
+    schedule:
+      interval: daily
+    groups:
+      pre-commit:
         patterns: ["*"]
