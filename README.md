@@ -7,6 +7,7 @@
 [![PyPI Python Version](https://img.shields.io/pypi/pyversions/spharmgrid)](https://pypi.org/project/spharmgrid/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/spharmgrid)](https://anaconda.org/channels/conda-forge/packages/spharmgrid/overview)
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22559210-blue.svg)](https://doi.org/10.5281/zenodo.22559210)
 
 Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray.
 
@@ -73,6 +74,10 @@ See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.htm
 The optional CLI reads NetCDF, Zarr, and GRIB and writes NetCDF and Zarr. See the [CLI documentation](https://spharmgrid.readthedocs.io/en/latest/cli.html) for installation and usage.
 
 See the full [documentation](https://spharmgrid.readthedocs.io/) for grid requirements, coordinate handling, CF metadata, atmospheric kinematics, inverse transforms, zero-mode conventions, and command-line use.
+
+## Citation
+
+If you use spharmgrid in research, please cite the software release DOI: [10.5281/zenodo.22559210](https://doi.org/10.5281/zenodo.22559210). Citation metadata are also provided in [`CITATION.cff`](https://github.com/mwyau/spharmgrid/blob/main/CITATION.cff).
 
 ## References
 

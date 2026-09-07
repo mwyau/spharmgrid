@@ -6,7 +6,9 @@ Spherical harmonic tools for filtering, regridding, and kinematics in atmospheri
 
 Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids. Leading dimensions and Xarray coordinates are preserved, so fields such as `(time, level, lat, lon)` can be transformed without reshaping them first.
 
-**Project:** [GitHub](https://github.com/mwyau/spharmgrid) · [PyPI](https://pypi.org/project/spharmgrid/) · [conda-forge](https://anaconda.org/conda-forge/spharmgrid)
+[GitHub](https://github.com/mwyau/spharmgrid) · [PyPI](https://pypi.org/project/spharmgrid/) · [conda-forge](https://anaconda.org/conda-forge/spharmgrid)
+
+DOI: [10.5281/zenodo.22559210](https://doi.org/10.5281/zenodo.22559210)
 
 ## Install
 
@@ -50,6 +52,10 @@ comparison
 changelog
 references
 ```
+
+## Citation
+
+If you use spharmgrid in research, please cite the software release DOI: [10.5281/zenodo.22559210](https://doi.org/10.5281/zenodo.22559210).
 
 ## References
 
