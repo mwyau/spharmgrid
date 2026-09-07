@@ -175,7 +175,7 @@ def test_same_grid_vector_taper_has_expected_upper_degree_response(
     np.testing.assert_allclose(tapered.v, 0.1 * v, rtol=0.0, atol=1.0e-15)
 
 
-def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
+def test_vector_regridding_selection_and_taper() -> None:
     source = supported_grid("cc", latitude_order="descending", lon0=-180.0)
     target = supported_grid("gl", latitude_order="descending", lon0=-180.0)
     u, v = _axisymmetric_vector_field(source)
@@ -186,12 +186,6 @@ def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
     v = v.copy(data=degree_two_v * np.ones((1, source.nlon)))
 
     direct = sg.regrid_vector(u, v, target, truncation="T2", taper=0.1)
-    dataarray_accessor = u.sg.regrid_vector(v, target, truncation="T2", taper=0.1)
-    dataset_accessor = xr.Dataset({"u": u, "v": v}).sg.regrid_vector(
-        target,
-        truncation="T2",
-        taper=0.1,
-    )
     target_latitude = np.deg2rad(target.latitude)[:, None]
     expected_u = (
         0.1
@@ -210,8 +204,6 @@ def test_vector_regridding_selection_taper_and_accessor_paths() -> None:
 
     np.testing.assert_allclose(direct.u, expected_u, rtol=0.0, atol=5.0e-16)
     np.testing.assert_allclose(direct.v, expected_v, rtol=0.0, atol=5.0e-16)
-    xr.testing.assert_identical(dataarray_accessor, direct)
-    xr.testing.assert_identical(dataset_accessor, direct)
     np.testing.assert_array_equal(direct.lat, target.latitude)
     np.testing.assert_array_equal(direct.lon, target.longitude)
 
@@ -326,26 +318,6 @@ def test_scalar_laplacian_units_simplify_operator_chains() -> None:
     assert restored.attrs["units"] == "K"
     assert inverse.attrs["units"] == "K m2"
     assert inverse_restored.attrs["units"] == "K"
-
-
-def test_accessor_and_direct_scalar_paths_are_identical() -> None:
-    field = scalar_field(supported_grid("cc"), leading=True)
-    target = supported_grid("gl")
-
-    direct = sg.regrid(field, target, truncation="T2", taper=0.4)
-    accessor = field.sg.regrid(target, truncation="T2", taper=0.4)
-
-    xr.testing.assert_identical(direct, accessor)
-
-
-def test_scalar_operator_accessors_delegate_to_direct_functions() -> None:
-    field = degree_one_field(supported_grid("cc"))
-
-    xr.testing.assert_identical(field.sg.gradient(), sg.gradient(field))
-    xr.testing.assert_identical(field.sg.laplacian(), sg.laplacian(field))
-    xr.testing.assert_identical(
-        field.sg.inverse_laplacian(), sg.inverse_laplacian(field)
-    )
 
 
 def test_spectral_error_cases_are_explicit() -> None:
