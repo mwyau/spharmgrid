@@ -37,8 +37,9 @@ filtered = field.sg.filter("T6-42")
 ## Contents
 
 ```{toctree}
-:maxdepth: 1
-
+---
+maxdepth: 1
+---
 quickstart
 filtering
 regridding

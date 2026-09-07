@@ -25,8 +25,8 @@ CC detection requires equally spaced latitudes spanning −90° to 90°, togethe
 Latitude and longitude are identified in this order:
 
 1. unique exact CF `standard_name` values `latitude` and `longitude`;
-2. coordinate names `lat`/`latitude` and `lon`/`longitude`;
-3. optional `cf-xarray` discovery when installed.
+1. coordinate names `lat`/`latitude` and `lon`/`longitude`;
+1. optional `cf-xarray` discovery when installed.
 
 Ambiguous coordinates raise an error.
 

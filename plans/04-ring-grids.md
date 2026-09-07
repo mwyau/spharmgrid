@@ -28,7 +28,7 @@ reduced Gaussian  DUCC0 initially
 Do not add generic interpolation methods as a fallback when a spherical-harmonic
 analysis is unavailable.
 
----
+______________________________________________________________________
 
 ## 1. Why grid expansion follows backend work
 
@@ -46,7 +46,7 @@ not merely mirror one engine's internal ring arguments.
 Reduced Gaussian may remain DUCC-only until another engine provides a verified
 equivalent transform.
 
----
+______________________________________________________________________
 
 ## 2. Research and verification gate
 
@@ -90,7 +90,7 @@ iterative/pseudo analysis
     approximate coefficient recovery to a stated numerical tolerance
 ```
 
----
+______________________________________________________________________
 
 ## 3. Public grid model
 
@@ -125,7 +125,7 @@ The exact class names may differ after implementation research.
 Because spharmgrid is pre-1.0, prefer a coherent grid model over preserving an
 abstraction that no longer represents the supported geometries cleanly.
 
----
+______________________________________________________________________
 
 # Phase 4a: HEALPix
 
@@ -157,7 +157,7 @@ or metadata.
 
 Do not make backend-specific ring arrays mandatory constructor arguments.
 
----
+______________________________________________________________________
 
 ## 5. HEALPix xarray representation
 
@@ -179,7 +179,7 @@ Prefer RING ordering internally when required by a backend SHT path.
 If NESTED input is supported, reorder data and coordinates together and restore
 or document the requested output ordering.
 
----
+______________________________________________________________________
 
 ## 6. HEALPix backend behavior
 
@@ -223,7 +223,7 @@ Do not hide iteration behind a generic `accuracy=True` switch.
 Do not enable wind diagnostics merely because scalar HEALPix transforms work.
 Verify spin-1/geographic-vector conventions independently for DUCC0 and S2FFT.
 
----
+______________________________________________________________________
 
 ## 7. HEALPix scientific operations
 
@@ -255,7 +255,7 @@ wind
 Availability should be capability-based. Do not pretend all backends provide
 identical numerical analysis semantics.
 
----
+______________________________________________________________________
 
 # Phase 4b: reduced Gaussian
 
@@ -276,7 +276,7 @@ Do not infer an `Nxxx` or `Oxxx` grid from total point count alone.
 A dedicated `ReducedGaussianGrid` should describe the sampling without requiring
 users to pass DUCC internal ring arrays directly.
 
----
+______________________________________________________________________
 
 ## 9. Reduced-Gaussian xarray representation
 
@@ -298,7 +298,7 @@ and enough grid metadata to recover the ring structure.
 Do not pad reduced Gaussian rows with NaNs to force a rectangular `(lat, lon)`
 representation.
 
----
+______________________________________________________________________
 
 ## 10. Reduced-Gaussian backend behavior
 
@@ -312,7 +312,7 @@ If reliable analysis requires an iterative solver, make the solver/tolerance
 semantics explicit. Do not label the grid as equivalent to full GL merely
 because the latitudes are Gaussian.
 
----
+______________________________________________________________________
 
 ## 11. Reduced-Gaussian scientific operations
 
@@ -344,7 +344,7 @@ wind
 Do not enable an operation until its required scalar or spin transform is
 validated for the grid.
 
----
+______________________________________________________________________
 
 ## 12. Cross-grid spectral regridding
 
@@ -372,7 +372,7 @@ target grid has a valid synthesis path for the selected backend/capability.
 No bilinear, nearest-neighbor, spline, or conservative fallback belongs in this
 API.
 
----
+______________________________________________________________________
 
 ## 13. Transform-accuracy model
 
@@ -394,7 +394,7 @@ user documentation must state the actual semantics.
 If users can control iterative analysis, keep those controls on operations that
 perform analysis rather than embedding solver options in grid constructors.
 
----
+______________________________________________________________________
 
 ## 14. Tests
 
@@ -446,7 +446,7 @@ When no second package exposes the identical transform:
 
 Do not treat DUCC through two spharmgrid code paths as independent parity.
 
----
+______________________________________________________________________
 
 ## 15. Performance
 
@@ -468,7 +468,7 @@ meaningful common spectral resolution.
 
 Do not describe reduced storage alone as transform acceleration.
 
----
+______________________________________________________________________
 
 ## 16. Documentation
 
@@ -487,7 +487,7 @@ Explain:
 Do not imply that every grid/backend combination has identical mathematical
 semantics.
 
----
+______________________________________________________________________
 
 ## 17. Acceptance criteria
 
@@ -507,7 +507,7 @@ Phase 4 is complete when:
 - backend/grid capability failures are explicit;
 - no non-SHT interpolation fallback is introduced.
 
----
+______________________________________________________________________
 
 ## Primary implementation references
 

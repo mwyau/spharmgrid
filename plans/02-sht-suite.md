@@ -68,7 +68,7 @@ streamfunction + velocity potential -> full wind
 The next phase should fill the remaining high-value gaps rather than adding
 many aliases.
 
----
+______________________________________________________________________
 
 ## 1. Add vector spectral regridding
 
@@ -140,7 +140,7 @@ CC -> CC
 
 Use the same spectral-range and taper semantics as scalar `regrid()`.
 
----
+______________________________________________________________________
 
 ## 2. Add a combined Helmholtz decomposition
 
@@ -190,7 +190,7 @@ rotational wind
 Do not add non-SHT conveniences such as wind magnitude merely to reproduce the
 complete windspharm method list.
 
----
+______________________________________________________________________
 
 ## 3. Add inverse gradient
 
@@ -232,7 +232,7 @@ non-gradient/rotational component. The intended first behavior should follow
 the corresponding SPHEREPACK operation rather than introducing an
 undocumented projection rule.
 
----
+______________________________________________________________________
 
 ## 4. Add vector Laplacian and inverse vector Laplacian
 
@@ -282,7 +282,7 @@ independent analytic derivation.
 
 Document singular/null modes explicitly for the inverse.
 
----
+______________________________________________________________________
 
 ## 5. Keep raw coefficient analysis/synthesis private for now
 
@@ -322,7 +322,7 @@ Continue using internal analysis/synthesis helpers as needed.
 Reconsider a public spectral-coefficient object only when a concrete use case
 requires users to inspect or modify coefficients directly.
 
----
+______________________________________________________________________
 
 ## 6. Do not add non-SHT operations
 
@@ -345,7 +345,7 @@ package's spherical-harmonic scope.
 The package name and scientific boundary should remain literal:
 `spharmgrid` performs spherical-harmonic operations on global spherical grids.
 
----
+______________________________________________________________________
 
 ## 7. Independent pyspharm/SPHEREPACK verification
 
@@ -355,7 +355,7 @@ Keep `pyspharm-syl` in the existing parity dependency group only.
 
 It must not become a runtime dependency.
 
-The current compatibility restriction to Python <3.14 is acceptable for parity
+The current compatibility restriction to Python \<3.14 is acceptable for parity
 jobs.
 
 ### Reference mappings
@@ -396,9 +396,9 @@ the high-level pyspharm class, use one of:
 
 1. the underlying independent SPHEREPACK operation available through
    pyspharm;
-2. a small static NCL/SPHEREPACK reference generated outside the production
+1. a small static NCL/SPHEREPACK reference generated outside the production
    spharmgrid code;
-3. an analytic harmonic field with an independently derived exact answer.
+1. an analytic harmonic field with an independently derived exact answer.
 
 Prefer 1 or 3 over storing large reference arrays.
 
@@ -455,7 +455,7 @@ regrid_vector(source -> target -> source)
 Do not use a round trip as the only evidence; round trips can preserve a
 matching sign/convention error on both sides.
 
----
+______________________________________________________________________
 
 ## 8. NCL/SPHEREPACK semantic map
 
@@ -464,28 +464,28 @@ explosion.
 
 Target documentation table:
 
-| spharmgrid | NCL/SPHEREPACK family |
-| --- | --- |
-| `gradient` | `gradsf`, `gradsg` |
-| `inverse_gradient` | `igradsf`, `igradsg` |
-| `laplacian` | `lapsf`, `lapsg` |
-| `inverse_laplacian` | `ilapsf`, `ilapsg` |
-| `vector_laplacian` | `lapvf`, `lapvg` |
-| `inverse_vector_laplacian` | `ilapvf`, `ilapvg` |
-| `vorticity` | `uv2vr*` |
-| `divergence` | `uv2dv*` |
-| `kinematics` | `uv2vrdv*` |
-| `potentials` | `uv2sfvp*` |
-| `rotational_wind` | `vr2uv*` or streamfunction synthesis |
-| `divergent_wind` | `dv2uv*` or velocity-potential synthesis |
-| `wind` | `vrdv2uv*`, `sfvp2uv*` |
-| `regrid` | `f2fsh`, `f2gsh`, `g2fsh`, `g2gsh` |
-| `regrid_vector` | `f2fshv`, `f2gshv`, `g2fshv`, `g2gshv` |
+| spharmgrid                 | NCL/SPHEREPACK family                    |
+| -------------------------- | ---------------------------------------- |
+| `gradient`                 | `gradsf`, `gradsg`                       |
+| `inverse_gradient`         | `igradsf`, `igradsg`                     |
+| `laplacian`                | `lapsf`, `lapsg`                         |
+| `inverse_laplacian`        | `ilapsf`, `ilapsg`                       |
+| `vector_laplacian`         | `lapvf`, `lapvg`                         |
+| `inverse_vector_laplacian` | `ilapvf`, `ilapvg`                       |
+| `vorticity`                | `uv2vr*`                                 |
+| `divergence`               | `uv2dv*`                                 |
+| `kinematics`               | `uv2vrdv*`                               |
+| `potentials`               | `uv2sfvp*`                               |
+| `rotational_wind`          | `vr2uv*` or streamfunction synthesis     |
+| `divergent_wind`           | `dv2uv*` or velocity-potential synthesis |
+| `wind`                     | `vrdv2uv*`, `sfvp2uv*`                   |
+| `regrid`                   | `f2fsh`, `f2gsh`, `g2fsh`, `g2gsh`       |
+| `regrid_vector`            | `f2fshv`, `f2gshv`, `g2fshv`, `g2gshv`   |
 
 Do not present NCL as the scientific origin of the mathematics. It is an
 established atmospheric API/behavior and SPHEREPACK integration reference.
 
----
+______________________________________________________________________
 
 ## 9. Implementation requirements
 
@@ -524,7 +524,7 @@ and coordinate/longitude conventions.
 All new operations must support both ascending and descending latitude input
 where the current package supports them.
 
----
+______________________________________________________________________
 
 ## 10. Documentation
 
@@ -545,7 +545,7 @@ Emphasize physical/descriptive Python names rather than NCL function names.
 
 Document the zero/null-mode convention for every inverse operator.
 
----
+______________________________________________________________________
 
 ## 11. Acceptance criteria
 
@@ -567,7 +567,7 @@ Phase 2 is complete when:
 - no public raw coefficient format is introduced;
 - no alternate-backend or ring-grid public API is introduced prematurely.
 
----
+______________________________________________________________________
 
 ## Primary references for implementation research
 
