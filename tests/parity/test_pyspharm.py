@@ -10,7 +10,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 import spharmgrid as sg
-from tests.conftest import scalar_field, solid_body_wind
+from tests.conftest import degree_one_field, scalar_field, solid_body_wind
 
 pytestmark = pytest.mark.parity
 spharm = pytest.importorskip(
@@ -30,6 +30,12 @@ _KINEMATIC_ATOL = 3.0e-12
 _WIND_POTENTIAL_ATOL = 2.5e1
 _INVERSE_GRADIENT_POTENTIAL_ATOL = 1.2e1
 _VECTOR_LAPLACIAN_ATOL = 1.0e-17
+# The existing 16/17 by 36 fixtures represent a full triangular T15 domain.
+_SCALAR_LAPLACIAN_ATOL = 1.5e-18
+# Inverse-Laplacian values are O(radius**2); SPHEREPACK synthesizes float32
+# maps, so its rounding error is correspondingly larger in physical units.
+_SCALAR_INVERSE_LAPLACIAN_ATOL = 4.0e6
+_SCALAR_OPERATOR_NTRUNC = 15
 
 
 class _SpharmTransform(Protocol):
@@ -239,6 +245,81 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
         reference_regridded,
         rtol=0.0,
         atol=_SCALAR_MAP_ATOL,
+    )
+
+
+@pytest.mark.parametrize(
+    ("kind", "gridtype"),
+    [
+        ("gaussian", "gaussian"),
+        ("cc", "regular"),
+    ],
+)
+def test_scalar_laplacians_match_independent_spherepack(
+    kind: Literal["cc", "gaussian"],
+    gridtype: Literal["gaussian", "regular"],
+) -> None:
+    """Compare scalar Laplacians through independent SPHEREPACK coefficients."""
+    grid = (
+        _gaussian_grid()
+        if kind == "gaussian"
+        else sg.clenshaw_curtis_grid(17, 36, latitude_order="ascending")
+    )
+    reference = (
+        _reference_transform()
+        if gridtype == "gaussian"
+        else cast(
+            _SpharmTransform,
+            spharm.Spharmt(
+                grid.nlon,
+                grid.nlat,
+                rsphere=sg.EARTH_RADIUS_M,
+                gridtype=gridtype,
+                legfunc="stored",
+            ),
+        )
+    )
+
+    laplacian_source = scalar_field(grid)
+    inverse_source = degree_one_field(grid)
+    laplacian_coefficients = reference.grdtospec(
+        _north_to_south(np.asarray(laplacian_source.values, dtype=np.float64)),
+        ntrunc=_SCALAR_OPERATOR_NTRUNC,
+    )
+    inverse_coefficients = reference.grdtospec(
+        _north_to_south(np.asarray(inverse_source.values, dtype=np.float64)),
+        ntrunc=_SCALAR_OPERATOR_NTRUNC,
+    )
+
+    # The degree-one input has no degree-zero content.  SPHEREPACK's inverse
+    # scalar Laplacian sets the degree-zero solution to zero, matching
+    # spharmgrid's canonical additive-constant convention.
+    np.testing.assert_equal(inverse_coefficients[0], 0.0)
+    reference_laplacian = np.squeeze(
+        reference.spectogrd(
+            spharm._spherepack.lap(laplacian_coefficients, sg.EARTH_RADIUS_M)
+        )
+    )
+    reference_inverse_laplacian = np.squeeze(
+        reference.spectogrd(
+            spharm._spherepack.invlap(inverse_coefficients, sg.EARTH_RADIUS_M)
+        )
+    )
+
+    actual_laplacian = sg.laplacian(laplacian_source)
+    actual_inverse_laplacian = sg.inverse_laplacian(inverse_source)
+
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(actual_laplacian.values, dtype=np.float64)),
+        reference_laplacian,
+        rtol=0.0,
+        atol=_SCALAR_LAPLACIAN_ATOL,
+    )
+    np.testing.assert_allclose(
+        _north_to_south(np.asarray(actual_inverse_laplacian.values, dtype=np.float64)),
+        reference_inverse_laplacian,
+        rtol=0.0,
+        atol=_SCALAR_INVERSE_LAPLACIAN_ATOL,
     )
 
 
