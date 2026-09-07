@@ -68,7 +68,7 @@ streamfunction + velocity potential -> full wind
 The next phase should fill the remaining high-value gaps rather than adding
 many aliases.
 
-______________________________________________________________________
+---
 
 ## 1. Add vector spectral regridding
 
@@ -140,7 +140,7 @@ CC -> CC
 
 Use the same spectral-range and taper semantics as scalar `regrid()`.
 
-______________________________________________________________________
+---
 
 ## 2. Add a combined Helmholtz decomposition
 
@@ -190,7 +190,7 @@ rotational wind
 Do not add non-SHT conveniences such as wind magnitude merely to reproduce the
 complete windspharm method list.
 
-______________________________________________________________________
+---
 
 ## 3. Add inverse gradient
 
@@ -232,7 +232,7 @@ non-gradient/rotational component. The intended first behavior should follow
 the corresponding SPHEREPACK operation rather than introducing an
 undocumented projection rule.
 
-______________________________________________________________________
+---
 
 ## 4. Add vector Laplacian and inverse vector Laplacian
 
@@ -282,7 +282,7 @@ independent analytic derivation.
 
 Document singular/null modes explicitly for the inverse.
 
-______________________________________________________________________
+---
 
 ## 5. Keep raw coefficient analysis/synthesis private for now
 
@@ -322,7 +322,7 @@ Continue using internal analysis/synthesis helpers as needed.
 Reconsider a public spectral-coefficient object only when a concrete use case
 requires users to inspect or modify coefficients directly.
 
-______________________________________________________________________
+---
 
 ## 6. Do not add non-SHT operations
 
@@ -345,7 +345,7 @@ package's spherical-harmonic scope.
 The package name and scientific boundary should remain literal:
 `spharmgrid` performs spherical-harmonic operations on global spherical grids.
 
-______________________________________________________________________
+---
 
 ## 7. Independent pyspharm/SPHEREPACK verification
 
@@ -455,7 +455,7 @@ regrid_vector(source -> target -> source)
 Do not use a round trip as the only evidence; round trips can preserve a
 matching sign/convention error on both sides.
 
-______________________________________________________________________
+---
 
 ## 8. NCL/SPHEREPACK semantic map
 
@@ -485,7 +485,7 @@ Target documentation table:
 Do not present NCL as the scientific origin of the mathematics. It is an
 established atmospheric API/behavior and SPHEREPACK integration reference.
 
-______________________________________________________________________
+---
 
 ## 9. Implementation requirements
 
@@ -524,7 +524,7 @@ and coordinate/longitude conventions.
 All new operations must support both ascending and descending latitude input
 where the current package supports them.
 
-______________________________________________________________________
+---
 
 ## 10. Documentation
 
@@ -545,7 +545,7 @@ Emphasize physical/descriptive Python names rather than NCL function names.
 
 Document the zero/null-mode convention for every inverse operator.
 
-______________________________________________________________________
+---
 
 ## 11. Acceptance criteria
 
@@ -567,7 +567,7 @@ Phase 2 is complete when:
 - no public raw coefficient format is introduced;
 - no alternate-backend or ring-grid public API is introduced prematurely.
 
-______________________________________________________________________
+---
 
 ## Primary references for implementation research
 

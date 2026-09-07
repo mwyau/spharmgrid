@@ -21,7 +21,7 @@ A concise description is:
 DUCC0 supplies the numerical spherical-harmonic transforms. spharmgrid does not
 implement a new SHT engine.
 
-______________________________________________________________________
+---
 
 # Scientific and software roles
 
@@ -39,7 +39,7 @@ PyStormTracker remains useful source context for shared numerical behavior, but
 spharmgrid is its own package contract. Changes should be justified by
 spharmgrid's tests, numerical definitions, and user-facing API.
 
-______________________________________________________________________
+---
 
 # Current scope
 
@@ -91,7 +91,7 @@ Do not add speculative architecture for:
 These are not prohibited forever; they require a specific scientific or user
 need and should not complicate the current GL/CC model in advance.
 
-______________________________________________________________________
+---
 
 # Public model
 
@@ -117,7 +117,7 @@ Keep the top-level namespace small and close to the documented public API.
 Internal DUCC coefficient helpers, gufunc kernels, E/B arrays, metadata
 registries, layouts, and accessor classes are implementation details.
 
-______________________________________________________________________
+---
 
 # Spectral filtering and regridding
 
@@ -180,7 +180,7 @@ representable by source and target sampling under DUCC's actual limits. Explicit
 `Tn` input remains triangular and must raise if the requested range cannot be
 represented.
 
-______________________________________________________________________
+---
 
 # Scalar differential operators
 
@@ -198,7 +198,7 @@ applies the spherical-harmonic eigenvalue `-l(l+1)/R^2`.
 sets the singular degree-zero coefficient to zero, defining the zero-mean
 solution.
 
-______________________________________________________________________
+---
 
 # Atmospheric wind transforms
 
@@ -252,7 +252,7 @@ Related outputs should share one analysis where practical: `kinematics()`
 shares the vector analysis for vorticity/divergence and `potentials()` shares it
 for streamfunction/velocity potential.
 
-______________________________________________________________________
+---
 
 # xarray, CF, and coordinates
 
@@ -291,7 +291,7 @@ Transforms operate only over discovered horizontal dimensions and preserve
 arbitrary leading dimensions and coordinates. xarray owns time/calendar
 representation; spharmgrid does not convert or normalize time.
 
-______________________________________________________________________
+---
 
 # Dask and thread behavior
 
@@ -300,7 +300,7 @@ horizontal transform graph. Do not introduce a spharmgrid backend selector.
 
 DUCC uses four threads per transform internally. For Dask-backed arrays, the default local scheduler worker count is `max(1, os.cpu_count() // 4)` unless the application already configured `num_workers`. Do not expose backend thread tuning in the public API.
 
-______________________________________________________________________
+---
 
 # CLI and I/O
 
@@ -336,7 +336,7 @@ message when those imports are unavailable. Optional backend imports stay lazy;
 constructing the argument parser and importing `spharmgrid` do not require
 `h5netcdf`, `zarr`, or `cfgrib`.
 
-______________________________________________________________________
+---
 
 # Dependencies and repository engineering
 
@@ -380,7 +380,7 @@ enables the GIL is reported as a warning so one incompatibility does not
 prevent the remaining checks from running. Transitive implementation
 dependencies are not probed separately.
 
-______________________________________________________________________
+---
 
 # Validation requirements
 
@@ -414,7 +414,7 @@ Before accepting a numerical change, check at least:
 - scalar/vector sign and component convention;
 - units and precision.
 
-______________________________________________________________________
+---
 
 # Documentation contract
 
@@ -441,7 +441,7 @@ Documentation must state:
 Do not describe spharmgrid as a new SHT implementation or imply that it contains
 SPHEREPACK.
 
-______________________________________________________________________
+---
 
 # Completion and change gate
 

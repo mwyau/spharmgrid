@@ -25,7 +25,7 @@ reimplement the numerical SHT libraries. It owns the scientific operation
 semantics, grid translation, atmospheric conventions, and user-facing APIs over
 the engines.
 
-______________________________________________________________________
+---
 
 ## 1. Preconditions
 
@@ -58,7 +58,7 @@ wind
 
 Do not delay Phase 3 for reduced Gaussian or HEALPix. Those become Phase 4.
 
-______________________________________________________________________
+---
 
 ## 2. Refactor only as required by real backends
 
@@ -99,7 +99,7 @@ spharmgrid scientific operation
               S2FFT
 ```
 
-______________________________________________________________________
+---
 
 ## 3. One scientific definition, framework-native execution
 
@@ -134,7 +134,7 @@ A backend-native coefficient result may be exposed inside a framework-specific
 namespace only if a concrete tensor-native use case requires it. It must be
 identified as backend-native rather than a package-wide coefficient format.
 
-______________________________________________________________________
+---
 
 ## 4. Backend capability is explicit
 
@@ -166,7 +166,7 @@ Do not infer equivalence from names such as `equiangular`, `lobatto`, or
 `legendre-gauss`; compare actual nodes, quadrature, normalization, and
 band-limit conventions.
 
-______________________________________________________________________
+---
 
 ## 5. torch-harmonics is the PyTorch numerical engine
 
@@ -245,7 +245,7 @@ forward/inverse vector transforms.
 Do not add an operation merely because a scalar analogue exists. Vector/spin
 conventions must be independently verified.
 
-______________________________________________________________________
+---
 
 ## 6. SFNO and learned spherical spectral convolution
 
@@ -351,7 +351,7 @@ This may use torch-harmonics `SpectralConvS2` directly or a current
 `neuraloperator` SFNO/SphericalConv layer. It does not require spharmgrid to own
 a full SFNO model.
 
-______________________________________________________________________
+---
 
 ## 7. S2FFT adapter
 
@@ -375,7 +375,7 @@ replacing the backend interface.
 Do not require S2FFT's PyTorch wrapper to become a second public PyTorch API if
 torch-harmonics already covers that use case.
 
-______________________________________________________________________
+---
 
 ## 8. Cross-backend convention audit
 
@@ -405,7 +405,7 @@ DUCC spharmgrid
 SPHEREPACK/pyspharm for GL/CC atmospheric operations
 ```
 
-______________________________________________________________________
+---
 
 ## 9. Public accelerator API and I/O boundary
 
@@ -557,7 +557,7 @@ benchmarks demonstrate a useful workload.
 If added, document it as an xarray convenience path rather than a differentiable
 model API. Never auto-select an accelerator because hardware is present.
 
-______________________________________________________________________
+---
 
 ## 10. Differentiability
 
@@ -580,7 +580,7 @@ wind reconstruction
 Do not claim spharmgrid differentiability solely because the transform library
 is differentiable.
 
-______________________________________________________________________
+---
 
 ## 11. Precision
 
@@ -598,7 +598,7 @@ Do not require bitwise equality between independent implementations. Use
 operation/grid/dtype-specific tolerances justified by analytic and cross-backend
 error measurements.
 
-______________________________________________________________________
+---
 
 ## 12. Performance acceptance
 
@@ -632,7 +632,7 @@ For the SFNO interoperability case, measure only enough to ensure the spharmgrid
 adapter does not add material overhead beyond the underlying torch-harmonics
 layer. Do not make model-training performance a spharmgrid benchmark suite.
 
-______________________________________________________________________
+---
 
 ## 13. Optional dependencies and CI
 
@@ -662,7 +662,7 @@ independent of accelerator availability.
 Use small CPU adapter/import tests where possible. Add GPU CI only when a
 reliable runner is available.
 
-______________________________________________________________________
+---
 
 ## 14. Relevant ecosystem precedent
 
@@ -739,7 +739,7 @@ optional labeled JAX execution   xarray_jax-style integration if justified
 model architecture               dedicated neural-operator/weather packages
 ```
 
-______________________________________________________________________
+---
 
 ## 15. Phase-4 handoff
 
@@ -758,7 +758,7 @@ reduced Gaussian  DUCC0 initially
 This table is a target capability map, not a promise that every operation has
 identical analysis semantics or bandwidth on every engine.
 
-______________________________________________________________________
+---
 
 ## 16. Acceptance criteria
 
@@ -798,7 +798,7 @@ Phase 3 is complete when:
 - no package-wide raw coefficient compatibility format is introduced;
 - HEALPix and reduced Gaussian public grid expansion remain Phase-4 work.
 
-______________________________________________________________________
+---
 
 ## Current implementation references
 
