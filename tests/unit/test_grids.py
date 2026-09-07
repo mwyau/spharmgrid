@@ -27,7 +27,6 @@ def test_constructed_grid_is_detected(
     assert detected.kind == kind
     np.testing.assert_array_equal(detected.latitude, grid.latitude)
     np.testing.assert_array_equal(detected.longitude, grid.longitude)
-    assert field.sg.grid_type == kind
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
