@@ -396,9 +396,9 @@ the high-level pyspharm class, use one of:
 
 1. the underlying independent SPHEREPACK operation available through
    pyspharm;
-1. a small static NCL/SPHEREPACK reference generated outside the production
+2. a small static NCL/SPHEREPACK reference generated outside the production
    spharmgrid code;
-1. an analytic harmonic field with an independently derived exact answer.
+3. an analytic harmonic field with an independently derived exact answer.
 
 Prefer 1 or 3 over storing large reference arrays.
 

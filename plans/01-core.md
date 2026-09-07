@@ -387,8 +387,8 @@ dependencies are not probed separately.
 Maintain three evidence layers:
 
 1. deterministic analytic/constructed fields;
-1. internal identities and inverse round trips;
-1. parity against an independent implementation such as SPHEREPACK/pyspharm.
+2. internal identities and inverse round trips;
+3. parity against an independent implementation such as SPHEREPACK/pyspharm.
 
 Current coverage should continue to include both GL and CC for the core analytic
 and round-trip behavior, coordinate-order/cyclic-representation invariance,
