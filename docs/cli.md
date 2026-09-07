@@ -27,17 +27,17 @@ The CLI reads and writes Zarr through Xarray's Zarr methods. Other input paths u
 spharmgrid info input.nc
 
 spharmgrid filter input.nc output.nc \
-  --var msl \
-  --truncation T6-42 \
-  --taper 0.1
+    --var msl \
+    --truncation T6-42 \
+    --taper 0.1
 
 spharmgrid filter input.zarr output.zarr \
-  --var msl \
-  --truncation T42
+    --var msl \
+    --truncation T42
 
 spharmgrid regrid input.grib output.zarr \
-  --var msl \
-  --grid gl --nlat 64 --nlon 128
+    --var msl \
+    --grid gl --nlat 64 --nlon 128
 
 spharmgrid kinematics wind.nc kinematics.nc
 spharmgrid potentials wind.zarr potentials.zarr
@@ -49,8 +49,8 @@ Reconstruct wind from vorticity and divergence with:
 
 ```bash
 spharmgrid wind diagnostics.nc wind.nc \
-  --source vorticity_divergence \
-  --vorticity vo --divergence d
+    --source vorticity_divergence \
+    --vorticity vo --divergence d
 ```
 
 Use `spharmgrid --help` or `spharmgrid <command> --help` for all options.

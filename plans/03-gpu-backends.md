@@ -644,7 +644,7 @@ Conceptually:
 [project.optional-dependencies]
 torch = ["torch-harmonics>=..."]
 jax = ["s2fft>=...", "jax>=..."]
-jax-xarray = ["xarray-jax>=..."]  # only if this integration is adopted
+jax-xarray = ["xarray-jax>=..."] # only if this integration is adopted
 ```
 
 `neuraloperator` and Makani should not become dependencies merely because they
