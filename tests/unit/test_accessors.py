@@ -17,10 +17,10 @@ from tests.conftest import (
 )
 
 
-def _assert_dataset_allclose(actual: xr.Dataset, expected: xr.Dataset) -> None:
-    """Check both Dataset component names and numerical values."""
+def _assert_dataset_identical(actual: xr.Dataset, expected: xr.Dataset) -> None:
+    """Check Dataset component order, metadata, and values."""
     assert tuple(actual.data_vars) == tuple(expected.data_vars)
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
@@ -42,19 +42,19 @@ def test_dataarray_scalar_accessors() -> None:
     target = supported_grid("gl")
     radius = 1.1 * sg.EARTH_RADIUS_M
 
-    xr.testing.assert_allclose(
+    xr.testing.assert_identical(
         field.sg.filter("T2", taper=0.4),
         sg.filter(field, "T2", taper=0.4),
     )
-    xr.testing.assert_allclose(
+    xr.testing.assert_identical(
         field.sg.regrid(target, truncation="T2", taper=0.4),
         sg.regrid(field, target, truncation="T2", taper=0.4),
     )
-    xr.testing.assert_allclose(
+    xr.testing.assert_identical(
         field.sg.laplacian(radius=radius),
         sg.laplacian(field, radius=radius),
     )
-    xr.testing.assert_allclose(
+    xr.testing.assert_identical(
         field.sg.inverse_laplacian(radius=radius),
         sg.inverse_laplacian(field, radius=radius),
     )
@@ -77,7 +77,7 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
         northward="north_gradient",
         radius=radius,
     )
-    _assert_dataset_allclose(actual_gradient, expected_gradient)
+    _assert_dataset_identical(actual_gradient, expected_gradient)
 
     vorticity = sg.vorticity(u, v)
     expected_rotational = sg.rotational_wind(
@@ -93,7 +93,7 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
         northward="rot_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual_rotational, expected_rotational)
+    _assert_dataset_identical(actual_rotational, expected_rotational)
 
     divergence = sg.divergence(u, v)
     expected_divergent = sg.divergent_wind(
@@ -109,7 +109,7 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
         northward="div_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual_divergent, expected_divergent)
+    _assert_dataset_identical(actual_divergent, expected_divergent)
 
     diagnostics = sg.kinematics(u, v)
     expected_wind = sg.wind(
@@ -127,7 +127,7 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
         northward="wind_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual_wind, expected_wind)
+    _assert_dataset_identical(actual_wind, expected_wind)
 
     potentials = sg.potentials(u, v)
     expected_wind = sg.wind(
@@ -145,7 +145,7 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
         northward="potential_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual_wind, expected_wind)
+    _assert_dataset_identical(actual_wind, expected_wind)
 
 
 def test_dataarray_regrid_vector_accessor() -> None:
@@ -171,7 +171,7 @@ def test_dataarray_regrid_vector_accessor() -> None:
         northward="northward",
     )
 
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
 
 def test_dataarray_vector_accessors() -> None:
@@ -181,11 +181,11 @@ def test_dataarray_vector_accessors() -> None:
 
     expected = sg.vorticity(u, v, output="relative_vorticity", radius=radius)
     actual = u.sg.vorticity(v, output="relative_vorticity", radius=radius)
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.divergence(u, v, output="wind_divergence", radius=radius)
     actual = u.sg.divergence(v, output="wind_divergence", radius=radius)
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.kinematics(
         u,
@@ -200,15 +200,15 @@ def test_dataarray_vector_accessors() -> None:
         divergence="wind_divergence",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     expected = sg.streamfunction(u, v, output="streamfunction", radius=radius)
     actual = u.sg.streamfunction(v, output="streamfunction", radius=radius)
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.velocity_potential(u, v, output="velocity_potential", radius=radius)
     actual = u.sg.velocity_potential(v, output="velocity_potential", radius=radius)
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.potentials(
         u,
@@ -223,7 +223,7 @@ def test_dataarray_vector_accessors() -> None:
         velocity_potential="velocity_potential",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     expected = sg.helmholtz(
         u,
@@ -242,7 +242,7 @@ def test_dataarray_vector_accessors() -> None:
         rotational_northward="rotational_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     expected = sg.vector_laplacian(
         u,
@@ -257,7 +257,7 @@ def test_dataarray_vector_accessors() -> None:
         northward="laplacian_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     laplacian = sg.vector_laplacian(u, v)
     expected = sg.inverse_vector_laplacian(
@@ -273,7 +273,7 @@ def test_dataarray_vector_accessors() -> None:
         northward="restored_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     scalar = degree_one_field(grid)
     gradient = sg.gradient(scalar, radius=radius)
@@ -288,7 +288,7 @@ def test_dataarray_vector_accessors() -> None:
         output="potential",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
 
 def test_dataarray_accessor_preserves_leading_dimensions() -> None:
@@ -301,7 +301,7 @@ def test_dataarray_accessor_preserves_leading_dimensions() -> None:
     expected = sg.kinematics(u, v)
     actual = u.sg.kinematics(v)
 
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
     assert actual.vo.dims == ("member", "lat", "lon")
     np.testing.assert_array_equal(actual.member.values, member.values)
 
@@ -313,8 +313,8 @@ def test_dataset_regrid_vector_accessor() -> None:
     dataset = xr.Dataset({"eastward_input": u, "northward_input": v})
 
     expected = sg.regrid_vector(
-        u,
-        v,
+        dataset["eastward_input"],
+        dataset["northward_input"],
         target,
         truncation="T2",
         taper=0.1,
@@ -331,7 +331,7 @@ def test_dataset_regrid_vector_accessor() -> None:
         northward="northward_output",
     )
 
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
 
 def test_dataset_vector_accessors() -> None:
@@ -346,10 +346,12 @@ def test_dataset_vector_accessors() -> None:
         radius=radius,
     )
     dataset = xr.merge((dataset, gradient))
+    eastward = dataset["eastward_input"]
+    northward = dataset["northward_input"]
 
     expected = sg.inverse_gradient(
-        gradient.east_gradient,
-        gradient.north_gradient,
+        dataset["east_gradient"],
+        dataset["north_gradient"],
         output="potential",
         radius=radius,
     )
@@ -359,29 +361,39 @@ def test_dataset_vector_accessors() -> None:
         output="potential",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
-    expected = sg.vorticity(u, v, output="relative_vorticity", radius=radius)
+    expected = sg.vorticity(
+        eastward,
+        northward,
+        output="relative_vorticity",
+        radius=radius,
+    )
     actual = dataset.sg.vorticity(
         u="eastward_input",
         v="northward_input",
         output="relative_vorticity",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
-    expected = sg.divergence(u, v, output="wind_divergence", radius=radius)
+    expected = sg.divergence(
+        eastward,
+        northward,
+        output="wind_divergence",
+        radius=radius,
+    )
     actual = dataset.sg.divergence(
         u="eastward_input",
         v="northward_input",
         output="wind_divergence",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.kinematics(
-        u,
-        v,
+        eastward,
+        northward,
         vorticity="relative_vorticity",
         divergence="wind_divergence",
         radius=radius,
@@ -393,29 +405,39 @@ def test_dataset_vector_accessors() -> None:
         divergence="wind_divergence",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
-    expected = sg.streamfunction(u, v, output="streamfunction", radius=radius)
+    expected = sg.streamfunction(
+        eastward,
+        northward,
+        output="streamfunction",
+        radius=radius,
+    )
     actual = dataset.sg.streamfunction(
         u="eastward_input",
         v="northward_input",
         output="streamfunction",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
-    expected = sg.velocity_potential(u, v, output="velocity_potential", radius=radius)
+    expected = sg.velocity_potential(
+        eastward,
+        northward,
+        output="velocity_potential",
+        radius=radius,
+    )
     actual = dataset.sg.velocity_potential(
         u="eastward_input",
         v="northward_input",
         output="velocity_potential",
         radius=radius,
     )
-    xr.testing.assert_allclose(actual, expected)
+    xr.testing.assert_identical(actual, expected)
 
     expected = sg.potentials(
-        u,
-        v,
+        eastward,
+        northward,
         streamfunction="streamfunction",
         velocity_potential="velocity_potential",
         radius=radius,
@@ -427,11 +449,11 @@ def test_dataset_vector_accessors() -> None:
         velocity_potential="velocity_potential",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     expected = sg.helmholtz(
-        u,
-        v,
+        eastward,
+        northward,
         divergent_eastward="divergent_u",
         divergent_northward="divergent_v",
         rotational_eastward="rotational_u",
@@ -447,11 +469,11 @@ def test_dataset_vector_accessors() -> None:
         rotational_northward="rotational_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     expected = sg.vector_laplacian(
-        u,
-        v,
+        eastward,
+        northward,
         eastward="laplacian_u",
         northward="laplacian_v",
         radius=radius,
@@ -463,23 +485,23 @@ def test_dataset_vector_accessors() -> None:
         northward="laplacian_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
-    laplacian = sg.vector_laplacian(u, v)
-    expected = sg.inverse_vector_laplacian(
-        laplacian.u,
-        laplacian.v,
-        eastward="restored_u",
-        northward="restored_v",
-        radius=radius,
-    )
+    laplacian = sg.vector_laplacian(eastward, northward)
     dataset_with_laplacian = xr.Dataset(
         {
-            "eastward_input": u,
-            "northward_input": v,
+            "eastward_input": eastward,
+            "northward_input": northward,
             "laplacian_u": laplacian.u,
             "laplacian_v": laplacian.v,
         }
+    )
+    expected = sg.inverse_vector_laplacian(
+        dataset_with_laplacian["laplacian_u"],
+        dataset_with_laplacian["laplacian_v"],
+        eastward="restored_u",
+        northward="restored_v",
+        radius=radius,
     )
     actual = dataset_with_laplacian.sg.inverse_vector_laplacian(
         u="laplacian_u",
@@ -488,7 +510,7 @@ def test_dataset_vector_accessors() -> None:
         northward="restored_v",
         radius=radius,
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
 
 def test_dataset_automatic_component_discovery() -> None:
@@ -501,7 +523,7 @@ def test_dataset_automatic_component_discovery() -> None:
     expected = sg.kinematics(dataset.ua, dataset.va, vorticity="vort", divergence="div")
     actual = dataset.sg.kinematics(vorticity="vort", divergence="div")
 
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
     assert actual.vort.attrs["standard_name"] == "atmosphere_relative_vorticity"
     assert actual.div.attrs["standard_name"] == "divergence_of_wind"
 
@@ -532,7 +554,7 @@ def test_dataset_scalar_source_selection() -> None:
         eastward="eastward",
         northward="northward",
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     scalar_ambiguity = xr.Dataset({"vo": diagnostics.vo, "strf": potentials.strf})
     expected = sg.rotational_wind(
@@ -546,14 +568,14 @@ def test_dataset_scalar_source_selection() -> None:
         eastward="rotational_u",
         northward="rotational_v",
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     actual = scalar_ambiguity.sg.rotational_wind(
         quantity="vorticity",
         eastward="rotational_u",
         northward="rotational_v",
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
     divergent_sources = xr.Dataset({"d": diagnostics.d, "vp": potentials.vp})
     expected = sg.divergent_wind(
@@ -567,7 +589,7 @@ def test_dataset_scalar_source_selection() -> None:
         eastward="divergent_u",
         northward="divergent_v",
     )
-    _assert_dataset_allclose(actual, expected)
+    _assert_dataset_identical(actual, expected)
 
 
 def test_dataset_source_selection_errors() -> None:
