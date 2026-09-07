@@ -21,6 +21,7 @@ v0.1.1 strengthens validation, execution, typing, and documentation without chan
 ### Documentation and distribution
 
 - Added conda-forge installation alongside PyPI.
+- Archived v0.1.1 on Zenodo with DOI [10.5281/zenodo.22559210](https://doi.org/10.5281/zenodo.22559210).
 - Improved documentation navigation, theme controls, table rendering, and Edit on GitHub links, and expanded the API comparison with NCL and windspharm references.
 
 ---
