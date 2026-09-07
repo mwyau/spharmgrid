@@ -82,13 +82,11 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
     vorticity = sg.vorticity(u, v)
     expected_rotational = sg.rotational_wind(
         vorticity,
-        quantity="vorticity",
         eastward="rot_u",
         northward="rot_v",
         radius=radius,
     )
     actual_rotational = vorticity.sg.rotational_wind(
-        quantity="vorticity",
         eastward="rot_u",
         northward="rot_v",
         radius=radius,
@@ -98,13 +96,11 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
     divergence = sg.divergence(u, v)
     expected_divergent = sg.divergent_wind(
         divergence,
-        quantity="divergence",
         eastward="div_u",
         northward="div_v",
         radius=radius,
     )
     actual_divergent = divergence.sg.divergent_wind(
-        quantity="divergence",
         eastward="div_u",
         northward="div_v",
         radius=radius,
@@ -115,14 +111,12 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
     expected_wind = sg.wind(
         diagnostics.vo,
         diagnostics.d,
-        source="vorticity_divergence",
         eastward="wind_u",
         northward="wind_v",
         radius=radius,
     )
     actual_wind = diagnostics.vo.sg.wind(
         diagnostics.d,
-        source="vorticity_divergence",
         eastward="wind_u",
         northward="wind_v",
         radius=radius,
@@ -133,14 +127,12 @@ def test_dataarray_scalar_to_vector_accessors() -> None:
     expected_wind = sg.wind(
         potentials.strf,
         potentials.vp,
-        source="potentials",
         eastward="potential_u",
         northward="potential_v",
         radius=radius,
     )
     actual_wind = potentials.strf.sg.wind(
         potentials.vp,
-        source="potentials",
         eastward="potential_u",
         northward="potential_v",
         radius=radius,
@@ -543,12 +535,29 @@ def test_dataset_scalar_source_selection() -> None:
     )
 
     expected = sg.wind(
-        potentials.strf,
-        potentials.vp,
-        source="potentials",
+        diagnostics.vo,
+        diagnostics.d,
         eastward="eastward",
         northward="northward",
     )
+    actual = xr.Dataset({"vo": diagnostics.vo, "d": diagnostics.d}).sg.wind(
+        eastward="eastward",
+        northward="northward",
+    )
+    _assert_dataset_identical(actual, expected)
+
+    expected = sg.wind(
+        potentials.strf,
+        potentials.vp,
+        eastward="eastward",
+        northward="northward",
+    )
+    actual = xr.Dataset({"strf": potentials.strf, "vp": potentials.vp}).sg.wind(
+        eastward="eastward",
+        northward="northward",
+    )
+    _assert_dataset_identical(actual, expected)
+
     actual = sources.sg.wind(
         source="potentials",
         eastward="eastward",
@@ -557,13 +566,6 @@ def test_dataset_scalar_source_selection() -> None:
     _assert_dataset_identical(actual, expected)
 
     ambiguous_vorticity = sources.assign(other_vo=diagnostics.vo.rename("other_vo"))
-    expected = sg.wind(
-        potentials.strf,
-        potentials.vp,
-        source="potentials",
-        eastward="eastward",
-        northward="northward",
-    )
     actual = ambiguous_vorticity.sg.wind(
         source="potentials",
         eastward="eastward",
@@ -571,13 +573,29 @@ def test_dataset_scalar_source_selection() -> None:
     )
     _assert_dataset_identical(actual, expected)
 
-    scalar_ambiguity = xr.Dataset({"vo": diagnostics.vo, "strf": potentials.strf})
     expected = sg.rotational_wind(
         diagnostics.vo,
-        quantity="vorticity",
         eastward="rotational_u",
         northward="rotational_v",
     )
+    actual = xr.Dataset({"vo": diagnostics.vo}).sg.rotational_wind(
+        eastward="rotational_u",
+        northward="rotational_v",
+    )
+    _assert_dataset_identical(actual, expected)
+
+    expected_streamfunction = sg.rotational_wind(
+        potentials.strf,
+        eastward="rotational_u",
+        northward="rotational_v",
+    )
+    actual = xr.Dataset({"strf": potentials.strf}).sg.rotational_wind(
+        eastward="rotational_u",
+        northward="rotational_v",
+    )
+    _assert_dataset_identical(actual, expected_streamfunction)
+
+    scalar_ambiguity = xr.Dataset({"vo": diagnostics.vo, "strf": potentials.strf})
     actual = scalar_ambiguity.sg.rotational_wind(
         field="vo",
         eastward="rotational_u",
@@ -635,6 +653,11 @@ def test_dataset_source_selection_errors() -> None:
     with pytest.raises(ValueError, match="explicit field 'missing'"):
         scalar_ambiguity.sg.rotational_wind(field="missing")
 
+    with pytest.raises(
+        ValueError, match="could not identify an eligible scalar source"
+    ):
+        xr.Dataset().sg.rotational_wind()
+
     invalid_quantity = cast(Literal["vorticity", "streamfunction"], "invalid")
     with pytest.raises(ValueError, match="quantity must be one of"):
         xr.Dataset().sg.rotational_wind(quantity=invalid_quantity)
@@ -648,3 +671,6 @@ def test_dataset_source_selection_errors() -> None:
                 "vp": potentials.vp,
             }
         ).sg.wind()
+
+    with pytest.raises(ValueError, match="no complete"):
+        xr.Dataset({"vo": diagnostics.vo}).sg.wind()
