@@ -56,6 +56,7 @@ Use lowercase Python values:
 
 ```python
 "gl"
+
 "cc"
 ```
 
@@ -206,14 +207,14 @@ README/docs/package metadata.
 
 Canonical quantities are:
 
-| Quantity | Short name | CF `standard_name` |
-| --- | --- | --- |
-| Eastward wind | `u` | `eastward_wind` |
-| Northward wind | `v` | `northward_wind` |
-| Relative vorticity | `vo` | `atmosphere_relative_vorticity` |
-| Divergence | `d` | `divergence_of_wind` |
-| Streamfunction | `strf` | `atmosphere_horizontal_streamfunction` |
-| Velocity potential | `vp` | `atmosphere_horizontal_velocity_potential` |
+| Quantity           | Short name | CF `standard_name`                         |
+| ------------------ | ---------- | ------------------------------------------ |
+| Eastward wind      | `u`        | `eastward_wind`                            |
+| Northward wind     | `v`        | `northward_wind`                           |
+| Relative vorticity | `vo`       | `atmosphere_relative_vorticity`            |
+| Divergence         | `d`        | `divergence_of_wind`                       |
+| Streamfunction     | `strf`     | `atmosphere_horizontal_streamfunction`     |
+| Velocity potential | `vp`       | `atmosphere_horizontal_velocity_potential` |
 
 The supported transform graph is:
 

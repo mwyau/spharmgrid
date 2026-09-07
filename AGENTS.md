@@ -22,8 +22,7 @@ scientific explanations, follow
 including its research-software profile and atmospheric-science guidance.
 Repository-specific rules here take precedence.
 
-Use `spherical harmonic` as a modifier (for example, `spherical harmonic
-transform`) and `spherical harmonics` only as a plural noun. Never hyphenate
+Use `spherical harmonic` as a modifier (for example, `spherical harmonic transform`) and `spherical harmonics` only as a plural noun. Never hyphenate
 either form.
 
 Preserve equations, signs, normalization, grid definitions, radius factors,

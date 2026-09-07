@@ -355,7 +355,7 @@ Keep `pyspharm-syl` in the existing parity dependency group only.
 
 It must not become a runtime dependency.
 
-The current compatibility restriction to Python <3.14 is acceptable for parity
+The current compatibility restriction to Python \<3.14 is acceptable for parity
 jobs.
 
 ### Reference mappings
@@ -464,23 +464,23 @@ explosion.
 
 Target documentation table:
 
-| spharmgrid | NCL/SPHEREPACK family |
-| --- | --- |
-| `gradient` | `gradsf`, `gradsg` |
-| `inverse_gradient` | `igradsf`, `igradsg` |
-| `laplacian` | `lapsf`, `lapsg` |
-| `inverse_laplacian` | `ilapsf`, `ilapsg` |
-| `vector_laplacian` | `lapvf`, `lapvg` |
-| `inverse_vector_laplacian` | `ilapvf`, `ilapvg` |
-| `vorticity` | `uv2vr*` |
-| `divergence` | `uv2dv*` |
-| `kinematics` | `uv2vrdv*` |
-| `potentials` | `uv2sfvp*` |
-| `rotational_wind` | `vr2uv*` or streamfunction synthesis |
-| `divergent_wind` | `dv2uv*` or velocity-potential synthesis |
-| `wind` | `vrdv2uv*`, `sfvp2uv*` |
-| `regrid` | `f2fsh`, `f2gsh`, `g2fsh`, `g2gsh` |
-| `regrid_vector` | `f2fshv`, `f2gshv`, `g2fshv`, `g2gshv` |
+| spharmgrid                 | NCL/SPHEREPACK family                    |
+| -------------------------- | ---------------------------------------- |
+| `gradient`                 | `gradsf`, `gradsg`                       |
+| `inverse_gradient`         | `igradsf`, `igradsg`                     |
+| `laplacian`                | `lapsf`, `lapsg`                         |
+| `inverse_laplacian`        | `ilapsf`, `ilapsg`                       |
+| `vector_laplacian`         | `lapvf`, `lapvg`                         |
+| `inverse_vector_laplacian` | `ilapvf`, `ilapvg`                       |
+| `vorticity`                | `uv2vr*`                                 |
+| `divergence`               | `uv2dv*`                                 |
+| `kinematics`               | `uv2vrdv*`                               |
+| `potentials`               | `uv2sfvp*`                               |
+| `rotational_wind`          | `vr2uv*` or streamfunction synthesis     |
+| `divergent_wind`           | `dv2uv*` or velocity-potential synthesis |
+| `wind`                     | `vrdv2uv*`, `sfvp2uv*`                   |
+| `regrid`                   | `f2fsh`, `f2gsh`, `g2fsh`, `g2gsh`       |
+| `regrid_vector`            | `f2fshv`, `f2gshv`, `g2fshv`, `g2gshv`   |
 
 Do not present NCL as the scientific origin of the mathematics. It is an
 established atmospheric API/behavior and SPHEREPACK integration reference.

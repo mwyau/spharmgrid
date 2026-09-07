@@ -493,7 +493,7 @@ real use case requires it.
 Phase 4 may use a one-dimensional trailing pixel/cell dimension for packed
 HEALPix or reduced-Gaussian arrays where appropriate.
 
-### 9.4 Explicit xarray <-> accelerator boundary
+### 9.4 Explicit xarray \<-> accelerator boundary
 
 For accelerator workflows, conversion between scientific containers and device
 arrays should be explicit at the data-loader or application boundary, not on

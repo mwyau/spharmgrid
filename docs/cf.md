@@ -9,14 +9,14 @@ Dataset wind methods identify each physical quantity in this order:
 3. the canonical short name;
 4. an error if no unique match exists.
 
-| Quantity | Short name | CF `standard_name` |
-| --- | --- | --- |
-| Eastward wind | `u` | `eastward_wind` |
-| Northward wind | `v` | `northward_wind` |
-| Relative vorticity | `vo` | `atmosphere_relative_vorticity` |
-| Divergence | `d` | `divergence_of_wind` |
-| Streamfunction | `strf` | `atmosphere_horizontal_streamfunction` |
-| Velocity potential | `vp` | `atmosphere_horizontal_velocity_potential` |
+| Quantity           | Short name | CF `standard_name`                         |
+| ------------------ | ---------- | ------------------------------------------ |
+| Eastward wind      | `u`        | `eastward_wind`                            |
+| Northward wind     | `v`        | `northward_wind`                           |
+| Relative vorticity | `vo`       | `atmosphere_relative_vorticity`            |
+| Divergence         | `d`        | `divergence_of_wind`                       |
+| Streamfunction     | `strf`     | `atmosphere_horizontal_streamfunction`     |
+| Velocity potential | `vp`       | `atmosphere_horizontal_velocity_potential` |
 
 ```python
 ds["uwind"].attrs["standard_name"] = "eastward_wind"
