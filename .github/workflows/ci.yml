@@ -49,6 +49,9 @@ jobs:
         include:
           - os: ubuntu-26.04
             name: Ubuntu
+            python: "3.11"
+          - os: ubuntu-26.04
+            name: Ubuntu
             python: "3.12"
           - os: ubuntu-26.04
             name: Ubuntu
@@ -201,7 +204,7 @@ jobs:
           check_import ducc0
 
   minimum-dependencies:
-    name: Minimum dependencies (Python 3.12)
+    name: Minimum dependencies (Python 3.11)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -214,7 +217,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           save-cache: false
-          python-version: "3.12"
+          python-version: "3.11"
       - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
       - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
 

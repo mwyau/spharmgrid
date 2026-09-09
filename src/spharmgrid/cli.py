@@ -23,7 +23,7 @@ _CLI_INSTALL_MESSAGE = (
 )
 _GRIB_WINDOWS_PY314_MESSAGE = (
     "GRIB input is not supported on Windows with Python 3.14.\n"
-    "Use Python 3.12 or 3.13 for GRIB input."
+    "Use Python 3.11 to 3.13 for GRIB input."
 )
 
 
