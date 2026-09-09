@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, cast
+from typing import Literal, Protocol, TypeAlias, cast
 
 import numpy as np
 import pytest
@@ -18,8 +18,8 @@ spharm = pytest.importorskip(
     reason="run with uv --group parity on a supported Python version",
 )
 
-type _GridArray = NDArray[np.float32] | NDArray[np.float64]
-type _SpectralArray = NDArray[np.complex64] | NDArray[np.complex128]
+_GridArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
+_SpectralArray: TypeAlias = NDArray[np.complex64] | NDArray[np.complex128]
 
 # pyspharm-syl exposes synthesized maps at float32 precision.  These absolute
 # tolerances are calibrated from the maximum errors of the parity fixtures.

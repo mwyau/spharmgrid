@@ -369,7 +369,7 @@ such as `uv run ruff`, `uv run ty check`, and `uv run pytest` work without
 additional group flags. CI lanes that intentionally need a smaller environment
 must use `--no-default-groups` explicitly.
 
-Python 3.12--3.14 is the current supported matrix. The independent parity
+Python 3.11--3.14 is the current supported matrix. The independent parity
 dependency may use a narrower interpreter range without narrowing production
 support.
 
