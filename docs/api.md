@@ -1,5 +1,13 @@
 # API reference
 
+## Xarray accessors
+
+For Xarray workflows, the `.sg` accessor is usually the simplest way to use spharmgrid. Importing `spharmgrid` registers `.sg` on both Xarray `DataArray` and `Dataset` objects, so spherical harmonic operations can be called directly on the data being transformed while preserving Xarray dimensions, coordinates, and metadata.
+
+`DataArray.sg` provides field operations such as filtering, regridding, gradients, Laplacians, and vector transforms. `Dataset.sg` also supports multi-variable atmospheric diagnostics such as vorticity, divergence, streamfunction, velocity potential, and wind decomposition, including variable discovery from canonical names and CF metadata.
+
+The module-level functions documented below expose the same core operations for direct function calls. Accessor-based examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
+
 ## Typing
 
 The public `spharmgrid` API is fully type annotated and the package ships a `py.typed` marker for downstream static type checking.
@@ -77,11 +85,3 @@ The public `spharmgrid` API is fully type annotated and the package ships a `py.
 
 .. autofunction:: spharmgrid.wind
 ```
-
-## Execution
-
-Without Dask installed, spharmgrid passes `nthreads=0` and lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform. For Dask-backed arrays, spharmgrid sets the local Dask worker count to `max(1, os.cpu_count() // 4)` only when `num_workers` is unset. A configured `num_workers` value takes precedence. Distributed clusters use their configured worker topology.
-
-## Xarray accessors
-
-Importing `spharmgrid` registers `.sg` on Xarray `DataArray` and `Dataset` objects. Examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
