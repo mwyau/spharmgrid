@@ -34,31 +34,21 @@ field = xr.open_dataarray("msl.nc")
 filtered = field.sg.filter("T6-42")
 ```
 
-## Contents
-
 ```{toctree}
 ---
-maxdepth: 1
+hidden: true
+maxdepth: 2
 ---
-quickstart
-filtering
-regridding
-kinematics
-operators
-grids
-cf
-cli
-api
-comparison
+guide
+reference
 changelog
-references
 ```
 
 ## Citation
 
 If you use spharmgrid in research, please cite the software release DOI: [10.5281/zenodo.22559210](https://doi.org/10.5281/zenodo.22559210).
 
-## References
+## Bibliography
 
 See {doc}`references` for the scientific literature and software cited by spharmgrid.
 

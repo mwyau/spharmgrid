@@ -16,16 +16,28 @@ extensions = [
 ]
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-html_theme = "sphinx_rtd_theme"
+html_title = project
+html_theme = "pydata_sphinx_theme"
+html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/mwyau/spharmgrid",
+            "icon": "fa-brands fa-github",
+        }
+    ],
+    "use_edit_page_button": True,
+}
 html_static_path = ["_static"]
-html_css_files = ["dark.css"]
-html_js_files = ["theme.js"]
+html_css_files = ["layout.css"]
+html_sidebars = {
+    "changelog": [],
+}
 html_context = {
-    "display_github": True,
     "github_user": "mwyau",
     "github_repo": "spharmgrid",
     "github_version": "main",
-    "conf_py_path": "/docs/",
+    "doc_path": "docs/",
 }
 
 myst_heading_anchors = 3
