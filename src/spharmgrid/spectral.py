@@ -15,6 +15,7 @@ from ._ducc import (
     TransformSpec,
     alm_degrees,
     geometry_for,
+    resolve_sht_threads,
     scalar_analysis,
     scalar_synthesis,
 )
@@ -73,6 +74,7 @@ def filter(
     lmin: int | None = None,
     lmax: int | None = None,
     taper: float | None = None,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Apply a hard or Sardeshmukh–Hoskins tapered spectral selection.
 
@@ -86,6 +88,7 @@ def filter(
     spec = transform_spec(source.grid, source.grid, selection)
     retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
+    nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
@@ -93,6 +96,7 @@ def filter(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         filtered = apply_spectral_selection(alm, spec, retained, taper)
         return scalar_synthesis(
@@ -102,6 +106,7 @@ def filter(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     result = scalar_transform(field, source, source, transform)

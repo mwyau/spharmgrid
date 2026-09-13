@@ -37,22 +37,22 @@ Optional groups are:
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
-Without Dask installed, spharmgrid lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform; for the local Dask scheduler, spharmgrid sets `num_workers=max(1, os.cpu_count() // 4)` unless `num_workers` is configured.
+Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
 
 For a standalone command-line installation:
 
 ```bash
-uv tool install "spharmgrid[cli]"
+uv tool install "spharmgrid[cli,dask]"
 ```
 
-For a project environment, install the CLI extra with either:
+For a project environment, install the CLI and Dask extras with either:
 
 ```bash
-uv add "spharmgrid[cli]"
+uv add "spharmgrid[cli,dask]"
 ```
 
 ```bash
-pip install "spharmgrid[cli]"
+pip install "spharmgrid[cli,dask]"
 ```
 
 ## Quick start

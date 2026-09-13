@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cache
-from importlib.util import find_spec
+from numbers import Integral
 from typing import Literal, cast
 
 import numpy as np
@@ -14,8 +14,25 @@ from .grids import Grid
 
 Geometry = Literal["CC", "GL"]
 
-DASK_DUCC_THREADS = 4
-DUCC_THREADS = DASK_DUCC_THREADS if find_spec("dask") is not None else 0
+DEFAULT_DASK_SHT_THREADS = 1
+
+
+def resolve_sht_threads(sht_threads: int | None, *, dask: bool) -> int:
+    """Resolve and validate a public per-operation DUCC thread setting.
+
+    An eager operation leaves thread selection to DUCC when no explicit value
+    is supplied.  Dask-backed operations use one DUCC thread per transform
+    unless the caller supplies a value, leaving task-level concurrency to the
+    caller.
+    """
+    if sht_threads is None:
+        return DEFAULT_DASK_SHT_THREADS if dask else 0
+    if isinstance(sht_threads, bool) or not isinstance(sht_threads, Integral):
+        raise TypeError("sht_threads must be a positive integer or None")
+    resolved = int(sht_threads)
+    if resolved <= 0:
+        raise ValueError("sht_threads must be a positive integer or None")
+    return resolved
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +68,7 @@ def scalar_analysis(
     spec: TransformSpec,
     geometry: Geometry,
     phi0: float,
+    nthreads: int,
 ) -> NDArray[np.complex128]:
     """Analyze one north-to-south, cyclic-eastward scalar map."""
     _require_frame(frame)
@@ -64,7 +82,7 @@ def scalar_analysis(
         mmax=spec.mmax,
         geometry=geometry,
         phi0=phi0,
-        nthreads=DUCC_THREADS,
+        nthreads=nthreads,
     )
     return cast(NDArray[np.complex128], result)
 
@@ -77,6 +95,7 @@ def scalar_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
+    nthreads: int,
 ) -> NDArray[np.float64]:
     """Synthesize one scalar map on a north-to-south DUCC geometry."""
     import ducc0
@@ -91,7 +110,7 @@ def scalar_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=DUCC_THREADS,
+        nthreads=nthreads,
     )
     return cast(NDArray[np.float64], result[0])
 
@@ -104,6 +123,7 @@ def scalar_derivative_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
+    nthreads: int,
 ) -> NDArray[np.float64]:
     """Synthesize theta and eastward angular derivatives of a scalar field.
 
@@ -122,7 +142,7 @@ def scalar_derivative_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=DUCC_THREADS,
+        nthreads=nthreads,
         mode="DERIV1",
     )
     return cast(NDArray[np.float64], result)
@@ -135,6 +155,7 @@ def vector_analysis(
     spec: TransformSpec,
     geometry: Geometry,
     phi0: float,
+    nthreads: int,
 ) -> NDArray[np.complex128]:
     """Analyze geographic eastward/northward wind into DUCC E/B coefficients.
 
@@ -160,7 +181,7 @@ def vector_analysis(
         mmax=spec.mmax,
         geometry=geometry,
         phi0=phi0,
-        nthreads=DUCC_THREADS,
+        nthreads=nthreads,
     )
     return cast(NDArray[np.complex128], result)
 
@@ -174,6 +195,7 @@ def vector_synthesis(
     ntheta: int,
     nphi: int,
     phi0: float,
+    nthreads: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Synthesize DUCC E/B coefficients into geographic eastward/northward wind."""
     import ducc0
@@ -188,7 +210,7 @@ def vector_synthesis(
         ntheta=ntheta,
         nphi=nphi,
         phi0=phi0,
-        nthreads=DUCC_THREADS,
+        nthreads=nthreads,
     )
     # This is the inverse of ``(-v, u)`` in ``vector_analysis``.
     return (

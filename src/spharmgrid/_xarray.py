@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import Literal, NotRequired, TypedDict
 
 import xarray as xr
 
-from ._ducc import DASK_DUCC_THREADS
 from .grids import (
     Grid,
     GridLayout,
@@ -163,21 +161,10 @@ def apply_ufunc_options(
     """Return Dask options that keep horizontal transforms lazy when possible."""
     if field.chunks is None:
         return {"dask": "forbidden"}
-    _configure_local_dask_workers()
     gufunc_kwargs: dict[str, _DaskGufuncValue] = {"allow_rechunk": True}
     if output_sizes is not None:
         gufunc_kwargs["output_sizes"] = output_sizes
     return {"dask": "parallelized", "dask_gufunc_kwargs": gufunc_kwargs}
-
-
-def _configure_local_dask_workers() -> None:
-    """Limit default local Dask parallelism for internally threaded DUCC tasks."""
-    import dask
-
-    if dask.config.get("num_workers", default=None) is not None:
-        return
-    available_cpus = os.cpu_count() or 1
-    dask.config.set(num_workers=max(1, (available_cpus + 2) // DASK_DUCC_THREADS))
 
 
 def restore_output(

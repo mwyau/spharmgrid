@@ -60,4 +60,6 @@ Install Dask support with:
 uv add "spharmgrid[dask]"
 ```
 
-Without Dask installed, spharmgrid lets DUCC use its default thread count. With Dask support installed, DUCC uses four threads per transform. Dask-backed Xarray fields execute lazily, and horizontal core dimensions are rechunked when required by Xarray generalized ufunc execution. For the local Dask scheduler, spharmgrid sets `num_workers` to `max(1, os.cpu_count() // 4)` only when `num_workers` is unset. A configured `num_workers` value takes precedence. Distributed clusters use their configured worker topology.
+Dask-backed Xarray inputs remain lazy through spherical harmonic operations.
+They use one DUCC thread per transform by default; `sht_threads` overrides this
+value. The caller controls Dask scheduling.

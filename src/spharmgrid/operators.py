@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from ._ducc import (
     alm_degrees,
     geometry_for,
+    resolve_sht_threads,
     scalar_analysis,
     scalar_derivative_synthesis,
     scalar_synthesis,
@@ -37,6 +38,7 @@ def gradient(
     eastward: str = "gradient_eastward",
     northward: str = "gradient_northward",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Return physical eastward and northward horizontal gradient components.
 
@@ -49,6 +51,7 @@ def gradient(
     _validate_component_names(eastward, northward)
     source = field_layout(field)
     spec = transform_spec(source.grid, source.grid, None)
+    nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(
         frame: NDArray[np.generic],
@@ -58,6 +61,7 @@ def gradient(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         derivatives = scalar_derivative_synthesis(
             alm,
@@ -66,6 +70,7 @@ def gradient(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         return derivatives[1] / radius, -derivatives[0] / radius
 
@@ -83,6 +88,7 @@ def inverse_gradient(
     *,
     output: str | None = None,
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Recover a scalar potential from a horizontal gradient vector field.
 
@@ -99,6 +105,10 @@ def inverse_gradient(
         raise ValueError("inverse gradient requires a grid supporting total degree l=1")
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
+    dask = (
+        canonical_eastward.chunks is not None or canonical_northward.chunks is not None
+    )
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_eastward: NDArray[np.generic],
@@ -110,6 +120,7 @@ def inverse_gradient(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         potential_alm = np.zeros_like(vector_alm[0])
         nonzero = scale > 0.0
@@ -121,6 +132,7 @@ def inverse_gradient(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     result = vector_scalar_transform(
@@ -139,6 +151,7 @@ def laplacian(
     field: xr.DataArray,
     *,
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Apply the physical spherical Laplacian to a scalar field.
 
@@ -150,6 +163,7 @@ def laplacian(
     spec = transform_spec(source.grid, source.grid, None)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     multiplier = -(degrees * (degrees + 1.0)) / radius**2
+    nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
@@ -157,6 +171,7 @@ def laplacian(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
@@ -166,6 +181,7 @@ def laplacian(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     result = scalar_transform(field, source, source, transform)
@@ -178,6 +194,7 @@ def inverse_laplacian(
     field: xr.DataArray,
     *,
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Solve the spherical inverse Laplacian with its degree-zero mode set to zero.
 
@@ -192,6 +209,7 @@ def inverse_laplacian(
     multiplier = np.zeros_like(degrees)
     nonzero = degrees > 0.0
     multiplier[nonzero] = -(radius**2) / (degrees[nonzero] * (degrees[nonzero] + 1.0))
+    nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
         alm = scalar_analysis(
@@ -199,6 +217,7 @@ def inverse_laplacian(
             spec=spec,
             geometry=geometry_for(source.grid),
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
@@ -208,6 +227,7 @@ def inverse_laplacian(
             ntheta=source.grid.nlat,
             nphi=source.grid.nlon,
             phi0=source.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     result = scalar_transform(field, source, source, transform)
