@@ -1,8 +1,28 @@
 # Changelog
 
-## v0.1.1 - 2026-09-06
+## v0.1.2 - 2026-09-12
 
-v0.1.1 strengthens validation, execution, typing, and documentation without changing the scientific API.
+### Compatibility
+
+- Restored Python 3.11 support; spharmgrid now supports Python 3.11–3.14.
+
+### Execution
+
+- Improved Dask worker scaling on systems with intermediate CPU counts.
+
+### Testing and CI
+
+- Added independent SPHEREPACK/pyspharm comparisons for `laplacian` and `inverse_laplacian` on GL and CC grids.
+- Expanded Xarray `.sg` accessor tests and Codecov reporting for optional file backends.
+- Added prek hooks, grouped Dependabot updates, and repository formatting/checks.
+
+### Documentation
+
+- Switched the documentation to the PyData Sphinx Theme and reorganized the guide and API reference.
+
+---
+
+## v0.1.1 - 2026-09-06
 
 ### Execution
 
