@@ -60,6 +60,6 @@ Install Dask support with:
 uv add "spharmgrid[dask]"
 ```
 
-Dask-backed Xarray inputs remain lazy through spherical harmonic operations.
+Dask-backed Xarray inputs execute lazily through spherical harmonic operations.
 They use one DUCC thread per transform by default; `sht_threads` overrides this
 value. The caller controls Dask scheduling.

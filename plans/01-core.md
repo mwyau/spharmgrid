@@ -295,7 +295,7 @@ representation; spharmgrid does not convert or normalize time.
 
 # Dask and thread behavior
 
-Dask remains optional. Dask-backed Xarray inputs should remain lazy through
+Dask is optional. Dask-backed Xarray inputs should execute lazily through
 spherical harmonic operations. Do not introduce a spharmgrid backend selector.
 
 Public spherical harmonic operations accept `sht_threads`. With
@@ -336,7 +336,7 @@ Xarray backends themselves.
 The `spharmgrid` console entry point remains available from a core-only install
 for `--help` and `--version`. File-processing commands require the optional
 `cli` backends, and transforming commands additionally require the optional
-`dask` group. Optional backend imports stay lazy; constructing the argument
+`dask` group. Optional backend imports are lazy; constructing the argument
 parser and importing `spharmgrid` do not require `h5netcdf`, `zarr`, `cfgrib`, or
 `dask`.
 

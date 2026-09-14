@@ -59,7 +59,7 @@ def test_invalid_sht_threads_are_rejected(invalid: object) -> None:
         sg.filter(field, "T2", sht_threads=cast(int | None, invalid))
 
 
-def test_dask_default_uses_one_thread_and_stays_lazy(
+def test_dask_default_uses_one_thread_and_is_lazy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     dask = pytest.importorskip("dask")
