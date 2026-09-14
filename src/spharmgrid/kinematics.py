@@ -13,6 +13,7 @@ from ._ducc import (
     TransformSpec,
     alm_degrees,
     geometry_for,
+    resolve_sht_threads,
     scalar_analysis,
     scalar_synthesis,
     vector_analysis,
@@ -47,9 +48,10 @@ def vorticity(
     *,
     output: str = "vo",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Compute relative vorticity from eastward and northward wind."""
-    vo, _ = _kinematic_fields(u, v, radius=radius)
+    vo, _ = _kinematic_fields(u, v, radius=radius, sht_threads=sht_threads)
     return with_output_metadata(vo, "vo", output)
 
 
@@ -59,9 +61,10 @@ def divergence(
     *,
     output: str = "d",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Compute horizontal wind divergence from eastward and northward wind."""
-    _, div = _kinematic_fields(u, v, radius=radius)
+    _, div = _kinematic_fields(u, v, radius=radius, sht_threads=sht_threads)
     return with_output_metadata(div, "d", output)
 
 
@@ -72,10 +75,11 @@ def kinematics(
     vorticity: str = "vo",
     divergence: str = "d",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Compute relative vorticity and divergence from one spin-1 analysis."""
     _validate_distinct_names(vorticity, divergence)
-    vo, div = _kinematic_fields(u, v, radius=radius)
+    vo, div = _kinematic_fields(u, v, radius=radius, sht_threads=sht_threads)
     vo = with_output_metadata(vo, "vo", vorticity)
     div = with_output_metadata(div, "d", divergence)
     return xr.Dataset({vorticity: vo, divergence: div})
@@ -87,9 +91,10 @@ def streamfunction(
     *,
     output: str = "strf",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Compute the horizontal streamfunction from a wind field."""
-    psi, _ = _potential_fields(u, v, radius=radius)
+    psi, _ = _potential_fields(u, v, radius=radius, sht_threads=sht_threads)
     return with_output_metadata(psi, "strf", output)
 
 
@@ -99,9 +104,10 @@ def velocity_potential(
     *,
     output: str = "vp",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.DataArray:
     """Compute the horizontal velocity potential from a wind field."""
-    _, chi = _potential_fields(u, v, radius=radius)
+    _, chi = _potential_fields(u, v, radius=radius, sht_threads=sht_threads)
     return with_output_metadata(chi, "vp", output)
 
 
@@ -112,6 +118,7 @@ def potentials(
     streamfunction: str = "strf",
     velocity_potential: str = "vp",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Compute streamfunction and velocity potential from one wind analysis.
 
@@ -121,7 +128,7 @@ def potentials(
     are set by zeroing degree zero.
     """
     _validate_distinct_names(streamfunction, velocity_potential)
-    psi, chi = _potential_fields(u, v, radius=radius)
+    psi, chi = _potential_fields(u, v, radius=radius, sht_threads=sht_threads)
     psi = with_output_metadata(psi, "strf", streamfunction)
     chi = with_output_metadata(chi, "vp", velocity_potential)
     return xr.Dataset({streamfunction: psi, velocity_potential: chi})
@@ -136,6 +143,7 @@ def helmholtz(
     rotational_eastward: str = "u_rotational",
     rotational_northward: str = "v_rotational",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Split a wind field into divergent and rotational components.
 
@@ -154,6 +162,8 @@ def helmholtz(
     )
     layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
+    dask = canonical_u.chunks is not None or canonical_v.chunks is not None
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
@@ -169,6 +179,7 @@ def helmholtz(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         zeros = np.zeros_like(vector_alm[0])
         divergent_u, divergent_v = vector_synthesis(
@@ -179,6 +190,7 @@ def helmholtz(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         rotational_u, rotational_v = vector_synthesis(
             zeros,
@@ -188,6 +200,7 @@ def helmholtz(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         return divergent_u, divergent_v, rotational_u, rotational_v
 
@@ -222,6 +235,7 @@ def vector_laplacian(
     eastward: str = "u",
     northward: str = "v",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Apply the SPHEREPACK vector Laplacian to a tangent vector field.
 
@@ -236,6 +250,7 @@ def vector_laplacian(
         v,
         inverse=False,
         radius=radius,
+        sht_threads=sht_threads,
     )
     return _vector_operator_dataset(
         output_u,
@@ -255,6 +270,7 @@ def inverse_vector_laplacian(
     eastward: str = "u",
     northward: str = "v",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Solve the vector inverse Laplacian with degree-zero coefficients zeroed.
 
@@ -268,6 +284,7 @@ def inverse_vector_laplacian(
         v,
         inverse=True,
         radius=radius,
+        sht_threads=sht_threads,
     )
     return _vector_operator_dataset(
         output_u,
@@ -287,6 +304,7 @@ def rotational_wind(
     eastward: str = "u_rotational",
     northward: str = "v_rotational",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Recover rotational wind from relative vorticity or streamfunction."""
     field = require_dataarray(field)
@@ -301,6 +319,7 @@ def rotational_wind(
         source=source,
         kind="rotational",
         radius=radius,
+        sht_threads=sht_threads,
     )
     return _wind_dataset(u, v, eastward, northward, "rotational")
 
@@ -312,6 +331,7 @@ def divergent_wind(
     eastward: str = "u_divergent",
     northward: str = "v_divergent",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Recover divergent wind from divergence or velocity potential."""
     field = require_dataarray(field)
@@ -326,6 +346,7 @@ def divergent_wind(
         source=source,
         kind="divergent",
         radius=radius,
+        sht_threads=sht_threads,
     )
     return _wind_dataset(u, v, eastward, northward, "divergent")
 
@@ -338,6 +359,7 @@ def wind(
     eastward: str = "u",
     northward: str = "v",
     radius: float = EARTH_RADIUS_M,
+    sht_threads: int | None = None,
 ) -> xr.Dataset:
     """Reconstruct wind from ``vo``/``d`` or ``strf``/``vp`` scalar fields.
 
@@ -356,6 +378,7 @@ def wind(
         scalar_two,
         source=resolved_source,
         radius=radius,
+        sht_threads=sht_threads,
     )
     u = with_output_metadata(u, "u", eastward)
     v = with_output_metadata(v, "v", northward)
@@ -367,6 +390,7 @@ def _kinematic_fields(
     v: xr.DataArray,
     *,
     radius: float,
+    sht_threads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Compute vorticity then divergence while sharing vector analysis."""
     _validate_radius(radius)
@@ -374,6 +398,8 @@ def _kinematic_fields(
     spec = _vector_spec(layout)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
+    dask = canonical_u.chunks is not None or canonical_v.chunks is not None
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
@@ -384,6 +410,7 @@ def _kinematic_fields(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         divergence_alm = -scale * vector_alm[0]
         vorticity_alm = -scale * vector_alm[1]
@@ -394,6 +421,7 @@ def _kinematic_fields(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         divergence_map = scalar_synthesis(
             divergence_alm[np.newaxis, :],
@@ -402,6 +430,7 @@ def _kinematic_fields(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         return vorticity_map, divergence_map
 
@@ -420,6 +449,7 @@ def _potential_fields(
     v: xr.DataArray,
     *,
     radius: float,
+    sht_threads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Compute streamfunction then velocity potential from one vector analysis."""
     _validate_radius(radius)
@@ -428,6 +458,8 @@ def _potential_fields(
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
     inverse_laplacian = _inverse_laplacian_multiplier(degrees, radius)
+    dask = canonical_u.chunks is not None or canonical_v.chunks is not None
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
@@ -438,6 +470,7 @@ def _potential_fields(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         divergence_alm = -scale * vector_alm[0]
         vorticity_alm = -scale * vector_alm[1]
@@ -450,6 +483,7 @@ def _potential_fields(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         velocity_potential_map = scalar_synthesis(
             velocity_potential_alm[np.newaxis, :],
@@ -458,6 +492,7 @@ def _potential_fields(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         return streamfunction_map, velocity_potential_map
 
@@ -477,6 +512,7 @@ def _single_source_wind(
     source: ScalarSource,
     kind: Literal["rotational", "divergent"],
     radius: float,
+    sht_threads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     _validate_radius(radius)
     layout = field_layout(field)
@@ -484,6 +520,7 @@ def _single_source_wind(
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
     laplacian = -(degrees * (degrees + 1.0)) / radius**2
+    nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(
         frame: NDArray[np.generic],
@@ -493,6 +530,7 @@ def _single_source_wind(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )[0]
         e_alm = np.zeros_like(scalar_alm)
         b_alm = np.zeros_like(scalar_alm)
@@ -515,6 +553,7 @@ def _single_source_wind(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     return _single_scalar_to_wind(field, layout, transform)
@@ -526,6 +565,7 @@ def _vector_laplacian_fields(
     *,
     inverse: bool,
     radius: float,
+    sht_threads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     _validate_radius(radius)
     layout, canonical_u, canonical_v = vector_inputs(u, v)
@@ -535,6 +575,8 @@ def _vector_laplacian_fields(
         multiplier = _inverse_laplacian_multiplier(degrees, radius)
     else:
         multiplier = -(degrees * (degrees + 1.0)) / radius**2
+    dask = canonical_u.chunks is not None or canonical_v.chunks is not None
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
@@ -545,6 +587,7 @@ def _vector_laplacian_fields(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
         transformed_alm = vector_alm * multiplier[np.newaxis, :]
         return vector_synthesis(
@@ -555,6 +598,7 @@ def _vector_laplacian_fields(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     return vector_pair_transform(
@@ -573,6 +617,7 @@ def _two_source_wind(
     *,
     source: WindSource,
     radius: float,
+    sht_threads: int | None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     _validate_radius(radius)
     layout, canonical_first, canonical_second = _paired_scalar_inputs(first, second)
@@ -580,6 +625,8 @@ def _two_source_wind(
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     scale = np.sqrt(degrees * (degrees + 1.0)) / radius
     laplacian = -(degrees * (degrees + 1.0)) / radius**2
+    dask = canonical_first.chunks is not None or canonical_second.chunks is not None
+    nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
     def transform(
         frame_first: NDArray[np.generic],
@@ -590,12 +637,14 @@ def _two_source_wind(
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )[0]
         second_alm = scalar_analysis(
             frame_second,
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )[0]
         if source == "vorticity_divergence":
             vorticity_alm, divergence_alm = first_alm, second_alm
@@ -615,6 +664,7 @@ def _two_source_wind(
             ntheta=layout.grid.nlat,
             nphi=layout.grid.nlon,
             phi0=layout.transform_layout.phi0_radians,
+            nthreads=nthreads,
         )
 
     return _two_scalar_to_wind(

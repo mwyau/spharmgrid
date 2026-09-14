@@ -13,6 +13,7 @@ from tests.conftest import scalar_field, solid_body_wind, supported_grid
 
 pytest.importorskip("h5netcdf")
 pytest.importorskip("zarr")
+pytest.importorskip("dask")
 
 
 def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:

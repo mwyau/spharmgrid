@@ -295,10 +295,14 @@ representation; spharmgrid does not convert or normalize time.
 
 # Dask and thread behavior
 
-Dask remains optional. Dask-backed xarray inputs should remain lazy through the
-horizontal transform graph. Do not introduce a spharmgrid backend selector.
+Dask is optional. Dask-backed Xarray inputs should execute lazily through
+spherical harmonic operations. Do not introduce a spharmgrid backend selector.
 
-DUCC uses four threads per transform internally. For Dask-backed arrays, the default local scheduler worker count is `max(1, os.cpu_count() // 4)` unless the application already configured `num_workers`. Do not expose backend thread tuning in the public API.
+Public spherical harmonic operations accept `sht_threads`. With
+`sht_threads=None`, eager inputs use DUCC's default thread count and Dask-backed
+inputs use one DUCC thread per transform. The Python API does not configure
+Dask workers. The CLI owns its worker pool and resolves `--workers` and
+`--sht-threads` from the available CPU count.
 
 ---
 
@@ -326,15 +330,15 @@ to handle them. Other outputs are written as NetCDF through
 encoding remain delegated to xarray and its backend packages.
 
 The CLI should not introduce a separate file abstraction or numerical path.
-Python callers may still supply already-open xarray objects or use other xarray
-backends themselves.
+Python callers may still supply already-open Xarray objects or use other
+Xarray backends themselves.
 
 The `spharmgrid` console entry point remains available from a core-only install
 for `--help` and `--version`. File-processing commands require the optional
-`cli` backends and report an actionable `pip install "spharmgrid[cli]"`
-message when those imports are unavailable. Optional backend imports stay lazy;
-constructing the argument parser and importing `spharmgrid` do not require
-`h5netcdf`, `zarr`, or `cfgrib`.
+`cli` backends, and transforming commands additionally require the optional
+`dask` group. Optional backend imports are lazy; constructing the argument
+parser and importing `spharmgrid` do not require `h5netcdf`, `zarr`, `cfgrib`, or
+`dask`.
 
 ---
 

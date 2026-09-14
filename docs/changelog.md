@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.3 - 2026-09-13
+
+### Execution
+
+- Added `sht_threads` to spherical harmonic operations; Dask-backed operations
+  use one DUCC thread per transform by default.
+- Added CLI `--workers` and `--sht-threads` controls; the Python API no longer
+  configures Dask workers.
+
 ## v0.1.2 - 2026-09-12
 
 ### Compatibility

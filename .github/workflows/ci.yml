@@ -127,7 +127,7 @@ jobs:
           enable-cache: true
           save-cache: false
           python-version: "3.14"
-      - run: uv sync --no-default-groups --group test --extra cli --frozen
+      - run: uv sync --no-default-groups --group test --extra cli --extra dask --frozen
       - name: Run optional file backend tests with coverage
         run: >-
           uv run --no-sync pytest

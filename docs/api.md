@@ -85,3 +85,10 @@ The public `spharmgrid` API is fully type annotated and the package ships a `py.
 
 .. autofunction:: spharmgrid.wind
 ```
+
+## Execution
+
+`sht_threads` sets the number of DUCC threads per spherical harmonic transform.
+With `None`, eager operations use DUCC's default thread count and Dask-backed
+operations use one thread per transform. The caller controls Dask worker and
+scheduler configuration.
