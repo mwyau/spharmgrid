@@ -112,6 +112,56 @@ jobs:
           disable_search: true
           fail_ci_if_error: false
 
+  torch:
+    name: Torch backend (Python 3.12)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.12"
+      - run: uv sync --no-default-groups --group dev --extra torch --frozen
+      - name: Type-check with Torch installed
+        run: uv run --no-sync ty check
+      - name: Run Torch tests with coverage
+        run: >-
+          uv run --no-sync pytest
+          tests/optional/torch
+          --cov=spharmgrid.torch
+          --cov-branch
+          --cov-report=term-missing
+          --cov-report=xml:coverage-torch.xml
+          --junitxml=junit-torch.xml
+          -o junit_family=legacy
+      - name: Upload Torch test results to Codecov
+        if: ${{ !cancelled() && hashFiles('junit-torch.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./junit-torch.xml
+          report_type: test_results
+          flags: torch
+          name: torch-py312
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+      - name: Upload Torch coverage to Codecov
+        if: ${{ !cancelled() && hashFiles('coverage-torch.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./coverage-torch.xml
+          flags: torch
+          name: torch-py312
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+
   file-backends:
     name: Optional file backends (Python 3.14)
     needs: code-quality
