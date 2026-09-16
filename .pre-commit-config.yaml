@@ -26,6 +26,9 @@ repos:
     rev: v0.0.80
     hooks:
       - id: ty
+        # Keep the optional Torch stack out of the normal hook.  The project
+        # source configuration still makes ty check src/spharmgrid/torch;
+        # the dedicated Torch CI job supplies its runtime dependencies.
         args: [--isolated, --python=3.12, --group=dev, --extra=cf, --extra=dask]
         pass_filenames: false
 

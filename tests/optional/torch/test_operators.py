@@ -20,13 +20,16 @@ def _assert_close(
     expected: np.ndarray,
     dtype: torch.dtype,
     *,
+    tolerances: tuple[float, float] | None = None,
     rtol: float | None = None,
     atol: float | None = None,
 ) -> None:
+    if tolerances is None:
+        tolerances = _value_tolerances(dtype)
     if rtol is None:
-        rtol = 3.0e-11 if dtype == torch.float64 else 3.0e-5
+        rtol = tolerances[0]
     if atol is None:
-        atol = 3.0e-10 if dtype == torch.float64 else 3.0e-4
+        atol = tolerances[1]
     np.testing.assert_allclose(
         actual.detach().cpu().numpy(),
         expected,
@@ -35,15 +38,42 @@ def _assert_close(
     )
 
 
+def _value_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return tolerances for ordinary field-valued comparisons."""
+    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (5.0e-6, 5.0e-6)
+
+
+def _derivative_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return measured CPU/Torch derivative tolerances with CI margin."""
+    # The FP32 values are rounded from 5--10 times the measured GL
+    # CPU/Torch disagreement, with additional platform margin.
+    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (5.0e-6, 5.0e-12)
+
+
+def _laplacian_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return tolerances for the much smaller Laplacian quantities."""
+    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (1.0e-5, 1.0e-18)
+
+
+def _wind_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return tolerances for reconstructed wind components."""
+    return (3.0e-8, 3.0e-8) if dtype == torch.float64 else (1.0e-5, 5.0e-5)
+
+
 def _physical_tolerances(
     dtype: torch.dtype,
     *,
     vector: bool,
 ) -> tuple[float, float]:
-    """Set tolerances from measured transform error and output scale."""
+    """Return tolerances for potentials and inverse physical operators."""
     if vector:
-        return (1.0e-9, 1.0e5) if dtype == torch.float64 else (5.0e-7, 1.0e6)
-    return (1.0e-9, 0.1) if dtype == torch.float64 else (5.0e-7, 5.0)
+        return (1.0e-9, 1.0e5) if dtype == torch.float64 else (1.0e-5, 1.0e-2)
+    return (1.0e-9, 0.1) if dtype == torch.float64 else (1.0e-5, 1.0e-2)
+
+
+def _analytic_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return dtype-specific tolerances for analytic vector identities."""
+    return (2.0e-12, 2.0e-12) if dtype == torch.float64 else (2.0e-6, 2.0e-6)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
@@ -53,9 +83,18 @@ def test_scalar_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
 
     expected_gradient = sg.gradient(xarray_field)
     actual_gradient = sgt.gradient(field, grid=gl_grid)
-    _assert_close(actual_gradient[0], expected_gradient.gradient_eastward.values, dtype)
+    derivative_tolerances = _derivative_tolerances(dtype)
     _assert_close(
-        actual_gradient[1], expected_gradient.gradient_northward.values, dtype
+        actual_gradient[0],
+        expected_gradient.gradient_eastward.values,
+        dtype,
+        tolerances=derivative_tolerances,
+    )
+    _assert_close(
+        actual_gradient[1],
+        expected_gradient.gradient_northward.values,
+        dtype,
+        tolerances=derivative_tolerances,
     )
 
     expected_inverse_gradient = sg.inverse_gradient(
@@ -70,18 +109,23 @@ def test_scalar_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_inverse_gradient,
         expected_inverse_gradient.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=(3.0e-8, 3.0e-8)
+        if dtype == torch.float64
+        else _value_tolerances(dtype),
     )
 
-    for operation, expected in (
-        (sgt.laplacian(field, grid=gl_grid), sg.laplacian(xarray_field).values),
-        (
-            sgt.inverse_laplacian(field, grid=gl_grid),
-            sg.inverse_laplacian(xarray_field).values,
-        ),
-    ):
-        _assert_close(operation, expected, dtype)
+    _assert_close(
+        sgt.laplacian(field, grid=gl_grid),
+        sg.laplacian(xarray_field).values,
+        dtype,
+        tolerances=_laplacian_tolerances(dtype),
+    )
+    _assert_close(
+        sgt.inverse_laplacian(field, grid=gl_grid),
+        sg.inverse_laplacian(xarray_field).values,
+        dtype,
+        tolerances=_physical_tolerances(dtype, vector=False),
+    )
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
@@ -93,12 +137,33 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
     actual_vorticity = sgt.vorticity(eastward, northward, grid=gl_grid)
     actual_divergence = sgt.divergence(eastward, northward, grid=gl_grid)
     expected_kinematics = sg.kinematics(xarray_eastward, xarray_northward)
-    _assert_close(actual_vorticity, expected_kinematics.vo.values, dtype)
-    _assert_close(actual_divergence, expected_kinematics.d.values, dtype)
+    derivative_tolerances = _derivative_tolerances(dtype)
+    _assert_close(
+        actual_vorticity,
+        expected_kinematics.vo.values,
+        dtype,
+        tolerances=derivative_tolerances,
+    )
+    _assert_close(
+        actual_divergence,
+        expected_kinematics.d.values,
+        dtype,
+        tolerances=derivative_tolerances,
+    )
 
     actual_kinematics = sgt.kinematics(eastward, northward, grid=gl_grid)
-    _assert_close(actual_kinematics[0], expected_kinematics.vo.values, dtype)
-    _assert_close(actual_kinematics[1], expected_kinematics.d.values, dtype)
+    _assert_close(
+        actual_kinematics[0],
+        expected_kinematics.vo.values,
+        dtype,
+        tolerances=derivative_tolerances,
+    )
+    _assert_close(
+        actual_kinematics[1],
+        expected_kinematics.d.values,
+        dtype,
+        tolerances=derivative_tolerances,
+    )
 
     actual_potentials = sgt.potentials(eastward, northward, grid=gl_grid)
     expected_potentials = sg.potentials(xarray_eastward, xarray_northward)
@@ -141,8 +206,18 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         northward,
         grid=gl_grid,
     )
-    _assert_close(actual_vector_laplacian[0], expected_vector_laplacian.u.values, dtype)
-    _assert_close(actual_vector_laplacian[1], expected_vector_laplacian.v.values, dtype)
+    _assert_close(
+        actual_vector_laplacian[0],
+        expected_vector_laplacian.u.values,
+        dtype,
+        tolerances=_laplacian_tolerances(dtype),
+    )
+    _assert_close(
+        actual_vector_laplacian[1],
+        expected_vector_laplacian.v.values,
+        dtype,
+        tolerances=_laplacian_tolerances(dtype),
+    )
 
     expected_inverse_vector_laplacian = sg.inverse_vector_laplacian(
         xarray_eastward,
@@ -161,15 +236,13 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_inverse_vector_laplacian[0],
         expected_inverse_vector_laplacian.u.values,
         dtype,
-        rtol=inverse_vector_rtol,
-        atol=inverse_vector_atol,
+        tolerances=(inverse_vector_rtol, inverse_vector_atol),
     )
     _assert_close(
         actual_inverse_vector_laplacian[1],
         expected_inverse_vector_laplacian.v.values,
         dtype,
-        rtol=inverse_vector_rtol,
-        atol=inverse_vector_atol,
+        tolerances=(inverse_vector_rtol, inverse_vector_atol),
     )
 
     expected_helmholtz = sg.helmholtz(xarray_eastward, xarray_northward)
@@ -183,8 +256,7 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
             actual,
             expected_helmholtz[name].values,
             dtype,
-            rtol=3.0e-8 if dtype == torch.float64 else None,
-            atol=3.0e-8 if dtype == torch.float64 else None,
+            tolerances=_wind_tolerances(dtype),
         )
 
     expected_rotational = sg.rotational_wind(
@@ -200,15 +272,13 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_rotational[0],
         expected_rotational.u_rotational.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
     _assert_close(
         actual_rotational[1],
         expected_rotational.v_rotational.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
 
     expected_divergent = sg.divergent_wind(
@@ -224,15 +294,13 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_divergent[0],
         expected_divergent.u_divergent.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
     _assert_close(
         actual_divergent[1],
         expected_divergent.v_divergent.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
 
     expected_wind = sg.wind(
@@ -250,15 +318,13 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_wind[0],
         expected_wind.u.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
     _assert_close(
         actual_wind[1],
         expected_wind.v.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
 
     expected_potential_wind = sg.wind(
@@ -276,16 +342,27 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         actual_potential_wind[0],
         expected_potential_wind.u.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
     _assert_close(
         actual_potential_wind[1],
         expected_potential_wind.v.values,
         dtype,
-        rtol=3.0e-8 if dtype == torch.float64 else None,
-        atol=3.0e-8 if dtype == torch.float64 else None,
+        tolerances=_wind_tolerances(dtype),
     )
+
+
+def test_cc_full_state_operations_raise_capability_error(cc_grid: sg.Grid) -> None:
+    field, eastward, northward = make_fields(cc_grid)
+    error = (
+        r"Current spharmgrid\.torch.*torch-harmonics.*T8.*full spharmgrid.*"
+        r"filter, regrid, and regrid_vector"
+    )
+
+    with pytest.raises(ValueError, match=error):
+        sgt.gradient(field, grid=cc_grid)
+    with pytest.raises(ValueError, match=error):
+        sgt.kinematics(eastward, northward, grid=cc_grid)
 
 
 @pytest.mark.parametrize("latitude_order", ["ascending", "descending"])
@@ -436,9 +513,11 @@ def test_analytic_scalar_and_vector_identities(
     _assert_close(recovered_wind[1], northward.numpy(), torch.float64, atol=5.0e-14)
 
 
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 @pytest.mark.parametrize("latitude_order", ["ascending", "descending"])
 def test_analytic_nonaxisymmetric_l1m1_vector_identities(
     latitude_order: Literal["ascending", "descending"],
+    dtype: torch.dtype,
 ) -> None:
     """Check vector signs and phase against direct spherical-coordinate formulae."""
     grid = sg.gaussian_grid(8, 18, latitude_order=latitude_order, lon0=37.0)
@@ -465,28 +544,24 @@ def test_analytic_nonaxisymmetric_l1m1_vector_identities(
     rotational_v = psi_amplitude * cosine_longitude / radius
     eastward = divergent_u + rotational_u
     northward = divergent_v + rotational_v
-    u = torch.as_tensor(eastward, dtype=torch.float64)
-    v = torch.as_tensor(northward, dtype=torch.float64)
-    scalar = torch.as_tensor(chi, dtype=torch.float64)
+    tolerances = _analytic_tolerances(dtype)
+    u = torch.as_tensor(eastward, dtype=dtype)
+    v = torch.as_tensor(northward, dtype=dtype)
+    scalar = torch.as_tensor(chi, dtype=dtype)
 
     actual_gradient = sgt.gradient(scalar, grid=grid, radius=radius)
-    _assert_close(
-        actual_gradient[0], divergent_u, torch.float64, rtol=2.0e-12, atol=2.0e-12
-    )
-    _assert_close(
-        actual_gradient[1], divergent_v, torch.float64, rtol=2.0e-12, atol=2.0e-12
-    )
+    _assert_close(actual_gradient[0], divergent_u, dtype, tolerances=tolerances)
+    _assert_close(actual_gradient[1], divergent_v, dtype, tolerances=tolerances)
     _assert_close(
         sgt.inverse_gradient(
-            torch.as_tensor(divergent_u, dtype=torch.float64),
-            torch.as_tensor(divergent_v, dtype=torch.float64),
+            torch.as_tensor(divergent_u, dtype=dtype),
+            torch.as_tensor(divergent_v, dtype=dtype),
             grid=grid,
             radius=radius,
         ),
         chi,
-        torch.float64,
-        rtol=2.0e-12,
-        atol=2.0e-12,
+        dtype,
+        tolerances=tolerances,
     )
 
     actual_vorticity, actual_divergence = sgt.kinematics(
@@ -498,21 +573,19 @@ def test_analytic_nonaxisymmetric_l1m1_vector_identities(
     _assert_close(
         actual_vorticity,
         -2.0 * psi / radius**2,
-        torch.float64,
-        rtol=2.0e-12,
-        atol=2.0e-12,
+        dtype,
+        tolerances=tolerances,
     )
     _assert_close(
         actual_divergence,
         -2.0 * chi / radius**2,
-        torch.float64,
-        rtol=2.0e-12,
-        atol=2.0e-12,
+        dtype,
+        tolerances=tolerances,
     )
 
     actual_potentials = sgt.potentials(u, v, grid=grid, radius=radius)
-    _assert_close(actual_potentials[0], psi, torch.float64, rtol=2.0e-12, atol=2.0e-12)
-    _assert_close(actual_potentials[1], chi, torch.float64, rtol=2.0e-12, atol=2.0e-12)
+    _assert_close(actual_potentials[0], psi, dtype, tolerances=tolerances)
+    _assert_close(actual_potentials[1], chi, dtype, tolerances=tolerances)
 
     actual_helmholtz = sgt.helmholtz(u, v, grid=grid, radius=radius)
     for actual, expected in zip(
@@ -520,7 +593,7 @@ def test_analytic_nonaxisymmetric_l1m1_vector_identities(
         (divergent_u, divergent_v, rotational_u, rotational_v),
         strict=True,
     ):
-        _assert_close(actual, expected, torch.float64, rtol=2.0e-12, atol=2.0e-12)
+        _assert_close(actual, expected, dtype, tolerances=tolerances)
 
     for first, second, source in (
         (*actual_potentials, "potentials"),
@@ -533,9 +606,5 @@ def test_analytic_nonaxisymmetric_l1m1_vector_identities(
             source=source,
             radius=radius,
         )
-        _assert_close(
-            reconstructed[0], eastward, torch.float64, rtol=2.0e-12, atol=2.0e-12
-        )
-        _assert_close(
-            reconstructed[1], northward, torch.float64, rtol=2.0e-12, atol=2.0e-12
-        )
+        _assert_close(reconstructed[0], eastward, dtype, tolerances=tolerances)
+        _assert_close(reconstructed[1], northward, dtype, tolerances=tolerances)

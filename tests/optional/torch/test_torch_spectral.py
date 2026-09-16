@@ -190,6 +190,56 @@ def test_vector_regrid_matches_cpu_for_nonaxisymmetric_longitude_phase(
     )
 
 
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+@pytest.mark.parametrize("target_kind", ["gl", "cc"])
+def test_vector_regrid_matches_cpu_for_nonaxisymmetric_cc_source(
+    dtype: torch.dtype,
+    target_kind: str,
+) -> None:
+    source = sg.clenshaw_curtis_grid(
+        17,
+        36,
+        latitude_order="descending",
+        lon0=37.0,
+    )
+    target = (
+        sg.gaussian_grid(
+            10,
+            20,
+            latitude_order="ascending",
+            lon0=-83.0,
+        )
+        if target_kind == "gl"
+        else sg.clenshaw_curtis_grid(
+            19,
+            40,
+            latitude_order="ascending",
+            lon0=-83.0,
+        )
+    )
+    u, v = make_nonaxisymmetric_wind(source, dtype)
+    expected = sg.regrid_vector(
+        as_xarray(u, source, "u"),
+        as_xarray(v, source, "v"),
+        target,
+        "T2",
+    )
+    actual_u, actual_v = sgt.regrid_vector(
+        u,
+        v,
+        target,
+        "T2",
+        source_grid=source,
+    )
+    rtol, atol = _tolerance(dtype)
+    np.testing.assert_allclose(
+        actual_u.numpy(), expected.u.values, rtol=rtol, atol=atol
+    )
+    np.testing.assert_allclose(
+        actual_v.numpy(), expected.v.values, rtol=rtol, atol=atol
+    )
+
+
 def test_leading_dimensions_are_preserved(gl_grid: sg.Grid) -> None:
     field, u, v = make_fields(gl_grid)
     batched = field.unsqueeze(0).expand(2, -1, -1).clone()
@@ -217,7 +267,7 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
     gl_grid: sg.Grid,
 ) -> None:
     field, _, _ = make_fields(cc_grid)
-    with pytest.raises(ValueError, match="full bandwidth"):
+    with pytest.raises(ValueError, match="full spharmgrid.*filter, regrid"):
         sgt.filter(field, grid=cc_grid)
     with pytest.raises(ValueError, match="verified.*T8"):
         sgt.filter(field, "T9", grid=cc_grid)

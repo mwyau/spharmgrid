@@ -79,7 +79,8 @@ import spharmgrid as sg
 import spharmgrid.torch as sgt
 
 grid = sg.gaussian_grid(64, 128)
-filtered = sgt.filter(torch_input, grid=grid, truncation="T42")
+field = torch.randn(grid.nlat, grid.nlon)
+filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
 See the [PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and backend bandwidth limits.

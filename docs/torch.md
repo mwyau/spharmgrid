@@ -110,20 +110,29 @@ accepted. A CC grid is not a general regular latitude–longitude grid.
 
 The adapter uses triangular total-degree bands so that the torch-harmonics
 coefficient domain matches spharmgrid's explicit `Tn` semantics. For an
-explicit request, the verified inclusive limits are
+explicit triangular request, the verified inclusive limits are
 
 ```text
-GL: Tn where n <= min(nlat - 1, (nlon - 1) // 2)
-CC: Tn where n <= min((nlat - 1) // 2, (nlon - 1) // 2)
+GL
+n <= min(nlat - 1, (nlon - 1) // 2)
+
+CC
+n <= min((nlat - 1) // 2, (nlon - 1) // 2)
 ```
 
-For regridding, the limit is the minimum over both source and target grids.
-`truncation=None` is accepted only when the full spharmgrid transform domain is
-triangular and fits the verified torch-harmonics limit. In particular, a
-full-bandwidth CC call usually requests more latitude modes than the current
-equiangular torch-harmonics transform can represent. Such calls, and explicit
-requests above the limits, raise `ValueError`; the backend never silently
-clamps a requested band.
+For regridding, an explicit `Tn` must fit the limit of both source and target
+grids. A full same-grid state is supported on GL when spharmgrid's requested
+domain is representable by torch-harmonics. On CC, the current equiangular
+torch-harmonics path cannot represent the full spharmgrid domain on ordinary
+grids because its verified latitude limit is the CC bound above.
+
+Consequently, current CC support consists primarily of explicitly selected
+bands such as `filter(..., "Tn")`, `regrid(..., "Tn")`, and
+`regrid_vector(..., "Tn")`. The differential and wind functions request the
+same-grid full domain; when that domain exceeds the verified CC limit, they
+raise `ValueError` rather than silently reducing bandwidth. Explicit requests
+above the documented limits also raise `ValueError`; the backend never
+silently clamps a requested band.
 
 CUDA execution is available when the installed PyTorch and torch-harmonics
 build support it. The optional test suite exercises CUDA conditionally and

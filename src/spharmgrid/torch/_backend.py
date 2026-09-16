@@ -60,6 +60,16 @@ def _resolve_transform_spec(
         _torch_capabilities(target).triangular_lmax,
     )
 
+    if requested.lmax > limit and (source.kind == "cc" or target.kind == "cc"):
+        raise ValueError(
+            _cc_bandwidth_error(
+                source,
+                target,
+                limit,
+                requested_lmax=None if selection is None else selection.lmax,
+            )
+        )
+
     if requested.lmax != requested.mmax:
         raise ValueError(
             "torch-harmonics can only reproduce a triangular spharmgrid "
@@ -67,17 +77,37 @@ def _resolve_transform_spec(
             "full bandwidth on these grids, so supply an explicit supported Tn"
         )
     if requested.lmax > limit:
-        if selection is None:
-            raise ValueError(
-                "torch-harmonics cannot reproduce spharmgrid's full bandwidth "
-                f"on this {source.kind.upper()} grid (verified limit T{limit}); "
-                "supply an explicit supported Tn range"
-            )
         raise ValueError(
             f"requested lmax={requested.lmax} exceeds the verified "
             f"torch-harmonics triangular bandwidth T{limit} for these grids"
         )
     return TransformSpec(requested.lmax, requested.lmax)
+
+
+def _cc_bandwidth_error(
+    source: Grid,
+    target: Grid,
+    limit: int,
+    *,
+    requested_lmax: int | None,
+) -> str:
+    """Describe the current torch-harmonics CC bandwidth boundary."""
+    cc_grids = [grid for grid in (source, target) if grid.kind == "cc"]
+    cc_limit = min(_torch_capabilities(grid).triangular_lmax for grid in cc_grids)
+    if requested_lmax is None:
+        request = "the requested full spharmgrid transform domain"
+    else:
+        request = f"the requested T{requested_lmax} domain"
+    pair_limit = "" if cc_limit == limit else f"; this grid pair is limited to T{limit}"
+    return (
+        "Current spharmgrid.torch support has a torch-harmonics bandwidth "
+        "limitation for the supplied CC grid: the verified CC triangular "
+        "limit is "
+        f"T{cc_limit} (n <= min((nlat - 1) // 2, (nlon - 1) // 2)){pair_limit}; "
+        f"{request} cannot currently be represented. Explicitly truncated "
+        "filter, regrid, and regrid_vector calls remain available within the "
+        f"supported range through T{limit}."
+    )
 
 
 def _torch_grid_name(grid: Grid) -> str:

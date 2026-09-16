@@ -63,6 +63,15 @@ def test_core_import_does_not_load_torch() -> None:
     )
 
 
+def test_cc_sht_operators_raise_capability_error(cc_grid: sg.Grid) -> None:
+    error = (
+        r"Current spharmgrid\.torch.*torch-harmonics.*T8.*full spharmgrid.*"
+        r"filter, regrid, and regrid_vector"
+    )
+    with pytest.raises(ValueError, match=error):
+        sgnn.SHTOperators(cc_grid)
+
+
 def test_sht_operators_reuse_transform_state(gl_grid: sg.Grid) -> None:
     field, eastward, northward = make_fields(gl_grid)
     operators = sgnn.SHTOperators(gl_grid)
