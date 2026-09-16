@@ -7,6 +7,14 @@ harmonic operations for PyTorch workflows. Install it with the `torch` extra:
 pip install "spharmgrid[torch]"
 ```
 
+The current `torch-harmonics` PyPI release provides prebuilt CPU wheels for
+Linux x86-64 on only a limited set of CPython versions. CUDA-enabled upstream
+packages and source builds have separate PyTorch, CUDA, and platform
+requirements. See the upstream [installation documentation](https://github.com/NVIDIA/torch-harmonics#installation)
+for the current wheel and build options; if no compatible upstream package can
+be installed, installation fails rather than making the `torch` extra
+available incompletely.
+
 The backend calls the installed `torch-harmonics` scalar and vector transform
 modules. spharmgrid translates its `Grid` descriptors and applies the
 scientific spectral selections, radius factors, and atmospheric vector
@@ -22,7 +30,7 @@ vo = sg.vorticity(u, v)
 For a tensor-native one-off, use `spharmgrid.torch` directly. For repeated
 model execution, keep transform state in one of the reusable modules below.
 
-## Functional operations
+## Functional API
 
 The functional API accepts `torch.Tensor` objects. The last two dimensions are
 latitude and longitude, in that order; all preceding dimensions are preserved
@@ -42,7 +50,7 @@ v = torch.randn(grid.nlat, grid.nlon)
 vorticity, divergence = sgt.kinematics(u, v, grid=grid)
 ```
 
-The namespace contains the following operations:
+The namespace contains the following functions:
 
 ```text
 filter, regrid, regrid_vector
@@ -85,10 +93,10 @@ vector_layer = sgnn.SHTVectorRegrid(source_grid, target_grid, "T42")
 target_u, target_v = vector_layer(u, v)
 ```
 
-`SHTOperators` exposes methods for the scientific operations and owns reusable
-transform state. `SHTFilter`, `SHTRegrid`, and `SHTVectorRegrid` are callable
-layers with fixed grids and spectral selections. Move a module and its input
-tensors together with `.to(device)` or `.to(dtype=...)`.
+`SHTOperators` exposes reusable transform and diagnostic methods and owns
+reusable transform state. `SHTFilter`, `SHTRegrid`, and `SHTVectorRegrid` are
+callable layers with fixed grids and spectral selections. Move a module and
+its input tensors together with `.to(device)` or `.to(dtype=...)`.
 
 `SHTOperators` builds a full same-grid transform state. It therefore has the
 same `truncation=None` capability restriction as full-bandwidth functional
