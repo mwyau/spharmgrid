@@ -10,7 +10,6 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from ._ducc import (
-    TransformSpec,
     alm_degrees,
     geometry_for,
     resolve_sht_threads,
@@ -19,6 +18,8 @@ from ._ducc import (
     vector_analysis,
     vector_synthesis,
 )
+from ._transform import TransformSpec
+from ._types import DivergentQuantity, RotationalQuantity, WindSource
 from ._vector import vector_inputs, vector_pair_transform, vector_quad_transform
 from ._xarray import (
     FieldLayout,
@@ -38,8 +39,6 @@ from .metadata import (
 )
 from .operators import EARTH_RADIUS_M
 from .spectral import transform_spec
-
-WindSource = Literal["vorticity_divergence", "potentials"]
 
 
 def vorticity(
@@ -300,7 +299,7 @@ def inverse_vector_laplacian(
 def rotational_wind(
     field: xr.DataArray,
     *,
-    quantity: Literal["vorticity", "streamfunction"] | None = None,
+    quantity: RotationalQuantity | None = None,
     eastward: str = "u_rotational",
     northward: str = "v_rotational",
     radius: float = EARTH_RADIUS_M,
@@ -327,7 +326,7 @@ def rotational_wind(
 def divergent_wind(
     field: xr.DataArray,
     *,
-    quantity: Literal["divergence", "velocity_potential"] | None = None,
+    quantity: DivergentQuantity | None = None,
     eastward: str = "u_divergent",
     northward: str = "v_divergent",
     radius: float = EARTH_RADIUS_M,

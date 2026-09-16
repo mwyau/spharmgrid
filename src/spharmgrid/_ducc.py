@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import cache
 from numbers import Integral
 from typing import Literal, cast
@@ -10,6 +9,7 @@ from typing import Literal, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from ._transform import TransformSpec
 from .grids import Grid
 
 Geometry = Literal["CC", "GL"]
@@ -33,18 +33,6 @@ def resolve_sht_threads(sht_threads: int | None, *, dask: bool) -> int:
     if resolved <= 0:
         raise ValueError("sht_threads must be a positive integer or None")
     return resolved
-
-
-@dataclass(frozen=True, slots=True)
-class TransformSpec:
-    """A scalar/vector transform bandwidth supported by its source geometry."""
-
-    lmax: int
-    mmax: int
-
-    def __post_init__(self) -> None:
-        if self.lmax < 0 or self.mmax < 0 or self.mmax > self.lmax:
-            raise ValueError("transform limits must satisfy 0 <= mmax <= lmax")
 
 
 def geometry_for(grid: Grid) -> Geometry:
