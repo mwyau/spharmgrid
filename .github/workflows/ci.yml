@@ -127,14 +127,14 @@ jobs:
           enable-cache: true
           save-cache: false
           python-version: "3.12"
-      - run: uv sync --no-default-groups --group dev --extra torch --frozen
+      - run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra torch --frozen
       - name: Type-check with Torch installed
         run: uv run --no-sync ty check
       - name: Run Torch tests with coverage
         run: >-
           uv run --no-sync pytest
           tests/optional/torch
-          --cov=spharmgrid.torch
+          --cov=src/spharmgrid/torch
           --cov-branch
           --cov-report=term-missing
           --cov-report=xml:coverage-torch.xml
