@@ -57,6 +57,7 @@ packages = ["src/spharmgrid"]
 exclude = [
     "/.github",
     "/AGENTS.md",
+    "/benchmarks",
     "/plans",
     "/skills",
 ]
