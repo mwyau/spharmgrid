@@ -138,6 +138,7 @@ def test_cuda_smoke_scalar_vector_autograd_and_reusable_modules(
         module_v,
     )
     assert all(value.is_cuda for value in outputs)
+    assert all(value.dtype == dtype for value in outputs)
     assert all(torch.isfinite(value).all() for value in outputs)
     assert all(
         buffer.is_cuda
@@ -154,5 +155,6 @@ def test_cuda_smoke_scalar_vector_autograd_and_reusable_modules(
     for value in (field, eastward, northward):
         assert value.grad is not None
         assert value.grad.is_cuda
+        assert value.grad.dtype == dtype
         assert value.grad.shape == value.shape
         assert torch.isfinite(value.grad).all()
