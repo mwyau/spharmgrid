@@ -800,6 +800,36 @@ Phase 3 is complete when:
 
 ---
 
+## 17. v0.2 Torch slice
+
+The first Phase-3 implementation is the optional PyTorch namespace in the
+`0.2.0.dev0` development series. It uses the installed `torch-harmonics`
+`RealSHT`, `InverseRealSHT`, `RealVectorSHT`, and `InverseRealVectorSHT` modules;
+DUCC0 remains the reference engine for the Xarray API.
+
+The implemented tensor API covers the scalar, vector, kinematic, potential,
+Helmholtz, and inverse-wind operations listed in the preconditions, plus
+`spharmgrid.torch.nn.SHTOperators`, `SHTFilter`, `SHTRegrid`, and
+`SHTVectorRegrid`. Tensor inputs use the last two dimensions for latitude and
+longitude, preserve leading dimensions, and keep coefficient masks and
+physical multipliers in Torch for autograd.
+
+The adapter's independently checked vector mapping is
+`(v_theta, v_phi) = (-v_northward, u_eastward)`. In the tested normalization,
+the Torch spheroidal and toroidal coefficients map to spharmgrid's E and B
+coefficients as `E = sqrt(l(l+1)) s` and `B = -sqrt(l(l+1)) t` for positive
+degree. Longitude-origin phase handling and both latitude orders are tested
+against DUCC and analytic degree-one fields.
+
+The current torch-harmonics equiangular transform has a narrower CC latitude
+bandwidth than DUCC. The adapter therefore accepts explicit triangular `Tn`
+ranges only through `min((nlat - 1) // 2, (nlon - 1) // 2)` on CC (and the
+corresponding GL limit `min(nlat - 1, (nlon - 1) // 2)`). It raises a clear
+error for a non-triangular or over-wide request instead of clamping it. S2FFT,
+HEALPix, reduced Gaussian grids, and SFNO remain future work.
+
+---
+
 ## Current implementation references
 
 - DUCC0: https://github.com/mreineck/ducc

@@ -35,6 +35,7 @@ Optional groups are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
+- `spharmgrid[torch]` — tensor-native PyTorch operations backed by `torch-harmonics`;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
 Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
@@ -68,6 +69,20 @@ filtered = field.sg.filter("T6-42")
 ```
 
 See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
+
+For differentiable tensor workflows, install `spharmgrid[torch]` and use the
+separate `spharmgrid.torch` API:
+
+```python
+import torch
+import spharmgrid as sg
+import spharmgrid.torch as sgt
+
+grid = sg.gaussian_grid(64, 128)
+filtered = sgt.filter(torch_input, grid=grid, truncation="T42")
+```
+
+See the [PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and backend bandwidth limits.
 
 ## Documentation
 
