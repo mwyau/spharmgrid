@@ -1,34 +1,30 @@
 # PyTorch backend
 
-The optional `spharmgrid.torch` namespace provides tensor-native spherical
-harmonic operations for PyTorch workflows. Install it with the `torch` extra:
+The optional `spharmgrid.torch` namespace applies spharmgrid's spherical
+harmonic operations to PyTorch tensors. Install it with the `torch` extra:
 
 ```bash
 pip install "spharmgrid[torch]"
 ```
 
-The current `torch-harmonics` PyPI release provides prebuilt CPU wheels for
-Linux x86-64 on only a limited set of CPython versions. CUDA-enabled upstream
-packages and source builds have separate PyTorch, CUDA, and platform
-requirements. See the upstream [installation documentation](https://github.com/NVIDIA/torch-harmonics#installation)
-for the current wheel and build options; if no compatible upstream package can
-be installed, installation fails rather than making the `torch` extra
-available incompletely.
+`spharmgrid[torch]` depends on PyTorch and `torch-harmonics`. Wheel and CUDA
+availability varies by Python version and platform; see the upstream
+[installation documentation](https://github.com/NVIDIA/torch-harmonics#installation)
+for current installation options.
 
-The backend calls the installed `torch-harmonics` scalar and vector transform
-modules. spharmgrid translates its `Grid` descriptors and applies the
-scientific spectral selections, radius factors, and atmospheric vector
-conventions around those transforms. Importing `spharmgrid` alone does not
-import PyTorch.
+`torch-harmonics` computes the scalar and vector spherical harmonic transforms.
+spharmgrid maps its `Grid` descriptors to those transforms and applies the
+spectral selections, radius factors, and atmospheric vector conventions.
+Import `spharmgrid.torch` to load the PyTorch API.
 
-The existing Xarray/DUCC API remains the file and metadata workflow:
+The Xarray/DUCC API handles file and metadata workflows:
 
 ```python
 vo = sg.vorticity(u, v)
 ```
 
-For a tensor-native one-off, use `spharmgrid.torch` directly. For repeated
-model execution, keep transform state in one of the reusable modules below.
+For individual tensor operations, use `spharmgrid.torch` directly. For repeated
+model execution, use one of the reusable modules below.
 
 ## Functional API
 
@@ -70,12 +66,12 @@ an explicit `source=` or `quantity=` because tensors do not carry CF metadata.
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators
 set the degree-zero coefficient to zero, and vector inverse operations remove
 the nonphysical degree-zero vector slot. The backend supports `float32` and
-`float64` tensors. Tensor operations remain in PyTorch, so gradients can flow
-through the transforms and spectral multipliers.
+`float64` tensors. Tensor operations use PyTorch throughout, so gradients can
+flow through the transforms and spectral multipliers.
 
 ## Reusable modules
 
-`spharmgrid.torch.nn` contains four deliberately small module interfaces:
+`spharmgrid.torch.nn` contains four reusable module classes:
 
 ```python
 import spharmgrid.torch.nn as sgnn
@@ -98,15 +94,14 @@ reusable transform state. `SHTFilter`, `SHTRegrid`, and `SHTVectorRegrid` are
 callable layers with fixed grids and spectral selections. Move a module and
 its input tensors together with `.to(device)` or `.to(dtype=...)`.
 
-`SHTOperators` builds a full same-grid transform state. It therefore has the
-same `truncation=None` capability restriction as full-bandwidth functional
-calls; on a CC grid that cannot be represented, use a fixed layer with an
-explicit supported `Tn` range for filtering or regridding.
+`SHTOperators` builds a full same-grid transform state and therefore requires
+full-bandwidth support for the grid. On CC grids, the fixed filtering and
+regridding modules accept explicit supported `Tn` ranges.
 
 ## Grid and bandwidth capabilities
 
-Only full rectangular GL and pole-including, equally spaced CC grids are
-accepted. A CC grid is not a general regular latitude–longitude grid.
+Supported grids are full rectangular GL grids and pole-including CC grids with
+equally spaced latitudes from -90° to 90°.
 
 The adapter uses triangular total-degree bands so that the torch-harmonics
 coefficient domain matches spharmgrid's explicit `Tn` semantics. For an
@@ -122,31 +117,21 @@ n <= min((nlat - 1) // 2, (nlon - 1) // 2)
 
 For regridding, an explicit `Tn` must fit the limit of both source and target
 grids. A full same-grid state is supported on GL when spharmgrid's requested
-domain is representable by torch-harmonics. On CC, the current equiangular
-torch-harmonics path cannot represent the full spharmgrid domain on ordinary
-grids because its verified latitude limit is the CC bound above.
+domain is representable by torch-harmonics. For CC, torch-harmonics supports
+triangular bands through the CC limit above; spharmgrid's full same-grid domain
+generally exceeds that limit.
 
-Consequently, current CC support consists primarily of explicitly selected
-bands such as `filter(..., "Tn")`, `regrid(..., "Tn")`, and
-`regrid_vector(..., "Tn")`. The differential and wind functions request the
-same-grid full domain; when that domain exceeds the verified CC limit, they
-raise `ValueError` rather than silently reducing bandwidth. Explicit requests
-above the documented limits also raise `ValueError`; the backend never
-silently clamps a requested band.
+CC filtering and regridding use explicit `Tn` bands within the documented
+limit. Differential and wind functions require the full same-grid domain and
+raise `ValueError` when it exceeds the limit. Requests outside the documented
+bandwidth also raise `ValueError`.
 
-CUDA execution is available when the installed PyTorch and torch-harmonics
-build support it. The optional test suite exercises CUDA conditionally and
-keeps the normal CI job CPU-only. File I/O, CF metadata discovery, Xarray
-accessors, S2FFT, HEALPix, reduced Gaussian grids, and SFNO layers are outside
-this namespace. Use the existing Xarray API for scientific file and metadata
-workflows, and use `torch-harmonics` or a neural-operator package for learned
-spherical spectral convolution.
+CUDA execution requires compatible PyTorch and torch-harmonics builds. Use the
+Xarray API for file I/O, CF metadata, and accessors. Learned spherical spectral
+convolution is available from torch-harmonics and neural-operator packages.
 
-On the tested Torch 2.11.0 and torch-harmonics 0.9.2 CUDA stack, the real
-Inductor path for `torch.compile(SHTFilter(...))` fails during Triton code
-generation with `KeyError: 'complex64'`. A minimal compiled
-`torch_harmonics.RealSHT` reproduces the same failure, while its inverse
-transform compiles, so this is an upstream complex-coefficient compilation
-limitation rather than a separate spharmgrid numerical path. The optional test
-records this known limitation as an expected failure and still exercises the
-real compiler when CUDA is available.
+On the tested Torch 2.11.0 and torch-harmonics 0.9.2 CUDA stack, default Inductor
+compilation of `SHTFilter(...)` fails during Triton code generation with
+`KeyError: 'complex64'`. A minimal compiled `torch_harmonics.RealSHT` reproduces
+the same failure, while `InverseRealSHT` compiles. The CUDA compile test records
+this torch-harmonics/Torch limitation as an expected failure.

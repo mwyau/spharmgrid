@@ -1,4 +1,4 @@
-"""Small type aliases shared by execution namespaces."""
+"""Type aliases shared by the Xarray and PyTorch APIs."""
 
 from __future__ import annotations
 

@@ -8,8 +8,8 @@ For Xarray workflows, the `.sg` accessor is usually the simplest way to use spha
 
 The module-level functions documented below expose the same core operations for direct function calls. Accessor-based examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
 
-The optional tensor-native PyTorch API is described in {doc}`torch`. It is
-separate from the Xarray API and is not imported by the core package.
+The optional PyTorch tensor API is documented in {doc}`torch` and imported as
+`spharmgrid.torch`.
 
 ## Typing
 

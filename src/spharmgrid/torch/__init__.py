@@ -1,7 +1,6 @@
-"""Tensor-native spherical harmonic operations backed by torch-harmonics.
+"""Spherical harmonic operations for PyTorch tensors, backed by torch-harmonics.
 
-Import this optional namespace explicitly with ``import spharmgrid.torch``.
-The root :mod:`spharmgrid` namespace remains independent of PyTorch.
+Import ``spharmgrid.torch`` to load this optional API and its PyTorch dependencies.
 """
 
 from __future__ import annotations

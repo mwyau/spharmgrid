@@ -1,4 +1,4 @@
-"""Canonical public functions shared by spharmgrid execution namespaces."""
+"""Public function names shared by the Xarray and PyTorch APIs."""
 
 from __future__ import annotations
 
