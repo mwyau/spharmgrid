@@ -11,6 +11,9 @@ import spharmgrid as sg
 torch = pytest.importorskip("torch")
 pytest.importorskip("torch_harmonics")
 
+import spharmgrid.torch  # noqa: E402, F401
+import spharmgrid.torch.nn  # noqa: E402, F401
+
 
 def make_fields(
     grid: sg.Grid,

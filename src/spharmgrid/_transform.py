@@ -1,4 +1,4 @@
-"""Backend-neutral spherical-harmonic transform descriptors."""
+"""Backend-neutral spherical harmonic transform descriptors."""
 
 from __future__ import annotations
 
