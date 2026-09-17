@@ -8,11 +8,8 @@ import numpy as np
 import pytest
 
 import spharmgrid as sg
-
-torch = pytest.importorskip("torch")
-sgt = pytest.importorskip("spharmgrid.torch")  # noqa: E402
-
-from tests.optional.torch.conftest import as_xarray, make_fields  # noqa: E402
+import spharmgrid.torch as sgt
+from tests.optional.torch.conftest import as_xarray, make_fields, torch
 
 
 def _assert_close(
@@ -261,12 +258,12 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
 
     expected_rotational = sg.rotational_wind(
         expected_kinematics.vo,
-        quantity="vorticity",
+        source="vorticity",
     )
     actual_rotational = sgt.rotational_wind(
         actual_vorticity,
         grid=gl_grid,
-        quantity="vorticity",
+        source="vorticity",
     )
     _assert_close(
         actual_rotational[0],
@@ -283,12 +280,12 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
 
     expected_divergent = sg.divergent_wind(
         expected_kinematics.d,
-        quantity="divergence",
+        source="divergence",
     )
     actual_divergent = sgt.divergent_wind(
         actual_divergence,
         grid=gl_grid,
-        quantity="divergence",
+        source="divergence",
     )
     _assert_close(
         actual_divergent[0],
@@ -480,13 +477,13 @@ def test_analytic_scalar_and_vector_identities(
     recovered_rotational = sgt.rotational_wind(
         vorticity,
         grid=grid,
-        quantity="vorticity",
+        source="vorticity",
         radius=radius,
     )
     recovered_divergent = sgt.divergent_wind(
         divergence,
         grid=grid,
-        quantity="divergence",
+        source="divergence",
         radius=radius,
     )
     _assert_close(

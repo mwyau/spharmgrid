@@ -5,8 +5,10 @@ Import ``spharmgrid.torch`` to load this optional API and its PyTorch dependenci
 
 from __future__ import annotations
 
+import importlib
+
 try:
-    import torch as _torch  # noqa: F401
+    importlib.import_module("torch")
 except ModuleNotFoundError as error:
     if error.name == "torch" or (error.name or "").startswith("torch."):
         raise ImportError(
@@ -16,7 +18,7 @@ except ModuleNotFoundError as error:
     raise
 
 try:
-    import torch_harmonics as _torch_harmonics  # noqa: F401
+    importlib.import_module("torch_harmonics")
 except ModuleNotFoundError as error:
     if error.name == "torch_harmonics" or (error.name or "").startswith(
         "torch_harmonics."

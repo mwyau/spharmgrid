@@ -18,8 +18,13 @@ from ._ducc import (
     vector_analysis,
     vector_synthesis,
 )
+from ._kinematics_types import (
+    DivergentWindSource,
+    RotationalWindSource,
+    ScalarSource,
+    WindSource,
+)
 from ._transform import TransformSpec
-from ._types import DivergentQuantity, RotationalQuantity, WindSource
 from ._vector import vector_inputs, vector_pair_transform, vector_quad_transform
 from ._xarray import (
     FieldLayout,
@@ -31,7 +36,6 @@ from ._xarray import (
 )
 from .grids import grids_equivalent
 from .metadata import (
-    ScalarSource,
     identify_scalar_source,
     vector_operator_metadata,
     wind_component_metadata,
@@ -299,7 +303,7 @@ def inverse_vector_laplacian(
 def rotational_wind(
     field: xr.DataArray,
     *,
-    quantity: RotationalQuantity | None = None,
+    source: RotationalWindSource | None = None,
     eastward: str = "u_rotational",
     northward: str = "v_rotational",
     radius: float = EARTH_RADIUS_M,
@@ -307,15 +311,15 @@ def rotational_wind(
 ) -> xr.Dataset:
     """Recover rotational wind from relative vorticity or streamfunction."""
     field = require_dataarray(field)
-    source = identify_scalar_source(
+    resolved_source = identify_scalar_source(
         field,
         allowed=("vorticity", "streamfunction"),
-        quantity=quantity,
+        source=source,
     )
     _validate_distinct_names(eastward, northward)
     u, v = _single_source_wind(
         field,
-        source=source,
+        source=resolved_source,
         kind="rotational",
         radius=radius,
         sht_threads=sht_threads,
@@ -326,7 +330,7 @@ def rotational_wind(
 def divergent_wind(
     field: xr.DataArray,
     *,
-    quantity: DivergentQuantity | None = None,
+    source: DivergentWindSource | None = None,
     eastward: str = "u_divergent",
     northward: str = "v_divergent",
     radius: float = EARTH_RADIUS_M,
@@ -334,15 +338,15 @@ def divergent_wind(
 ) -> xr.Dataset:
     """Recover divergent wind from divergence or velocity potential."""
     field = require_dataarray(field)
-    source = identify_scalar_source(
+    resolved_source = identify_scalar_source(
         field,
         allowed=("divergence", "velocity_potential"),
-        quantity=quantity,
+        source=source,
     )
     _validate_distinct_names(eastward, northward)
     u, v = _single_source_wind(
         field,
-        source=source,
+        source=resolved_source,
         kind="divergent",
         radius=radius,
         sht_threads=sht_threads,

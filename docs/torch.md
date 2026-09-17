@@ -61,7 +61,7 @@ rotational_wind, divergent_wind, wind
 Use `source_grid=` with `regrid()` and `regrid_vector()`; the target grid is a
 positional argument. Vector arguments are geographic eastward `u` and
 northward `v`. `wind()` and the single-source inverse wind functions require
-an explicit `source=` or `quantity=` because tensors do not carry CF metadata.
+an explicit `source=` because tensors do not carry CF metadata.
 
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators
 set the degree-zero coefficient to zero, and vector inverse operations remove

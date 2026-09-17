@@ -341,7 +341,7 @@ def test_dataset_scalar_source_selection() -> None:
     _assert_dataset_identical(actual, expected)
 
     actual = scalar_ambiguity.sg.rotational_wind(
-        quantity="vorticity",
+        source="vorticity",
         eastward="rotational_u",
         northward="rotational_v",
     )
@@ -350,7 +350,7 @@ def test_dataset_scalar_source_selection() -> None:
     divergent_sources = xr.Dataset({"d": diagnostics.d, "vp": potentials.vp})
     expected = sg.divergent_wind(
         diagnostics.d,
-        quantity="divergence",
+        source="divergence",
         eastward="divergent_u",
         northward="divergent_v",
     )
@@ -395,9 +395,9 @@ def test_dataset_source_selection_errors() -> None:
     ):
         xr.Dataset().sg.rotational_wind()
 
-    invalid_quantity = cast(Literal["vorticity", "streamfunction"], "invalid")
-    with pytest.raises(ValueError, match="quantity must be one of"):
-        xr.Dataset().sg.rotational_wind(quantity=invalid_quantity)
+    invalid_source = cast(Literal["vorticity", "streamfunction"], "invalid")
+    with pytest.raises(ValueError, match="source must be one of"):
+        xr.Dataset().sg.rotational_wind(source=invalid_source)
 
     with pytest.raises(ValueError, match="both vorticity/divergence"):
         xr.Dataset(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -11,8 +13,8 @@ import spharmgrid as sg
 torch = pytest.importorskip("torch")
 pytest.importorskip("torch_harmonics")
 
-import spharmgrid.torch  # noqa: E402, F401
-import spharmgrid.torch.nn  # noqa: E402, F401
+importlib.import_module("spharmgrid.torch")
+importlib.import_module("spharmgrid.torch.nn")
 
 
 def make_fields(

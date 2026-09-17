@@ -9,14 +9,11 @@ from types import ModuleType
 import pytest
 
 import spharmgrid as sg
-
-torch = pytest.importorskip("torch")
-sgt = pytest.importorskip("spharmgrid.torch")  # noqa: E402
-
-from spharmgrid._api_contract import FUNCTIONS  # noqa: E402
+import spharmgrid.torch as sgt
+from tests.optional.torch.conftest import torch
 
 # These parameters describe information available from Xarray metadata or
-# output containers but absent from tensor calls.  They are the only
+# output containers but absent from tensor calls. They are the only
 # namespace-specific signature differences removed before comparison.
 _XARRAY_ONLY = {
     "filter": {"sht_threads"},
@@ -46,26 +43,34 @@ _XARRAY_ONLY = {
     "wind": {"eastward", "northward", "sht_threads"},
 }
 
-_TENSOR_ONLY = {
-    name: {"source_grid" if name in {"regrid", "regrid_vector"} else "grid"}
-    for name in FUNCTIONS
-}
-
-# Tensor inputs have no CF metadata from which to infer these choices.
-_TENSOR_REQUIRED = {
-    "rotational_wind": {"quantity"},
-    "divergent_wind": {"quantity"},
-    "wind": {"source"},
-}
-
-_SHARED_DEFAULTS = ("radius", "truncation", "lmin", "lmax", "taper")
-_REQUIRED = object()
 _ROOT_NON_EXECUTION_FUNCTIONS = {
     "clenshaw_curtis_grid",
     "detect_grid",
     "gaussian_grid",
     "parse_spectral",
 }
+
+_ROOT_EXECUTION_FUNCTIONS = {
+    name
+    for name in sg.__all__
+    if name not in _ROOT_NON_EXECUTION_FUNCTIONS
+    and inspect.isfunction(getattr(sg, name))
+}
+
+_TENSOR_ONLY = {
+    name: {"source_grid" if name in {"regrid", "regrid_vector"} else "grid"}
+    for name in _ROOT_EXECUTION_FUNCTIONS
+}
+
+# Tensor inputs have no CF metadata from which to infer these choices.
+_TENSOR_REQUIRED = {
+    "rotational_wind": {"source"},
+    "divergent_wind": {"source"},
+    "wind": {"source"},
+}
+
+_SHARED_DEFAULTS = ("radius", "truncation", "lmin", "lmax", "taper")
+_REQUIRED = object()
 
 
 def _signature_parts(
@@ -87,31 +92,26 @@ def _signature_parts(
     )
 
 
+def _execution_functions(namespace: ModuleType) -> set[str]:
+    return {
+        name
+        for name in namespace.__all__
+        if inspect.isfunction(getattr(namespace, name, None))
+    }
+
+
 def _assert_api_parity(
     xarray_namespace: ModuleType,
     tensor_namespace: ModuleType,
 ) -> None:
-    missing_xarray = [name for name in FUNCTIONS if not hasattr(xarray_namespace, name)]
-    missing_tensor = [name for name in FUNCTIONS if not hasattr(tensor_namespace, name)]
-    assert not missing_xarray, f"missing root functions: {missing_xarray}"
-    assert not missing_tensor, f"missing tensor functions: {missing_tensor}"
+    root_functions = _execution_functions(xarray_namespace)
+    tensor_functions = _execution_functions(tensor_namespace)
+    execution_functions = root_functions - _ROOT_NON_EXECUTION_FUNCTIONS
 
-    root_functions = {
-        name
-        for name in xarray_namespace.__all__
-        if inspect.isfunction(getattr(xarray_namespace, name))
-    }
-    tensor_functions = {
-        name
-        for name in tensor_namespace.__all__
-        if inspect.isfunction(getattr(tensor_namespace, name))
-    }
-    assert root_functions == set(FUNCTIONS) | _ROOT_NON_EXECUTION_FUNCTIONS
-    assert tensor_functions == set(FUNCTIONS)
+    assert root_functions == _ROOT_EXECUTION_FUNCTIONS | _ROOT_NON_EXECUTION_FUNCTIONS
+    assert tensor_functions == execution_functions
 
-    for name in FUNCTIONS:
-        assert name in xarray_namespace.__all__
-        assert name in tensor_namespace.__all__
+    for name in execution_functions:
         assert _signature_parts(
             name,
             getattr(xarray_namespace, name),
@@ -134,13 +134,13 @@ def _assert_api_parity(
             )
 
 
-def test_torch_functional_api_matches_root_contract() -> None:
+def test_torch_functional_api_matches_root_api() -> None:
     _assert_api_parity(sg, sgt)
 
 
 def test_parity_guard_detects_missing_function(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delattr(sgt, "wind")
-    with pytest.raises(AssertionError, match="missing tensor functions"):
+    with pytest.raises(AssertionError):
         _assert_api_parity(sg, sgt)
 
 

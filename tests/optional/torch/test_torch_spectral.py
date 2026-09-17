@@ -6,16 +6,13 @@ import numpy as np
 import pytest
 
 import spharmgrid as sg
-
-torch = pytest.importorskip("torch")
-
-sgt = pytest.importorskip("spharmgrid.torch")  # noqa: E402
-
-from tests.optional.torch.conftest import (  # noqa: E402
+import spharmgrid.torch as sgt
+from tests.optional.torch.conftest import (
     as_xarray,
     make_axisymmetric_wind,
     make_fields,
     make_nonaxisymmetric_wind,
+    torch,
 )
 
 

@@ -7,7 +7,11 @@ from typing import Literal
 import torch
 from torch import Tensor
 
-from .._types import DivergentQuantity, RotationalQuantity, WindSource
+from .._kinematics_types import (
+    DivergentWindSource,
+    RotationalWindSource,
+    WindSource,
+)
 from ..grids import Grid
 from ..operators import EARTH_RADIUS_M
 from ..spectral import (
@@ -356,15 +360,15 @@ def rotational_wind(
     field: Tensor,
     *,
     grid: Grid,
-    quantity: RotationalQuantity,
+    source: RotationalWindSource,
     radius: float = EARTH_RADIUS_M,
 ) -> tuple[Tensor, Tensor]:
     """Recover rotational wind from vorticity or streamfunction."""
-    _validate_scalar_source(quantity, ("vorticity", "streamfunction"), "rotational")
+    _validate_scalar_source(source, ("vorticity", "streamfunction"))
     return _single_source_wind(
         field,
         grid=grid,
-        quantity=quantity,
+        source=source,
         kind="rotational",
         radius=radius,
     )
@@ -374,19 +378,18 @@ def divergent_wind(
     field: Tensor,
     *,
     grid: Grid,
-    quantity: DivergentQuantity,
+    source: DivergentWindSource,
     radius: float = EARTH_RADIUS_M,
 ) -> tuple[Tensor, Tensor]:
     """Recover divergent wind from divergence or velocity potential."""
     _validate_scalar_source(
-        quantity,
+        source,
         ("divergence", "velocity_potential"),
-        "divergent",
     )
     return _single_source_wind(
         field,
         grid=grid,
-        quantity=quantity,
+        source=source,
         kind="divergent",
         radius=radius,
     )
@@ -579,7 +582,7 @@ def _single_source_wind(
     field: Tensor,
     *,
     grid: Grid,
-    quantity: str,
+    source: str,
     kind: Literal["rotational", "divergent"],
     radius: float,
 ) -> tuple[Tensor, Tensor]:
@@ -587,13 +590,13 @@ def _single_source_wind(
     _require_tensor(field, grid)
     _validate_radius(radius)
     state = _full_state(field, grid, vector=True)
-    return _single_source_wind_with_state(field, state, quantity, kind, radius)
+    return _single_source_wind_with_state(field, state, source, kind, radius)
 
 
 def _single_source_wind_with_state(
     field: Tensor,
     state: _TorchTransform,
-    quantity: str,
+    source: str,
     kind: Literal["rotational", "divergent"],
     radius: float,
 ) -> tuple[Tensor, Tensor]:
@@ -603,7 +606,7 @@ def _single_source_wind_with_state(
     if kind == "rotational":
         source_coefficients = (
             scalar_coefficients
-            if quantity == "vorticity"
+            if source == "vorticity"
             else scalar_coefficients * _laplacian_multiplier(state, radius, field.dtype)
         )
         e = torch.zeros_like(source_coefficients)
@@ -611,7 +614,7 @@ def _single_source_wind_with_state(
     else:
         source_coefficients = (
             scalar_coefficients
-            if quantity == "divergence"
+            if source == "divergence"
             else scalar_coefficients * _laplacian_multiplier(state, radius, field.dtype)
         )
         e = _safe_divide(-source_coefficients, scale)
@@ -663,18 +666,13 @@ def _safe_divide(numerator: Tensor, denominator: Tensor) -> Tensor:
 
 
 def _validate_scalar_source(
-    quantity: str | None,
+    source: str | None,
     allowed: tuple[str, str],
-    operation: str,
 ) -> None:
-    if quantity not in allowed:
-        raise ValueError(
-            f"quantity must be explicitly one of {allowed!r} for {operation}_wind"
-        )
+    if source not in allowed:
+        raise ValueError(f"source must be one of: {', '.join(allowed)}")
 
 
 def _validate_source(source: str | None) -> None:
     if source not in ("vorticity_divergence", "potentials"):
-        raise ValueError(
-            "source must be explicitly 'vorticity_divergence' or 'potentials'"
-        )
+        raise ValueError("source must be 'vorticity_divergence' or 'potentials'")

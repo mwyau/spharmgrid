@@ -5,10 +5,9 @@ from __future__ import annotations
 import pytest
 
 import spharmgrid as sg
-
-torch = pytest.importorskip("torch")
-sgt = pytest.importorskip("spharmgrid.torch")  # noqa: E402
-sgnn = pytest.importorskip("spharmgrid.torch.nn")  # noqa: E402
+import spharmgrid.torch as sgt
+import spharmgrid.torch.nn as sgnn
+from tests.optional.torch.conftest import torch
 
 
 def test_filter_regrid_and_kinematics_pass_gradcheck() -> None:

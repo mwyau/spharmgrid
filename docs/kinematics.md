@@ -63,8 +63,8 @@ The radius factors cancel in this decomposition. The four output fields use `lon
 rot = vo.sg.rotational_wind()
 div = vp.sg.divergent_wind()
 
-rot = sg.rotational_wind(field, quantity="streamfunction")
-div = sg.divergent_wind(field, quantity="divergence")
+rot = sg.rotational_wind(field, source="streamfunction")
+div = sg.divergent_wind(field, source="divergence")
 ```
 
 `rotational_wind()` accepts relative vorticity or streamfunction. `divergent_wind()` accepts divergence or velocity potential. The returned Datasets contain `u_rotational`/`v_rotational` or `u_divergent`/`v_divergent`.

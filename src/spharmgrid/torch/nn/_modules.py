@@ -5,7 +5,11 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from ..._types import DivergentQuantity, RotationalQuantity, WindSource
+from ..._kinematics_types import (
+    DivergentWindSource,
+    RotationalWindSource,
+    WindSource,
+)
 from ...grids import Grid
 from ...operators import EARTH_RADIUS_M
 from ...spectral import SpectralRange, _resolve_spectral_range, _validate_taper
@@ -158,14 +162,14 @@ class SHTOperators(torch.nn.Module):
         self,
         field: Tensor,
         *,
-        quantity: RotationalQuantity,
+        source: RotationalWindSource,
     ) -> tuple[Tensor, Tensor]:
-        _validate_scalar_source(quantity, ("vorticity", "streamfunction"), "rotational")
+        _validate_scalar_source(source, ("vorticity", "streamfunction"))
         _require_tensor(field, self.grid)
         return _single_source_wind_with_state(
             field,
             self._state,
-            quantity,
+            source,
             "rotational",
             self.radius,
         )
@@ -174,18 +178,17 @@ class SHTOperators(torch.nn.Module):
         self,
         field: Tensor,
         *,
-        quantity: DivergentQuantity,
+        source: DivergentWindSource,
     ) -> tuple[Tensor, Tensor]:
         _validate_scalar_source(
-            quantity,
+            source,
             ("divergence", "velocity_potential"),
-            "divergent",
         )
         _require_tensor(field, self.grid)
         return _single_source_wind_with_state(
             field,
             self._state,
-            quantity,
+            source,
             "divergent",
             self.radius,
         )

@@ -8,12 +8,9 @@ import sys
 import pytest
 
 import spharmgrid as sg
-
-torch = pytest.importorskip("torch")
-sgt = pytest.importorskip("spharmgrid.torch")  # noqa: E402
-sgnn = pytest.importorskip("spharmgrid.torch.nn")  # noqa: E402
-
-from tests.optional.torch.conftest import make_fields  # noqa: E402
+import spharmgrid.torch as sgt
+import spharmgrid.torch.nn as sgnn
+from tests.optional.torch.conftest import make_fields, torch
 
 
 def test_public_torch_exports_are_deliberately_small() -> None:
@@ -147,24 +144,24 @@ def test_sht_operators_reuse_transform_state(gl_grid: sg.Grid) -> None:
 
     rotational = operators.rotational_wind(
         actual_kinematics[0],
-        quantity="vorticity",
+        source="vorticity",
     )
     expected_rotational = sgt.rotational_wind(
         expected_kinematics[0],
         grid=gl_grid,
-        quantity="vorticity",
+        source="vorticity",
     )
     for actual, expected in zip(rotational, expected_rotational, strict=True):
         torch.testing.assert_close(actual, expected)
 
     divergent = operators.divergent_wind(
         actual_kinematics[1],
-        quantity="divergence",
+        source="divergence",
     )
     expected_divergent = sgt.divergent_wind(
         expected_kinematics[1],
         grid=gl_grid,
-        quantity="divergence",
+        source="divergence",
     )
     for actual, expected in zip(divergent, expected_divergent, strict=True):
         torch.testing.assert_close(actual, expected)
