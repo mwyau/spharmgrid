@@ -352,8 +352,8 @@ def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
 def test_cc_full_state_operations_raise_capability_error(cc_grid: sg.Grid) -> None:
     field, eastward, northward = make_fields(cc_grid)
     error = (
-        r"Current spharmgrid\.torch.*torch-harmonics.*T8.*full spharmgrid.*"
-        r"filter, regrid, and regrid_vector"
+        r"torch-harmonics.*CC triangular bands through T8.*"
+        r"Full-domain operations.*filter, regrid, and regrid_vector"
     )
 
     with pytest.raises(ValueError, match=error):

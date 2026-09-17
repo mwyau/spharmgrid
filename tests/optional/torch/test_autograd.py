@@ -150,7 +150,7 @@ def test_cuda_smoke_scalar_vector_autograd_and_reusable_modules(
         for buffer in module.buffers()
     )
 
-    sum(value.square().mean() for value in outputs).backward()
+    torch.stack([value.square().mean() for value in outputs]).sum().backward()
     for value in (field, eastward, northward):
         assert value.grad is not None
         assert value.grad.is_cuda

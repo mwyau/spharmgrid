@@ -264,9 +264,9 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
     gl_grid: sg.Grid,
 ) -> None:
     field, _, _ = make_fields(cc_grid)
-    with pytest.raises(ValueError, match="full spharmgrid.*filter, regrid"):
+    with pytest.raises(ValueError, match="Full-domain operations.*filter, regrid"):
         sgt.filter(field, grid=cc_grid)
-    with pytest.raises(ValueError, match="verified.*T8"):
+    with pytest.raises(ValueError, match="CC triangular bands through T8"):
         sgt.filter(field, "T9", grid=cc_grid)
     with pytest.raises(ValueError, match="exceeds"):
         sgt.filter(make_fields(gl_grid)[0], "T99", grid=gl_grid)

@@ -43,23 +43,22 @@ _XARRAY_ONLY = {
     "wind": {"eastward", "northward", "sht_threads"},
 }
 
-_ROOT_NON_EXECUTION_FUNCTIONS = {
+_ROOT_NON_EXECUTION_NAMES = {
     "clenshaw_curtis_grid",
     "detect_grid",
     "gaussian_grid",
     "parse_spectral",
 }
 
-_ROOT_EXECUTION_FUNCTIONS = {
+_ROOT_EXECUTION_NAMES = {
     name
     for name in sg.__all__
-    if name not in _ROOT_NON_EXECUTION_FUNCTIONS
-    and inspect.isfunction(getattr(sg, name))
+    if name not in _ROOT_NON_EXECUTION_NAMES and inspect.isfunction(getattr(sg, name))
 }
 
 _TENSOR_ONLY = {
     name: {"source_grid" if name in {"regrid", "regrid_vector"} else "grid"}
-    for name in _ROOT_EXECUTION_FUNCTIONS
+    for name in _ROOT_EXECUTION_NAMES
 }
 
 # Tensor inputs have no CF metadata from which to infer these choices.
@@ -106,9 +105,9 @@ def _assert_api_parity(
 ) -> None:
     root_functions = _execution_functions(xarray_namespace)
     tensor_functions = _execution_functions(tensor_namespace)
-    execution_functions = root_functions - _ROOT_NON_EXECUTION_FUNCTIONS
+    execution_functions = root_functions - _ROOT_NON_EXECUTION_NAMES
 
-    assert root_functions == _ROOT_EXECUTION_FUNCTIONS | _ROOT_NON_EXECUTION_FUNCTIONS
+    assert root_functions == _ROOT_EXECUTION_NAMES | _ROOT_NON_EXECUTION_NAMES
     assert tensor_functions == execution_functions
 
     for name in execution_functions:

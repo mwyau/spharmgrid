@@ -13,7 +13,7 @@ import spharmgrid.torch.nn as sgnn
 from tests.optional.torch.conftest import make_fields, torch
 
 
-def test_public_torch_exports_are_deliberately_small() -> None:
+def test_public_torch_exports_match_expected_api() -> None:
     assert sgt.__all__ == [
         "filter",
         "regrid",
@@ -62,8 +62,8 @@ def test_core_import_does_not_load_torch() -> None:
 
 def test_cc_sht_operators_raise_capability_error(cc_grid: sg.Grid) -> None:
     error = (
-        r"Current spharmgrid\.torch.*torch-harmonics.*T8.*full spharmgrid.*"
-        r"filter, regrid, and regrid_vector"
+        r"torch-harmonics.*CC triangular bands through T8.*"
+        r"Full-domain operations.*filter, regrid, and regrid_vector"
     )
     with pytest.raises(ValueError, match=error):
         sgnn.SHTOperators(cc_grid)
@@ -275,7 +275,7 @@ def test_modules_work_inside_a_trainable_torch_model() -> None:
     eastward = field.detach().clone().requires_grad_()
     northward = torch.flip(field.detach(), dims=(-2,)).requires_grad_()
     output = Model()(field, eastward, northward)
-    sum(value.square().mean() for value in output).backward()
+    torch.stack([value.square().mean() for value in output]).sum().backward()
     for value in (field, eastward, northward):
         assert value.grad is not None
         assert torch.isfinite(value.grad).all()

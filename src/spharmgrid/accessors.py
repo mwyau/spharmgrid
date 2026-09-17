@@ -10,6 +10,7 @@ from ._kinematics_types import (
     DivergentWindSource,
     RotationalWindSource,
     ScalarSource,
+    WindSource,
 )
 from .grids import Grid, detect_grid
 from .kinematics import (
@@ -390,7 +391,7 @@ class DataArrayAccessor:
         self,
         second: xr.DataArray,
         *,
-        source: Literal["vorticity_divergence", "potentials"] | None = None,
+        source: WindSource | None = None,
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
@@ -713,7 +714,7 @@ class DatasetAccessor:
     def wind(
         self,
         *,
-        source: Literal["vorticity_divergence", "potentials"] | None = None,
+        source: WindSource | None = None,
         vorticity: str | None = None,
         divergence: str | None = None,
         streamfunction: str | None = None,
@@ -782,7 +783,7 @@ def _find_single_source(
 
 def _as_rotational_source(
     value: ScalarSource | None,
-) -> Literal["vorticity", "streamfunction"] | None:
+) -> RotationalWindSource | None:
     if value is None:
         return None
     if value in {"vorticity", "streamfunction"}:
@@ -792,7 +793,7 @@ def _as_rotational_source(
 
 def _as_divergent_source(
     value: ScalarSource | None,
-) -> Literal["divergence", "velocity_potential"] | None:
+) -> DivergentWindSource | None:
     if value is None:
         return None
     if value in {"divergence", "velocity_potential"}:
@@ -803,12 +804,12 @@ def _as_divergent_source(
 def _resolve_dataset_wind_source(
     dataset: xr.Dataset,
     *,
-    source: Literal["vorticity_divergence", "potentials"] | None,
+    source: WindSource | None,
     vorticity: str | None,
     divergence: str | None,
     streamfunction: str | None,
     velocity_potential: str | None,
-) -> tuple[Literal["vorticity_divergence", "potentials"], xr.DataArray, xr.DataArray]:
+) -> tuple[WindSource, xr.DataArray, xr.DataArray]:
     if source is not None and source not in {"vorticity_divergence", "potentials"}:
         raise ValueError("source must be 'vorticity_divergence' or 'potentials'")
 

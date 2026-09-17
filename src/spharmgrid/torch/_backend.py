@@ -40,8 +40,8 @@ def _validate_grid(grid: Grid, name: str = "grid") -> None:
 def _torch_capabilities(grid: Grid) -> _TorchGridCapabilities:
     """Return the verified spharmgrid-compatible torch-harmonics limits."""
     latitude_lmax = grid.nlat - 1 if grid.kind == "gl" else (grid.nlat - 1) // 2
-    # spharmgrid intentionally excludes the real-FFT Nyquist mode when nlon is
-    # even, matching DUCC's ``(nphi - 1) // 2`` limit.
+    # Match DUCC's ``(nphi - 1) // 2`` longitude limit; for even ``nlon`` this
+    # excludes the real-FFT Nyquist mode.
     longitude_mmax = (grid.nlon - 1) // 2
     return _TorchGridCapabilities(latitude_lmax, longitude_mmax)
 
@@ -95,18 +95,19 @@ def _cc_bandwidth_error(
     cc_grids = [grid for grid in (source, target) if grid.kind == "cc"]
     cc_limit = min(_torch_capabilities(grid).triangular_lmax for grid in cc_grids)
     if requested_lmax is None:
-        request = "the requested full spharmgrid transform domain"
+        request = "Full-domain operations exceed this limit"
     else:
-        request = f"the requested T{requested_lmax} domain"
-    pair_limit = "" if cc_limit == limit else f"; this grid pair is limited to T{limit}"
+        request = f"Requested T{requested_lmax} exceeds this limit"
+    pair_limit = (
+        ""
+        if cc_limit == limit
+        else f" The supplied grid pair supports through T{limit}."
+    )
     return (
-        "Current spharmgrid.torch support has a torch-harmonics bandwidth "
-        "limitation for the supplied CC grid: the verified CC triangular "
-        "limit is "
-        f"T{cc_limit} (n <= min((nlat - 1) // 2, (nlon - 1) // 2)){pair_limit}; "
-        f"{request} cannot currently be represented. Explicitly truncated "
-        "filter, regrid, and regrid_vector calls remain available within the "
-        f"supported range through T{limit}."
+        "torch-harmonics supports CC triangular bands through "
+        f"T{cc_limit} (n <= min((nlat - 1) // 2, (nlon - 1) // 2)). "
+        f"{request}.{pair_limit} Explicit Tn filter, regrid, and "
+        f"regrid_vector operations support bands through T{limit}."
     )
 
 
