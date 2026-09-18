@@ -13,4 +13,5 @@ kinematics
 operators
 grids
 cf
+torch
 ```

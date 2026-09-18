@@ -151,7 +151,13 @@ jobs:
                   raise SystemExit("wheel is missing spharmgrid/py.typed")
 
           sdist = next(path for path in distributions if path.name.endswith(".tar.gz"))
-          excluded = (".github/", "plans/", "skills/", "AGENTS.md")
+          excluded = (
+              ".github/",
+              "plans/",
+              "skills/",
+              "benchmarks/",
+              "AGENTS.md",
+          )
           with tarfile.open(sdist, mode="r:gz") as archive:
               members = archive.getnames()
           if not any(name.endswith("/src/spharmgrid/py.typed") for name in members):

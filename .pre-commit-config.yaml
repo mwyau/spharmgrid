@@ -26,6 +26,9 @@ repos:
     rev: v0.0.80
     hooks:
       - id: ty
+        # The normal hook checks src/spharmgrid/torch with unresolved optional
+        # imports allowed. Torch CI repeats the type check with the torch extra.
+        args: [--isolated, --python=3.12, --group=dev, --extra=cf, --extra=dask]
         pass_filenames: false
 
   - repo: https://github.com/hukkin/mdformat

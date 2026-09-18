@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0 development
+
+### PyTorch backend
+
+- Added the optional `spharmgrid.torch` tensor API and four reusable
+  `torch.nn` execution modules, backed by `torch-harmonics`.
+- Added explicit GL/CC bandwidth validation, PyTorch autograd coverage, and a
+  dedicated Python 3.12 CI lane for the optional dependency.
+- Renamed the `quantity=` argument of `rotational_wind()` and
+  `divergent_wind()` to `source=`.
+
 ## v0.1.3 - 2026-09-13
 
 ### Execution

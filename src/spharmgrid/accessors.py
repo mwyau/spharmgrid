@@ -6,6 +6,12 @@ from typing import Literal
 
 import xarray as xr
 
+from ._kinematics_types import (
+    DivergentWindSource,
+    RotationalWindSource,
+    ScalarSource,
+    WindSource,
+)
 from .grids import Grid, detect_grid
 from .kinematics import (
     divergence as calculate_divergence,
@@ -43,7 +49,7 @@ from .kinematics import (
 from .kinematics import (
     wind as calculate_wind,
 )
-from .metadata import Quantity, ScalarSource, find_variable, try_find_variable
+from .metadata import Quantity, find_variable, try_find_variable
 from .operators import EARTH_RADIUS_M
 from .operators import gradient as calculate_gradient
 from .operators import inverse_gradient as calculate_inverse_gradient
@@ -346,7 +352,7 @@ class DataArrayAccessor:
     def rotational_wind(
         self,
         *,
-        quantity: Literal["vorticity", "streamfunction"] | None = None,
+        source: RotationalWindSource | None = None,
         eastward: str = "u_rotational",
         northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
@@ -355,7 +361,7 @@ class DataArrayAccessor:
         """Recover rotational wind from this vorticity or streamfunction field."""
         return calculate_rotational_wind(
             self._obj,
-            quantity=quantity,
+            source=source,
             eastward=eastward,
             northward=northward,
             radius=radius,
@@ -365,7 +371,7 @@ class DataArrayAccessor:
     def divergent_wind(
         self,
         *,
-        quantity: Literal["divergence", "velocity_potential"] | None = None,
+        source: DivergentWindSource | None = None,
         eastward: str = "u_divergent",
         northward: str = "v_divergent",
         radius: float = EARTH_RADIUS_M,
@@ -374,7 +380,7 @@ class DataArrayAccessor:
         """Recover divergent wind from this divergence or potential field."""
         return calculate_divergent_wind(
             self._obj,
-            quantity=quantity,
+            source=source,
             eastward=eastward,
             northward=northward,
             radius=radius,
@@ -385,7 +391,7 @@ class DataArrayAccessor:
         self,
         second: xr.DataArray,
         *,
-        source: Literal["vorticity_divergence", "potentials"] | None = None,
+        source: WindSource | None = None,
         eastward: str = "u",
         northward: str = "v",
         radius: float = EARTH_RADIUS_M,
@@ -655,7 +661,7 @@ class DatasetAccessor:
         self,
         *,
         field: str | None = None,
-        quantity: Literal["vorticity", "streamfunction"] | None = None,
+        source: RotationalWindSource | None = None,
         eastward: str = "u_rotational",
         northward: str = "v_rotational",
         radius: float = EARTH_RADIUS_M,
@@ -665,13 +671,13 @@ class DatasetAccessor:
         selected, inferred = _find_single_source(
             self._obj,
             field,
-            quantity,
+            source,
             primary="vo",
             secondary="strf",
         )
         return calculate_rotational_wind(
             selected,
-            quantity=_as_rotational_source(inferred),
+            source=_as_rotational_source(inferred),
             eastward=eastward,
             northward=northward,
             radius=radius,
@@ -682,7 +688,7 @@ class DatasetAccessor:
         self,
         *,
         field: str | None = None,
-        quantity: Literal["divergence", "velocity_potential"] | None = None,
+        source: DivergentWindSource | None = None,
         eastward: str = "u_divergent",
         northward: str = "v_divergent",
         radius: float = EARTH_RADIUS_M,
@@ -692,13 +698,13 @@ class DatasetAccessor:
         selected, inferred = _find_single_source(
             self._obj,
             field,
-            quantity,
+            source,
             primary="d",
             secondary="vp",
         )
         return calculate_divergent_wind(
             selected,
-            quantity=_as_divergent_source(inferred),
+            source=_as_divergent_source(inferred),
             eastward=eastward,
             northward=northward,
             radius=radius,
@@ -708,7 +714,7 @@ class DatasetAccessor:
     def wind(
         self,
         *,
-        source: Literal["vorticity_divergence", "potentials"] | None = None,
+        source: WindSource | None = None,
         vorticity: str | None = None,
         divergence: str | None = None,
         streamfunction: str | None = None,
@@ -741,7 +747,7 @@ class DatasetAccessor:
 def _find_single_source(
     dataset: xr.Dataset,
     explicit: str | None,
-    quantity: ScalarSource | None,
+    source: ScalarSource | None,
     *,
     primary: Literal["vo", "d"],
     secondary: Literal["strf", "vp"],
@@ -749,24 +755,24 @@ def _find_single_source(
     if explicit is not None:
         if explicit not in dataset.data_vars:
             raise ValueError(f"explicit field {explicit!r} is not a data variable")
-        return dataset[explicit], quantity
-    if quantity is not None:
+        return dataset[explicit], source
+    if source is not None:
         lookups: dict[ScalarSource, Quantity] = {
             "vorticity": "vo",
             "streamfunction": "strf",
             "divergence": "d",
             "velocity_potential": "vp",
         }
-        lookup = lookups.get(quantity)
+        lookup = lookups.get(source)
         if lookup is None:
             choices = ", ".join(lookups)
-            raise ValueError(f"quantity must be one of: {choices}")
-        return find_variable(dataset, lookup), quantity
+            raise ValueError(f"source must be one of: {choices}")
+        return find_variable(dataset, lookup), source
     first = try_find_variable(dataset, primary)
     second = try_find_variable(dataset, secondary)
     if first is not None and second is not None:
         raise ValueError(
-            "both eligible scalar sources are present; pass field= or quantity="
+            "both eligible scalar sources are present; pass field= or source="
         )
     if first is not None:
         return first, None
@@ -777,7 +783,7 @@ def _find_single_source(
 
 def _as_rotational_source(
     value: ScalarSource | None,
-) -> Literal["vorticity", "streamfunction"] | None:
+) -> RotationalWindSource | None:
     if value is None:
         return None
     if value in {"vorticity", "streamfunction"}:
@@ -787,7 +793,7 @@ def _as_rotational_source(
 
 def _as_divergent_source(
     value: ScalarSource | None,
-) -> Literal["divergence", "velocity_potential"] | None:
+) -> DivergentWindSource | None:
     if value is None:
         return None
     if value in {"divergence", "velocity_potential"}:
@@ -798,12 +804,12 @@ def _as_divergent_source(
 def _resolve_dataset_wind_source(
     dataset: xr.Dataset,
     *,
-    source: Literal["vorticity_divergence", "potentials"] | None,
+    source: WindSource | None,
     vorticity: str | None,
     divergence: str | None,
     streamfunction: str | None,
     velocity_potential: str | None,
-) -> tuple[Literal["vorticity_divergence", "potentials"], xr.DataArray, xr.DataArray]:
+) -> tuple[WindSource, xr.DataArray, xr.DataArray]:
     if source is not None and source not in {"vorticity_divergence", "potentials"}:
         raise ValueError("source must be 'vorticity_divergence' or 'potentials'")
 

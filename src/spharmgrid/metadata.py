@@ -7,10 +7,9 @@ from typing import Literal
 
 import xarray as xr
 
+from ._kinematics_types import ScalarSource
+
 Quantity = Literal["u", "v", "vo", "d", "strf", "vp"]
-ScalarSource = Literal[
-    "vorticity", "divergence", "streamfunction", "velocity_potential"
-]
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,14 +96,14 @@ def identify_scalar_source(
     field: xr.DataArray,
     *,
     allowed: tuple[ScalarSource, ...],
-    quantity: ScalarSource | None = None,
+    source: ScalarSource | None = None,
 ) -> ScalarSource:
     """Identify a scalar transform source from explicit semantics, CF, or name."""
-    if quantity is not None:
-        if quantity not in allowed:
+    if source is not None:
+        if source not in allowed:
             choices = ", ".join(allowed)
-            raise ValueError(f"quantity must be one of: {choices}")
-        return quantity
+            raise ValueError(f"source must be one of: {choices}")
+        return source
 
     matches = [
         source
@@ -124,7 +123,7 @@ def identify_scalar_source(
             return matches[0]
     choices = ", ".join(allowed)
     raise ValueError(
-        f"could not identify scalar source; pass quantity= with one of: {choices}"
+        f"could not identify scalar source; pass source= with one of: {choices}"
     )
 
 

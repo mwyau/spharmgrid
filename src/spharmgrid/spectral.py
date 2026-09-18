@@ -12,13 +12,13 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from ._ducc import (
-    TransformSpec,
     alm_degrees,
     geometry_for,
     resolve_sht_threads,
     scalar_analysis,
     scalar_synthesis,
 )
+from ._transform import TransformSpec
 from ._xarray import (
     FieldLayout,
     apply_ufunc_options,
