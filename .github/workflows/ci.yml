@@ -113,7 +113,7 @@ jobs:
           fail_ci_if_error: false
 
   torch:
-    name: Torch backend (Python 3.12)
+    name: Torch tests (Python 3.12)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 40
@@ -140,7 +140,7 @@ jobs:
           --cov-report=xml:coverage-torch.xml
           --junitxml=junit-torch.xml
           -o junit_family=legacy
-      - name: Upload Torch test results to Codecov
+      - name: Upload Torch test results
         if: ${{ !cancelled() && hashFiles('junit-torch.xml') != '' }}
         uses: codecov/codecov-action@v7.0.0
         with:
@@ -151,7 +151,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
-      - name: Upload Torch coverage to Codecov
+      - name: Upload Torch coverage
         if: ${{ !cancelled() && hashFiles('coverage-torch.xml') != '' }}
         uses: codecov/codecov-action@v7.0.0
         with:
@@ -163,7 +163,7 @@ jobs:
           fail_ci_if_error: false
 
   file-backends:
-    name: Optional file backends (Python 3.14)
+    name: File backend tests (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -254,7 +254,7 @@ jobs:
           check_import ducc0
 
   minimum-dependencies:
-    name: Minimum dependencies (Python 3.11)
+    name: Minimum-dependency tests (Python 3.11)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -272,7 +272,7 @@ jobs:
       - run: uv run --no-sync pytest tests/unit tests/optional/test_cf_xarray.py
 
   docs:
-    name: Documentation (Python 3.14)
+    name: Docs tests (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
