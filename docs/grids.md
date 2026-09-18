@@ -34,7 +34,7 @@ Latitude may be ascending or descending. Longitude may use `[0, 360)`, `[-180, 1
 
 ## Transform limits
 
-DUCC gives the latitude analysis limit as `nlat - 2` for CC and `nlat - 1` for GL. The azimuthal limit is `(nlon - 1) // 2`. A triangular `Tn` range requires both source and target grids to represent every degree and order through `n`.
+DUCC gives the latitude analysis limit as `nlat - 2` for CC and `nlat - 1` for GL. The azimuthal limit is `(nlon - 1) // 2`. An explicit truncation requires `lmax` to fit the latitude limit and `mmax` to fit the azimuthal limit on both source and target grids. Thus `Tn` requires both limits through `n`, `Tnxm` uses `lmax=n` and `mmax=m`, and `Rn` uses `lmax=2n` and `mmax=n`.
 
 Without an explicit truncation, regridding retains the content represented by
 both source and target sampling.

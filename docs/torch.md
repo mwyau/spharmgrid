@@ -71,13 +71,10 @@ flow through the transforms and spectral multipliers.
 
 ## Spectral truncation support
 
-Triangular `Tn` and triangular degree-band `Ta-b` requests continue to work in
-the Torch backend, including the existing Torch-native degree-band selection.
-The shared spharmgrid parser also recognizes `Tnxm` trapezoidal and `Rn`
-rhomboidal notation. The current torch-harmonics backend does not yet execute
-those non-triangular requests, so they raise `NotImplementedError`. This keeps
-the Xarray/DUCC and Torch APIs aligned while upstream backend support catches
-up.
+The Torch API supports triangular `Tn` truncation and `Ta-b` total-degree
+bands. spharmgrid also accepts `Tnxm` trapezoidal and `Rn` rhomboidal
+notation, but these requests raise `NotImplementedError` because the current
+torch-harmonics transforms do not support these coefficient domains.
 
 ## Reusable modules
 
@@ -113,9 +110,8 @@ regridding modules accept explicit supported `Tn` ranges.
 Supported grids are full rectangular GL grids and pole-including CC grids with
 equally spaced latitudes from -90° to 90°.
 
-The adapter uses triangular total-degree bands so that the torch-harmonics
-coefficient domain matches spharmgrid's explicit `Tn` semantics. For an
-explicit triangular request, the verified inclusive limits are
+The Torch implementation currently executes triangular coefficient domains.
+For an explicit triangular request, the verified inclusive limits are
 
 ```text
 GL

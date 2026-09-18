@@ -4,9 +4,8 @@
 
 ### Spectral truncation
 
-- Added shared `Tnxm` trapezoidal and `Rn` rhomboidal parsing; `Rn` executes on
-  the DUCC/Xarray path, while non-triangular Torch requests raise an explicit
-  error pending torch-harmonics support.
+- Added `Tnxm` trapezoidal and `Rn` rhomboidal truncation. The Torch API
+  supports `Tn` and `Ta-b`; `Tnxm` and `Rn` raise `NotImplementedError`.
 
 ### PyTorch backend
 
