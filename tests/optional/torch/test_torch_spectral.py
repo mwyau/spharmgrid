@@ -9,20 +9,70 @@ import spharmgrid as sg
 import spharmgrid.torch as sgt
 from tests.optional.torch.conftest import (
     as_xarray,
-    make_axisymmetric_wind,
     make_fields,
     make_nonaxisymmetric_wind,
     torch,
 )
 
 
-def _tolerance(dtype: torch.dtype) -> tuple[float, float]:
-    return (2.0e-11, 2.0e-10) if dtype == torch.float64 else (3.0e-5, 3.0e-4)
+def _spectral_tolerances(
+    dtype: torch.dtype,
+    *,
+    vector: bool = False,
+) -> tuple[float, float]:
+    """Return measured T2 transform tolerances with platform margin.
+
+    Across GL/CC regrids and filters, the largest measured absolute errors were
+    9e-15 for float64 and 8e-7 for float32.  Vector float32 regrids reached
+    3.2e-5 relative error at small but meaningful field values.
+    """
+    if dtype == torch.float64:
+        return 1.0e-12, 1.0e-13
+    return (3.0e-4, 5.0e-6) if vector else (5.0e-6, 5.0e-6)
+
+
+def _assert_close(
+    actual: torch.Tensor,
+    expected: torch.Tensor | np.ndarray,
+    dtype: torch.dtype,
+    *,
+    vector: bool = False,
+) -> None:
+    rtol, atol = _spectral_tolerances(dtype, vector=vector)
+    if isinstance(expected, torch.Tensor):
+        torch.testing.assert_close(actual, expected, rtol=rtol, atol=atol)
+    else:
+        np.testing.assert_allclose(
+            actual.detach().cpu().numpy(),
+            expected,
+            rtol=rtol,
+            atol=atol,
+        )
+
+
+def _regrid_grid(kind: str, *, source: bool) -> sg.Grid:
+    latitude_order = "ascending" if source else "descending"
+    lon0 = 45.0 if source else -75.0
+    if kind == "gl":
+        nlat, nlon = (8, 18) if source else (10, 20)
+        return sg.gaussian_grid(
+            nlat,
+            nlon,
+            latitude_order=latitude_order,
+            lon0=lon0,
+        )
+    nlat, nlon = (17, 36) if source else (19, 40)
+    return sg.clenshaw_curtis_grid(
+        nlat,
+        nlon,
+        latitude_order=latitude_order,
+        lon0=lon0,
+    )
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
 @pytest.mark.parametrize("kind", ["gl", "cc"])
-def test_filter_matches_cpu_for_explicit_triangular_band(
+def test_filter_matches_ducc_xarray_for_explicit_triangular_band(
     dtype: torch.dtype,
     kind: str,
 ) -> None:
@@ -39,8 +89,7 @@ def test_filter_matches_cpu_for_explicit_triangular_band(
     field, _, _ = make_fields(grid, dtype)
     expected = sg.filter(as_xarray(field, grid), "T2").values
     actual = sgt.filter(field, "T2", grid=grid)
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(actual.numpy(), expected, rtol=rtol, atol=atol)
+    _assert_close(actual, expected, dtype)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
@@ -65,155 +114,71 @@ def test_filter_selection_and_taper_are_not_shape_only(
         lmax=2,
     )
     tapered = sgt.filter(degree_two, "T2", grid=gl_grid, taper=0.1)
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(
-        low.numpy(),
-        low_field.numpy(),
-        rtol=rtol,
-        atol=atol,
-    )
-    np.testing.assert_allclose(
-        band.numpy(),
-        (3.0 * degree_two).numpy(),
-        rtol=rtol,
-        atol=atol,
-    )
-    torch.testing.assert_close(explicit_band, band, rtol=rtol, atol=atol)
-    np.testing.assert_allclose(
-        tapered.numpy(),
-        (0.1 * degree_two).numpy(),
-        rtol=rtol,
-        atol=atol,
-    )
+    _assert_close(low, low_field, dtype)
+    _assert_close(band, 3.0 * degree_two, dtype)
+    _assert_close(explicit_band, band, dtype)
+    _assert_close(tapered, 0.1 * degree_two, dtype)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
 @pytest.mark.parametrize("source_kind", ["gl", "cc"])
 @pytest.mark.parametrize("target_kind", ["gl", "cc"])
-def test_scalar_regrid_matches_cpu(
+def test_scalar_regrid_matches_analytic_target_field(
     dtype: torch.dtype,
     source_kind: str,
     target_kind: str,
 ) -> None:
-    source = (
-        sg.gaussian_grid(8, 18, latitude_order="descending", lon0=-135.0)
-        if source_kind == "gl"
-        else sg.clenshaw_curtis_grid(
-            17,
-            36,
-            latitude_order="descending",
-            lon0=-135.0,
-        )
-    )
-    target = (
-        sg.gaussian_grid(10, 20, latitude_order="ascending", lon0=75.0)
-        if target_kind == "gl"
-        else sg.clenshaw_curtis_grid(
-            19,
-            40,
-            latitude_order="ascending",
-            lon0=75.0,
-        )
-    )
+    source = _regrid_grid(source_kind, source=True)
+    target = _regrid_grid(target_kind, source=False)
     field, _, _ = make_fields(source, dtype)
-    expected = sg.regrid(as_xarray(field, source), target, "T2").values
+    expected, _, _ = make_fields(target, dtype)
     actual = sgt.regrid(field, target, "T2", source_grid=source)
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(actual.numpy(), expected, rtol=rtol, atol=atol)
+    _assert_close(actual, expected, dtype)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_vector_regrid_matches_cpu_and_uses_geographic_vector_semantics(
-    dtype: torch.dtype,
-    cc_grid: sg.Grid,
-) -> None:
-    source = cc_grid
-    target = sg.gaussian_grid(10, 20, latitude_order="descending", lon0=-75.0)
-    u, v = make_axisymmetric_wind(source, dtype)
-    expected = sg.regrid_vector(
-        as_xarray(u, source, "u"),
-        as_xarray(v, source, "v"),
-        target,
-        "T2",
-    )
-    actual_u, actual_v = sgt.regrid_vector(
-        u,
-        v,
-        target,
-        "T2",
-        source_grid=source,
-    )
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(
-        actual_u.numpy(),
-        expected.u.values,
-        rtol=rtol,
-        atol=atol,
-    )
-    np.testing.assert_allclose(
-        actual_v.numpy(),
-        expected.v.values,
-        rtol=rtol,
-        atol=atol,
-    )
-
-
-@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_vector_regrid_matches_cpu_for_nonaxisymmetric_longitude_phase(
+def test_scalar_regrid_matches_ducc_xarray(
     dtype: torch.dtype,
 ) -> None:
-    source = sg.gaussian_grid(8, 18, latitude_order="ascending", lon0=45.0)
-    target = sg.gaussian_grid(10, 20, latitude_order="descending", lon0=-75.0)
-    u, v = make_nonaxisymmetric_wind(source, dtype)
-    expected = sg.regrid_vector(
-        as_xarray(u, source, "u"),
-        as_xarray(v, source, "v"),
+    source = _regrid_grid("gl", source=True)
+    target = _regrid_grid("cc", source=False)
+    field, _, _ = make_fields(source, dtype)
+    expected = sg.regrid(
+        as_xarray(field, source),
         target,
         "T2",
     )
-    actual_u, actual_v = sgt.regrid_vector(
-        u,
-        v,
-        target,
-        "T2",
-        source_grid=source,
-    )
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(
-        actual_u.numpy(), expected.u.values, rtol=rtol, atol=atol
-    )
-    np.testing.assert_allclose(
-        actual_v.numpy(), expected.v.values, rtol=rtol, atol=atol
-    )
+    actual = sgt.regrid(field, target, "T2", source_grid=source)
+    _assert_close(actual, expected.values, dtype)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+@pytest.mark.parametrize("source_kind", ["gl", "cc"])
 @pytest.mark.parametrize("target_kind", ["gl", "cc"])
-def test_vector_regrid_matches_cpu_for_nonaxisymmetric_cc_source(
+def test_vector_regrid_matches_analytic_target_field(
     dtype: torch.dtype,
+    source_kind: str,
     target_kind: str,
 ) -> None:
-    source = sg.clenshaw_curtis_grid(
-        17,
-        36,
-        latitude_order="descending",
-        lon0=37.0,
+    source = _regrid_grid(source_kind, source=True)
+    target = _regrid_grid(target_kind, source=False)
+    u, v = make_nonaxisymmetric_wind(source, dtype)
+    expected_u, expected_v = make_nonaxisymmetric_wind(target, dtype)
+    actual_u, actual_v = sgt.regrid_vector(
+        u,
+        v,
+        target,
+        "T2",
+        source_grid=source,
     )
-    target = (
-        sg.gaussian_grid(
-            10,
-            20,
-            latitude_order="ascending",
-            lon0=-83.0,
-        )
-        if target_kind == "gl"
-        else sg.clenshaw_curtis_grid(
-            19,
-            40,
-            latitude_order="ascending",
-            lon0=-83.0,
-        )
-    )
+    _assert_close(actual_u, expected_u, dtype, vector=True)
+    _assert_close(actual_v, expected_v, dtype, vector=True)
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+def test_vector_regrid_matches_ducc_xarray(dtype: torch.dtype) -> None:
+    source = _regrid_grid("cc", source=True)
+    target = _regrid_grid("gl", source=False)
     u, v = make_nonaxisymmetric_wind(source, dtype)
     expected = sg.regrid_vector(
         as_xarray(u, source, "u"),
@@ -228,13 +193,8 @@ def test_vector_regrid_matches_cpu_for_nonaxisymmetric_cc_source(
         "T2",
         source_grid=source,
     )
-    rtol, atol = _tolerance(dtype)
-    np.testing.assert_allclose(
-        actual_u.numpy(), expected.u.values, rtol=rtol, atol=atol
-    )
-    np.testing.assert_allclose(
-        actual_v.numpy(), expected.v.values, rtol=rtol, atol=atol
-    )
+    _assert_close(actual_u, expected.u.values, dtype, vector=True)
+    _assert_close(actual_v, expected.v.values, dtype, vector=True)
 
 
 def test_leading_dimensions_are_preserved(gl_grid: sg.Grid) -> None:

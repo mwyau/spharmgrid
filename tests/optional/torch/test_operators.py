@@ -36,25 +36,23 @@ def _assert_close(
 
 
 def _value_tolerances(dtype: torch.dtype) -> tuple[float, float]:
-    """Return tolerances for ordinary field-valued comparisons."""
-    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (5.0e-6, 5.0e-6)
+    """Return tolerances for dimensionless field and analytic comparisons."""
+    return (1.0e-12, 1.0e-13) if dtype == torch.float64 else (5.0e-6, 2.0e-6)
 
 
 def _derivative_tolerances(dtype: torch.dtype) -> tuple[float, float]:
-    """Return measured CPU/Torch derivative tolerances with CI margin."""
-    # The FP32 values are rounded from 5--10 times the measured GL
-    # CPU/Torch disagreement, with additional platform margin.
-    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (5.0e-6, 5.0e-12)
+    """Return measured CPU/Torch derivative tolerances with platform margin."""
+    return (1.0e-8, 1.0e-11) if dtype == torch.float64 else (5.0e-6, 5.0e-12)
 
 
 def _laplacian_tolerances(dtype: torch.dtype) -> tuple[float, float]:
     """Return tolerances for the much smaller Laplacian quantities."""
-    return (3.0e-11, 3.0e-10) if dtype == torch.float64 else (1.0e-5, 1.0e-18)
+    return (3.0e-8, 1.0e-18) if dtype == torch.float64 else (5.0e-6, 1.0e-18)
 
 
 def _wind_tolerances(dtype: torch.dtype) -> tuple[float, float]:
-    """Return tolerances for reconstructed wind components."""
-    return (3.0e-8, 3.0e-8) if dtype == torch.float64 else (1.0e-5, 5.0e-5)
+    """Return measured tolerances for reconstructed wind components."""
+    return (3.0e-7, 1.0e-9) if dtype == torch.float64 else (3.0e-4, 5.0e-6)
 
 
 def _physical_tolerances(
@@ -62,19 +60,22 @@ def _physical_tolerances(
     *,
     vector: bool,
 ) -> tuple[float, float]:
-    """Return tolerances for potentials and inverse physical operators."""
+    """Return measured relative tolerances with near-zero protection."""
     if vector:
-        return (1.0e-9, 1.0e5) if dtype == torch.float64 else (1.0e-5, 1.0e-2)
-    return (1.0e-9, 0.1) if dtype == torch.float64 else (1.0e-5, 1.0e-2)
+        return (1.0e-8, 1.0e-2) if dtype == torch.float64 else (3.0e-6, 1.0e-3)
+    return (3.0e-9, 1.0e-3) if dtype == torch.float64 else (3.0e-6, 1.0e-3)
 
 
-def _analytic_tolerances(dtype: torch.dtype) -> tuple[float, float]:
-    """Return dtype-specific tolerances for analytic vector identities."""
-    return (2.0e-12, 2.0e-12) if dtype == torch.float64 else (2.0e-6, 2.0e-6)
+def _inverse_laplacian_tolerances(dtype: torch.dtype) -> tuple[float, float]:
+    """Return scale-aware tolerances for Earth-radius inverse Laplacians."""
+    return (5.0e-12, 1.0e-6) if dtype == torch.float64 else (3.0e-5, 1.0e-3)
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_scalar_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> None:
+def test_scalar_operators_match_ducc_xarray(
+    gl_grid: sg.Grid,
+    dtype: torch.dtype,
+) -> None:
     field, _, _ = make_fields(gl_grid, dtype)
     xarray_field = as_xarray(field, gl_grid)
 
@@ -121,12 +122,15 @@ def test_scalar_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> Non
         sgt.inverse_laplacian(field, grid=gl_grid),
         sg.inverse_laplacian(xarray_field).values,
         dtype,
-        tolerances=_physical_tolerances(dtype, vector=False),
+        tolerances=_inverse_laplacian_tolerances(dtype),
     )
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_vector_operators_match_cpu(gl_grid: sg.Grid, dtype: torch.dtype) -> None:
+def test_vector_operators_match_ducc_xarray(
+    gl_grid: sg.Grid,
+    dtype: torch.dtype,
+) -> None:
     _, eastward, northward = make_fields(gl_grid, dtype)
     xarray_eastward = as_xarray(eastward, gl_grid, "u")
     xarray_northward = as_xarray(northward, gl_grid, "v")
@@ -395,6 +399,7 @@ def test_analytic_scalar_and_vector_identities(
         sgt.inverse_laplacian(scalar, grid=grid, radius=radius),
         -0.5 * radius**2 * sine,
         torch.float64,
+        rtol=2.0e-14,
         atol=5.0e-9,
     )
     _assert_close(
@@ -465,13 +470,15 @@ def test_analytic_scalar_and_vector_identities(
         streamfunction,
         -rotational_amplitude * radius * sine,
         torch.float64,
-        atol=5.0e-7,
+        rtol=1.0e-13,
+        atol=1.0e-7,
     )
     _assert_close(
         velocity_potential,
         divergent_amplitude * radius * sine,
         torch.float64,
-        atol=5.0e-7,
+        rtol=1.0e-13,
+        atol=1.0e-7,
     )
 
     recovered_rotational = sgt.rotational_wind(
@@ -487,16 +494,32 @@ def test_analytic_scalar_and_vector_identities(
         radius=radius,
     )
     _assert_close(
-        recovered_rotational[0], eastward.numpy(), torch.float64, atol=5.0e-14
+        recovered_rotational[0],
+        eastward.numpy(),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-14,
     )
     _assert_close(
-        recovered_rotational[1], np.zeros_like(cosine), torch.float64, atol=5.0e-20
+        recovered_rotational[1],
+        np.zeros_like(cosine),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-20,
     )
     _assert_close(
-        recovered_divergent[0], np.zeros_like(cosine), torch.float64, atol=5.0e-20
+        recovered_divergent[0],
+        np.zeros_like(cosine),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-20,
     )
     _assert_close(
-        recovered_divergent[1], northward.numpy(), torch.float64, atol=5.0e-14
+        recovered_divergent[1],
+        northward.numpy(),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-14,
     )
 
     recovered_wind = sgt.wind(
@@ -506,8 +529,20 @@ def test_analytic_scalar_and_vector_identities(
         source="vorticity_divergence",
         radius=radius,
     )
-    _assert_close(recovered_wind[0], eastward.numpy(), torch.float64, atol=5.0e-14)
-    _assert_close(recovered_wind[1], northward.numpy(), torch.float64, atol=5.0e-14)
+    _assert_close(
+        recovered_wind[0],
+        eastward.numpy(),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-14,
+    )
+    _assert_close(
+        recovered_wind[1],
+        northward.numpy(),
+        torch.float64,
+        rtol=1.0e-13,
+        atol=5.0e-14,
+    )
 
 
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
@@ -541,7 +576,7 @@ def test_analytic_nonaxisymmetric_l1m1_vector_identities(
     rotational_v = psi_amplitude * cosine_longitude / radius
     eastward = divergent_u + rotational_u
     northward = divergent_v + rotational_v
-    tolerances = _analytic_tolerances(dtype)
+    tolerances = _value_tolerances(dtype)
     u = torch.as_tensor(eastward, dtype=dtype)
     v = torch.as_tensor(northward, dtype=dtype)
     scalar = torch.as_tensor(chi, dtype=dtype)

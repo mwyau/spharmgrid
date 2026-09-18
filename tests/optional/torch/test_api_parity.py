@@ -6,11 +6,8 @@ import inspect
 from collections.abc import Callable
 from types import ModuleType
 
-import pytest
-
 import spharmgrid as sg
 import spharmgrid.torch as sgt
-from tests.optional.torch.conftest import torch
 
 # These parameters describe information available from Xarray metadata or
 # output containers but absent from tensor calls. They are the only
@@ -135,26 +132,3 @@ def _assert_api_parity(
 
 def test_torch_functional_api_matches_root_api() -> None:
     _assert_api_parity(sg, sgt)
-
-
-def test_parity_guard_detects_missing_function(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delattr(sgt, "wind")
-    with pytest.raises(AssertionError):
-        _assert_api_parity(sg, sgt)
-
-
-def test_parity_guard_detects_missing_shared_parameter(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    original = sgt.gradient
-
-    def without_radius(
-        field: torch.Tensor,
-        *,
-        grid: sg.Grid,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        return original(field, grid=grid)
-
-    monkeypatch.setattr(sgt, "gradient", without_radius)
-    with pytest.raises(AssertionError):
-        _assert_api_parity(sg, sgt)

@@ -21,7 +21,7 @@ def make_fields(
     grid: sg.Grid,
     dtype: torch.dtype = torch.float64,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Return a low-degree scalar field and a mixed geographic wind."""
+    """Return a scalar field with known modes through degree two and a wind."""
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
     sine = np.sin(latitude)
@@ -39,29 +39,11 @@ def make_fields(
     )
 
 
-def make_axisymmetric_wind(
-    grid: sg.Grid,
-    dtype: torch.dtype = torch.float64,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return independent degree-one rotational and divergent components."""
-    cosine = np.cos(np.deg2rad(grid.latitude))[:, None]
-    shape = (1, grid.nlon)
-    eastward = torch.as_tensor(
-        10.0 * cosine * np.ones(shape),
-        dtype=dtype,
-    )
-    northward = torch.as_tensor(
-        7.0 * cosine * np.ones(shape),
-        dtype=dtype,
-    )
-    return eastward, northward
-
-
 def make_nonaxisymmetric_wind(
     grid: sg.Grid,
     dtype: torch.dtype = torch.float64,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return a unit-radius ``l=1, m=1`` divergent-plus-rotational wind."""
+    """Return the unit-radius ``l=1, m=1`` wind from two analytic potentials."""
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
     eastward = -np.sin(longitude) + np.sin(latitude) * np.sin(longitude)

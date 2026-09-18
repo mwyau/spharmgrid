@@ -10,7 +10,7 @@ import spharmgrid.torch.nn as sgnn
 from tests.optional.torch.conftest import torch
 
 
-def test_filter_regrid_and_kinematics_pass_gradcheck() -> None:
+def test_scalar_and_vector_operations_pass_gradcheck() -> None:
     source = sg.gaussian_grid(4, 8, lon0=45.0)
     target = sg.gaussian_grid(5, 10, latitude_order="descending", lon0=-75.0)
     field = torch.linspace(
@@ -39,7 +39,20 @@ def test_filter_regrid_and_kinematics_pass_gradcheck() -> None:
     eastward = field.detach().clone().requires_grad_()
     northward = torch.flip(field.detach(), dims=(-2,)).requires_grad_()
     assert torch.autograd.gradcheck(
-        lambda u, v: sgt.kinematics(u, v, grid=source)[0],
+        lambda u, v: sgt.regrid_vector(
+            u,
+            v,
+            target,
+            "T2",
+            source_grid=source,
+        ),
+        (eastward, northward),
+        eps=1.0e-6,
+        atol=1.0e-7,
+        rtol=1.0e-5,
+    )
+    assert torch.autograd.gradcheck(
+        lambda u, v: sgt.kinematics(u, v, grid=source),
         (eastward, northward),
         eps=1.0e-6,
         atol=1.0e-7,
