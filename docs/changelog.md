@@ -2,6 +2,11 @@
 
 ## v0.2.0 development
 
+### Spectral truncation
+
+- Added `Tnxm` trapezoidal and `Rn` rhomboidal truncation. The Torch API
+  supports `Tn` and `Ta-b`; `Tnxm` and `Rn` raise `NotImplementedError`.
+
 ### PyTorch backend
 
 - Added the optional `spharmgrid.torch` tensor API and four reusable

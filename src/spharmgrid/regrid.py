@@ -14,24 +14,24 @@ from ._ducc import (
     vector_analysis,
     vector_synthesis,
 )
+from ._transform import TransformSpec
 from ._vector import vector_inputs, vector_pair_transform
 from ._xarray import field_layout, require_dataarray, target_layout
 from .grids import Grid
 from .metadata import preserve_quantity_metadata
 from .spectral import (
-    SpectralRange,
-    _resolve_spectral_range,
+    _resolve_spectral_spec,
     _validate_taper,
     apply_spectral_selection,
+    resolve_transform_spec,
     scalar_transform,
-    transform_spec,
 )
 
 
 def regrid(
     field: xr.DataArray,
     target_grid: Grid | xr.DataArray | xr.Dataset,
-    truncation: str | SpectralRange | None = None,
+    truncation: str | TransformSpec | None = None,
     *,
     lmin: int | None = None,
     lmax: int | None = None,
@@ -47,9 +47,8 @@ def regrid(
     field = require_dataarray(field)
     source = field_layout(field)
     target = target_layout(target_grid, source)
-    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
-    spec = transform_spec(source.grid, target.grid, selection)
-    retained = selection or SpectralRange(0, spec.lmax)
+    selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
+    spec = resolve_transform_spec(source.grid, target.grid, selection)
     _validate_taper(taper)
     nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
@@ -62,7 +61,7 @@ def regrid(
             nthreads=nthreads,
         )
         if selection is not None or taper is not None:
-            alm = apply_spectral_selection(alm, spec, retained, taper)
+            alm = apply_spectral_selection(alm, spec, taper)
         return scalar_synthesis(
             alm,
             spec=spec,
@@ -81,7 +80,7 @@ def regrid_vector(
     u: xr.DataArray,
     v: xr.DataArray,
     target_grid: Grid | xr.DataArray | xr.Dataset,
-    truncation: str | SpectralRange | None = None,
+    truncation: str | TransformSpec | None = None,
     *,
     lmin: int | None = None,
     lmax: int | None = None,
@@ -100,13 +99,12 @@ def regrid_vector(
     _validate_component_names(eastward, northward)
     source, canonical_u, canonical_v = vector_inputs(u, v)
     target = target_layout(target_grid, source)
-    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
-    spec = transform_spec(source.grid, target.grid, selection)
+    selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
+    spec = resolve_transform_spec(source.grid, target.grid, selection)
     if spec.lmax < 1:
         raise ValueError(
             "vector regridding requires a grid supporting total degree l=1"
         )
-    retained = selection or SpectralRange(0, spec.lmax)
     _validate_taper(taper)
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)
@@ -123,7 +121,7 @@ def regrid_vector(
             nthreads=nthreads,
         )
         if selection is not None or taper is not None:
-            alm = apply_spectral_selection(alm, spec, retained, taper)
+            alm = apply_spectral_selection(alm, spec, taper)
         return vector_synthesis(
             alm[0],
             alm[1],

@@ -27,7 +27,7 @@ from ._xarray import (
     restore_output,
 )
 from .metadata import gradient_metadata, inverse_gradient_metadata, operator_metadata
-from .spectral import scalar_transform, transform_spec
+from .spectral import resolve_transform_spec, scalar_transform
 
 EARTH_RADIUS_M = 6_371_220.0  # NCL default Earth radius in metres
 
@@ -50,7 +50,7 @@ def gradient(
     _validate_radius(radius)
     _validate_component_names(eastward, northward)
     source = field_layout(field)
-    spec = transform_spec(source.grid, source.grid, None)
+    spec = resolve_transform_spec(source.grid, source.grid, None)
     nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(
@@ -100,7 +100,7 @@ def inverse_gradient(
     _validate_radius(radius)
     _validate_output_name(output)
     source, canonical_eastward, canonical_northward = vector_inputs(eastward, northward)
-    spec = transform_spec(source.grid, source.grid, None)
+    spec = resolve_transform_spec(source.grid, source.grid, None)
     if spec.lmax < 1:
         raise ValueError("inverse gradient requires a grid supporting total degree l=1")
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
@@ -160,7 +160,7 @@ def laplacian(
     field = require_dataarray(field)
     _validate_radius(radius)
     source = field_layout(field)
-    spec = transform_spec(source.grid, source.grid, None)
+    spec = resolve_transform_spec(source.grid, source.grid, None)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     multiplier = -(degrees * (degrees + 1.0)) / radius**2
     nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
@@ -204,7 +204,7 @@ def inverse_laplacian(
     field = require_dataarray(field)
     _validate_radius(radius)
     source = field_layout(field)
-    spec = transform_spec(source.grid, source.grid, None)
+    spec = resolve_transform_spec(source.grid, source.grid, None)
     degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
     multiplier = np.zeros_like(degrees)
     nonzero = degrees > 0.0

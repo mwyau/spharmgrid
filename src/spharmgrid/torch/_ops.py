@@ -12,13 +12,10 @@ from .._kinematics_types import (
     RotationalWindSource,
     WindSource,
 )
+from .._transform import TransformSpec
 from ..grids import Grid
 from ..operators import EARTH_RADIUS_M
-from ..spectral import (
-    SpectralRange,
-    _resolve_spectral_range,
-    _validate_taper,
-)
+from ..spectral import _resolve_spectral_spec, _validate_taper
 from ._backend import (
     _apply_selection,
     _check_selection,
@@ -34,7 +31,7 @@ from ._backend import (
 
 def filter(
     field: Tensor,
-    truncation: str | SpectralRange | None = None,
+    truncation: str | TransformSpec | None = None,
     *,
     grid: Grid,
     lmin: int | None = None,
@@ -44,7 +41,7 @@ def filter(
     """Apply a hard or Sardeshmukh--Hoskins spectral selection."""
     _validate_grid(grid)
     _require_tensor(field, grid)
-    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     _validate_taper(taper)
     state = _make_state(
         grid,
@@ -53,14 +50,13 @@ def filter(
         vector=False,
         device=field.device,
     )
-    retained = selection or SpectralRange(0, state.spec.lmax)
-    return _filter_impl(field, state, retained, taper)
+    return _filter_impl(field, state, state.spec, taper)
 
 
 def regrid(
     field: Tensor,
     target_grid: Grid,
-    truncation: str | SpectralRange | None = None,
+    truncation: str | TransformSpec | None = None,
     *,
     source_grid: Grid,
     lmin: int | None = None,
@@ -71,7 +67,7 @@ def regrid(
     _validate_grid(source_grid, "source_grid")
     _validate_grid(target_grid, "target_grid")
     _require_tensor(field, source_grid)
-    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     _validate_taper(taper)
     state = _make_state(
         source_grid,
@@ -80,15 +76,14 @@ def regrid(
         vector=False,
         device=field.device,
     )
-    retained = selection or SpectralRange(0, state.spec.lmax)
-    return _regrid_impl(field, state, retained, taper, selection is not None)
+    return _regrid_impl(field, state, state.spec, taper, selection is not None)
 
 
 def regrid_vector(
     u: Tensor,
     v: Tensor,
     target_grid: Grid,
-    truncation: str | SpectralRange | None = None,
+    truncation: str | TransformSpec | None = None,
     *,
     source_grid: Grid,
     lmin: int | None = None,
@@ -99,7 +94,7 @@ def regrid_vector(
     _validate_grid(source_grid, "source_grid")
     _validate_grid(target_grid, "target_grid")
     _require_vector_tensors(u, v, source_grid)
-    selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+    selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     _validate_taper(taper)
     state = _make_state(
         source_grid,
@@ -109,12 +104,11 @@ def regrid_vector(
         device=u.device,
     )
     _require_vector_bandwidth(state)
-    retained = selection or SpectralRange(0, state.spec.lmax)
     return _regrid_vector_impl(
         u,
         v,
         state,
-        retained,
+        state.spec,
         taper,
         selection is not None,
     )
@@ -438,7 +432,7 @@ def _wind_with_state(
 def _filter_impl(
     field: Tensor,
     state: _TorchTransform,
-    selection: SpectralRange,
+    selection: TransformSpec,
     taper: float | None,
 ) -> Tensor:
     _check_selection(selection, state)
@@ -450,7 +444,7 @@ def _filter_impl(
 def _regrid_impl(
     field: Tensor,
     state: _TorchTransform,
-    selection: SpectralRange,
+    selection: TransformSpec,
     taper: float | None,
     apply_selection: bool,
 ) -> Tensor:
@@ -464,7 +458,7 @@ def _regrid_vector_impl(
     u: Tensor,
     v: Tensor,
     state: _TorchTransform,
-    selection: SpectralRange,
+    selection: TransformSpec,
     taper: float | None,
     apply_selection: bool,
 ) -> tuple[Tensor, Tensor]:

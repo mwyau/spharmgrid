@@ -18,7 +18,7 @@ A `Grid` target keeps the source horizontal dimension names and adds CF latitude
 
 ## Filtering during regridding
 
-A spectral range and taper can be applied during regridding:
+A supported truncation string and taper can be applied during regridding:
 
 ```python
 result = field.sg.regrid(
@@ -28,7 +28,10 @@ result = field.sg.regrid(
 )
 ```
 
-Without an explicit spectral range, regridding retains the spherical harmonic content represented by both source and target grids. An explicit `Tn` range must be representable on both grids.
+The `Tn`, `Ta-b`, `Tnxm`, and `Rn` notation has the same meaning as in
+{doc}`filtering`. Without an explicit truncation, regridding retains the
+spherical harmonic content represented by both source and target grids. An
+explicit truncation must be representable on both grids.
 
 ## Vector regridding
 

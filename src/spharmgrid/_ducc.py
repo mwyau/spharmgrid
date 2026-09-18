@@ -50,6 +50,16 @@ def alm_degrees(lmax: int, mmax: int) -> NDArray[np.int64]:
     return degrees
 
 
+@cache
+def alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
+    """Return zonal order for each contiguous healpy-ordered coefficient."""
+    orders = np.concatenate(
+        [np.full(lmax - m + 1, m, dtype=np.int64) for m in range(mmax + 1)]
+    )
+    orders.setflags(write=False)
+    return orders
+
+
 def scalar_analysis(
     frame: NDArray[np.generic],
     *,

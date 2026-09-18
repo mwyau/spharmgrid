@@ -12,6 +12,7 @@ from ._kinematics_types import (
     ScalarSource,
     WindSource,
 )
+from ._transform import TransformSpec
 from .grids import Grid, detect_grid
 from .kinematics import (
     divergence as calculate_divergence,
@@ -57,7 +58,6 @@ from .operators import inverse_laplacian as calculate_inverse_laplacian
 from .operators import laplacian as calculate_laplacian
 from .regrid import regrid as calculate_regrid
 from .regrid import regrid_vector as calculate_regrid_vector
-from .spectral import SpectralRange
 from .spectral import filter as calculate_filter
 
 
@@ -85,7 +85,7 @@ class DataArrayAccessor:
 
     def filter(
         self,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -105,7 +105,7 @@ class DataArrayAccessor:
     def regrid(
         self,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -127,7 +127,7 @@ class DataArrayAccessor:
         self,
         v: xr.DataArray,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -433,7 +433,7 @@ class DatasetAccessor:
     def regrid_vector(
         self,
         target_grid: Grid | xr.DataArray | xr.Dataset,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         u: str | None = None,
         v: str | None = None,

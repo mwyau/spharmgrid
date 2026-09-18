@@ -69,6 +69,13 @@ the nonphysical degree-zero vector slot. The backend supports `float32` and
 `float64` tensors. Tensor operations use PyTorch throughout, so gradients can
 flow through the transforms and spectral multipliers.
 
+## Spectral truncation support
+
+The Torch API supports triangular `Tn` truncation and `Ta-b` total-degree
+bands. spharmgrid also accepts `Tnxm` trapezoidal and `Rn` rhomboidal
+notation, but these requests raise `NotImplementedError` because the current
+torch-harmonics transforms do not support these coefficient domains.
+
 ## Reusable modules
 
 `spharmgrid.torch.nn` contains four reusable module classes:
@@ -103,9 +110,8 @@ regridding modules accept explicit supported `Tn` ranges.
 Supported grids are full rectangular GL grids and pole-including CC grids with
 equally spaced latitudes from -90° to 90°.
 
-The adapter uses triangular total-degree bands so that the torch-harmonics
-coefficient domain matches spharmgrid's explicit `Tn` semantics. For an
-explicit triangular request, the verified inclusive limits are
+The Torch implementation currently executes triangular coefficient domains.
+For an explicit triangular request, the verified inclusive limits are
 
 ```text
 GL
