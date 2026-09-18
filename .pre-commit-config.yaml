@@ -11,7 +11,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.13
+    rev: 0.12.15
     hooks:
       - id: uv-lock
 
@@ -23,7 +23,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.80
+    rev: v0.0.81
     hooks:
       - id: ty
         # The normal hook checks src/spharmgrid/torch with unresolved optional
