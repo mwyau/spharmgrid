@@ -92,7 +92,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload unit test results to Codecov
         if: ${{ !cancelled() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('junit-unit.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./junit-unit.xml
           report_type: test_results
@@ -103,7 +103,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload unit coverage to Codecov
         if: ${{ success() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('coverage-unit.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./coverage-unit.xml
           flags: unit
@@ -141,7 +141,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload file backend test results to Codecov
         if: ${{ !cancelled() && hashFiles('junit-file-backends.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./junit-file-backends.xml
           report_type: test_results
@@ -152,7 +152,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload file backend coverage to Codecov
         if: ${{ !cancelled() && hashFiles('coverage-file-backends.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./coverage-file-backends.xml
           flags: file-backends
@@ -267,7 +267,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload parity test results to Codecov
         if: ${{ !cancelled() && hashFiles('junit-parity.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./junit-parity.xml
           report_type: test_results
@@ -278,7 +278,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload parity coverage to Codecov
         if: ${{ !cancelled() && hashFiles('coverage-parity.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.0
         with:
           files: ./coverage-parity.xml
           flags: parity
