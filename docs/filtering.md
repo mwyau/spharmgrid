@@ -8,9 +8,29 @@ band_pass = field.sg.filter("T6-42")
 explicit = field.sg.filter(lmin=6, lmax=42)
 ```
 
-`T42` retains modes with total degree $0 \leq l \leq 42$. `T6-42` retains $6 \leq l \leq 42$. Parsing is case-insensitive and accepts an en dash, for example `T6–42`. `truncation=` cannot be combined with explicit `lmin=` and `lmax=` in the same call.
+The supported truncation strings are:
 
-With no spectral range, spharmgrid uses the transform bandwidth supported by the grid. The latitude sampling can support degrees above the largest represented zonal order.
+| Form   | Retained coefficient domain                                                   |
+| ------ | ----------------------------------------------------------------------------- |
+| `Tn`   | triangular: $0 \leq m \leq l \leq n$                                          |
+| `Ta-b` | triangular total-degree band-pass: $a \leq l \leq b$, with $0 \leq m \leq l$  |
+| `Tnxm` | trapezoidal: $0 \leq m' \leq m$, with $m' \leq l \leq n$                      |
+| `Rn`   | symmetric rhomboidal: $0 \leq m \leq n$, $m \leq l \leq 2n$, and $l-m \leq n$ |
+
+For example, `T42` is triangular, `T5-42` is a total-degree band-pass,
+`T42x10` is trapezoidal with maximum degree 42 and maximum order 10, and
+`R42` is rhomboidal with maximum order 42 and maximum degree 84. These are
+truncation and coefficient-selection strings, not grid names. Parsing is
+case-insensitive and accepts an en dash, for example `T5–42`.
+
+The notation intentionally does not encode compound cases such as a rhomboidal
+band or a trapezoidal band. `truncation=` cannot be combined with explicit
+`lmin=` and `lmax=` in the same call. The terminology follows the spectral
+algorithm overview used in [CAM](https://acomstaff.acom.ucar.edu/tilmes/CAM_docs/doc/build/html/cam6_scientific_guide/chapter3.html#spectral-algorithm-overview).
+
+With no explicit truncation, spharmgrid uses the transform bandwidth supported by
+the grid. The latitude sampling can support degrees above the largest represented
+zonal order.
 
 ## Hard selection
 
@@ -22,7 +42,8 @@ lmin <= l <= lmax    retained unchanged
 l > lmax             zero
 ```
 
-With no spectral range and no taper, `filter()` performs analysis and synthesis over the grid's available transform bandwidth.
+With no explicit truncation and no taper, `filter()` performs analysis and
+synthesis over the grid's available transform bandwidth.
 
 ## Sardeshmukh–Hoskins taper
 

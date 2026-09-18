@@ -8,6 +8,7 @@ operations around them.
 
 # Import for Xarray accessor registration after direct functions exist.
 from . import accessors as _accessors  # noqa: F401
+from ._transform import TransformSpec
 from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
 from .kinematics import (
     divergence,
@@ -31,12 +32,12 @@ from .operators import (
     laplacian,
 )
 from .regrid import regrid, regrid_vector
-from .spectral import SpectralRange, filter, parse_spectral
+from .spectral import filter, parse_spectral
 
 __all__ = [
     "EARTH_RADIUS_M",
     "Grid",
-    "SpectralRange",
+    "TransformSpec",
     "clenshaw_curtis_grid",
     "detect_grid",
     "divergent_wind",

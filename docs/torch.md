@@ -69,6 +69,16 @@ the nonphysical degree-zero vector slot. The backend supports `float32` and
 `float64` tensors. Tensor operations use PyTorch throughout, so gradients can
 flow through the transforms and spectral multipliers.
 
+## Spectral truncation support
+
+Triangular `Tn` and triangular degree-band `Ta-b` requests continue to work in
+the Torch backend, including the existing Torch-native degree-band selection.
+The shared spharmgrid parser also recognizes `Tnxm` trapezoidal and `Rn`
+rhomboidal notation. The current torch-harmonics backend does not yet execute
+those non-triangular requests, so they raise `NotImplementedError`. This keeps
+the Xarray/DUCC and Torch APIs aligned while upstream backend support catches
+up.
+
 ## Reusable modules
 
 `spharmgrid.torch.nn` contains four reusable module classes:

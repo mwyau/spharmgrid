@@ -7,6 +7,7 @@ import pytest
 
 import spharmgrid as sg
 import spharmgrid.torch as sgt
+import spharmgrid.torch.nn as sgnn
 from tests.optional.torch.conftest import (
     as_xarray,
     make_fields,
@@ -230,3 +231,34 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
         sgt.filter(field, "T9", grid=cc_grid)
     with pytest.raises(ValueError, match="exceeds"):
         sgt.filter(make_fields(gl_grid)[0], "T99", grid=gl_grid)
+
+
+@pytest.mark.parametrize(
+    ("notation", "shape"),
+    [("T42x10", "trapezoidal"), ("R42", "rhomboidal")],
+)
+def test_nontriangular_modes_raise_targeted_torch_errors(
+    notation: str,
+    shape: str,
+    gl_grid: sg.Grid,
+) -> None:
+    field, u, v = make_fields(gl_grid)
+    expected = f"{shape}.*{notation}"
+
+    with pytest.raises(NotImplementedError, match=expected):
+        sgt.filter(field, notation, grid=gl_grid)
+    with pytest.raises(NotImplementedError, match=expected):
+        sgt.regrid(field, gl_grid, notation, source_grid=gl_grid)
+    with pytest.raises(NotImplementedError, match=expected):
+        sgt.regrid_vector(u, v, gl_grid, notation, source_grid=gl_grid)
+
+    with pytest.raises(NotImplementedError, match=expected):
+        sgnn.SHTFilter(gl_grid, notation)
+    with pytest.raises(NotImplementedError, match=expected):
+        sgnn.SHTRegrid(gl_grid, gl_grid, notation)
+    with pytest.raises(NotImplementedError, match=expected):
+        sgnn.SHTVectorRegrid(gl_grid, gl_grid, notation)
+
+    operators = sgnn.SHTOperators(gl_grid)
+    with pytest.raises(NotImplementedError, match=expected):
+        operators.filter(field, notation)

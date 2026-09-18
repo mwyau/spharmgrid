@@ -178,7 +178,10 @@ def _input_output_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _spectral_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--truncation", help="Tn or Tn-m retained range")
+    parser.add_argument(
+        "--truncation",
+        help="Tn, Ta-b, Tnxm, or Rn retained spectral selection",
+    )
     parser.add_argument("--lmin", type=int, help="explicit lower retained degree")
     parser.add_argument("--lmax", type=int, help="explicit upper retained degree")
     parser.add_argument("--taper", type=float, help="response at upper retained degree")

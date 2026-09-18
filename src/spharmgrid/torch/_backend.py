@@ -16,7 +16,7 @@ import torch_harmonics as _torch_harmonics
 
 from .._transform import TransformSpec
 from ..grids import Grid, grid_layout
-from ..spectral import SpectralRange, _validate_taper, transform_spec
+from ..spectral import _validate_taper, resolve_transform_spec
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,12 +49,13 @@ def _torch_capabilities(grid: Grid) -> _TorchGridCapabilities:
 def _resolve_transform_spec(
     source: Grid,
     target: Grid,
-    selection: SpectralRange | None,
+    selection: TransformSpec | None,
 ) -> TransformSpec:
     """Resolve a transform without changing the requested coefficient domain."""
     _validate_grid(source, "source_grid")
     _validate_grid(target, "target_grid")
-    requested = transform_spec(source, target, selection)
+    _validate_torch_selection(selection)
+    requested = resolve_transform_spec(source, target, selection)
     limit = min(
         _torch_capabilities(source).triangular_lmax,
         _torch_capabilities(target).triangular_lmax,
@@ -81,7 +82,7 @@ def _resolve_transform_spec(
             f"requested lmax={requested.lmax} exceeds the verified "
             f"torch-harmonics triangular bandwidth T{limit} for these grids"
         )
-    return TransformSpec(requested.lmax, requested.lmax)
+    return requested
 
 
 def _cc_bandwidth_error(
@@ -410,7 +411,7 @@ class _TorchTransform(torch.nn.Module):
 
 def _spectral_weights(
     state: _TorchTransform,
-    selection: SpectralRange,
+    selection: TransformSpec,
     taper: float | None,
     dtype: torch.dtype,
 ) -> torch.Tensor:
@@ -437,7 +438,7 @@ def _spectral_weights(
 def _apply_selection(
     coefficients: torch.Tensor,
     state: _TorchTransform,
-    selection: SpectralRange,
+    selection: TransformSpec,
     taper: float | None,
 ) -> torch.Tensor:
     weights = _spectral_weights(state, selection, taper, coefficients.real.dtype)
@@ -447,7 +448,7 @@ def _apply_selection(
 def _make_state(
     source: Grid,
     target: Grid,
-    selection: SpectralRange | None,
+    selection: TransformSpec | None,
     *,
     vector: bool,
     device: torch.device,
@@ -458,13 +459,34 @@ def _make_state(
 
 
 def _check_selection(
-    selection: SpectralRange | None,
+    selection: TransformSpec | None,
     state: _TorchTransform,
 ) -> None:
-    if selection is not None and selection.lmax > state.spec.lmax:
+    _validate_torch_selection(selection)
+    if selection is None:
+        return
+    if selection.lmax > state.spec.lmax:
         raise ValueError(
             f"requested lmax={selection.lmax} exceeds transform lmax={state.spec.lmax}"
         )
+    if selection.mmax > state.spec.mmax:
+        raise ValueError(
+            f"requested mmax={selection.mmax} exceeds transform mmax={state.spec.mmax}"
+        )
+
+
+def _validate_torch_selection(selection: TransformSpec | None) -> None:
+    """Reject parsed spectral shapes not yet implemented by torch-harmonics."""
+    if selection is None or selection.truncation == "triangular":
+        return
+    if selection.truncation == "trapezoidal":
+        notation = f"T{selection.lmax}x{selection.mmax}"
+    else:
+        notation = f"R{selection.lmax - selection.mmax}"
+    raise NotImplementedError(
+        "torch-harmonics backend support for "
+        f"{selection.truncation} truncation {notation} is not enabled yet"
+    )
 
 
 def _require_vector_bandwidth(state: _TorchTransform) -> None:

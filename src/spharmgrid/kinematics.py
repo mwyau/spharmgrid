@@ -42,7 +42,7 @@ from .metadata import (
     with_output_metadata,
 )
 from .operators import EARTH_RADIUS_M
-from .spectral import transform_spec
+from .spectral import resolve_transform_spec
 
 
 def vorticity(
@@ -714,7 +714,7 @@ def _require_matching_layouts(
 
 
 def _vector_spec(layout: FieldLayout) -> TransformSpec:
-    spec = transform_spec(layout.grid, layout.grid, None)
+    spec = resolve_transform_spec(layout.grid, layout.grid, None)
     if spec.lmax < 1:
         raise ValueError("wind transforms require a grid supporting total degree l=1")
     return spec

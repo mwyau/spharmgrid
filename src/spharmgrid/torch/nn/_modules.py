@@ -10,9 +10,10 @@ from ..._kinematics_types import (
     RotationalWindSource,
     WindSource,
 )
+from ..._transform import TransformSpec
 from ...grids import Grid
 from ...operators import EARTH_RADIUS_M
-from ...spectral import SpectralRange, _resolve_spectral_range, _validate_taper
+from ...spectral import _resolve_spectral_spec, _validate_taper
 from .._backend import (
     _make_state,
     _require_tensor,
@@ -69,19 +70,19 @@ class SHTOperators(torch.nn.Module):
     def filter(
         self,
         field: Tensor,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
         taper: float | None = None,
     ) -> Tensor:
-        selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+        selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
         _require_tensor(field, self.grid)
         return _filter_impl(
             field,
             self._state,
-            selection or SpectralRange(0, self._state.spec.lmax),
+            selection or self._state.spec,
             taper,
         )
 
@@ -211,7 +212,7 @@ class SHTFilter(torch.nn.Module):
     def __init__(
         self,
         grid: Grid,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -219,7 +220,7 @@ class SHTFilter(torch.nn.Module):
     ) -> None:
         super().__init__()
         _validate_grid(grid)
-        selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+        selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
         self.grid = grid
         self.truncation = selection
@@ -237,7 +238,7 @@ class SHTFilter(torch.nn.Module):
         return _filter_impl(
             field,
             self._state,
-            self.truncation or SpectralRange(0, self._state.spec.lmax),
+            self._state.spec,
             self.taper,
         )
 
@@ -249,7 +250,7 @@ class SHTRegrid(torch.nn.Module):
         self,
         source_grid: Grid,
         target_grid: Grid,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -258,7 +259,7 @@ class SHTRegrid(torch.nn.Module):
         super().__init__()
         _validate_grid(source_grid, "source_grid")
         _validate_grid(target_grid, "target_grid")
-        selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+        selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
         self.source_grid = source_grid
         self.target_grid = target_grid
@@ -277,7 +278,7 @@ class SHTRegrid(torch.nn.Module):
         return _regrid_impl(
             field,
             self._state,
-            self.truncation or SpectralRange(0, self._state.spec.lmax),
+            self._state.spec,
             self.taper,
             self.truncation is not None,
         )
@@ -290,7 +291,7 @@ class SHTVectorRegrid(torch.nn.Module):
         self,
         source_grid: Grid,
         target_grid: Grid,
-        truncation: str | SpectralRange | None = None,
+        truncation: str | TransformSpec | None = None,
         *,
         lmin: int | None = None,
         lmax: int | None = None,
@@ -299,7 +300,7 @@ class SHTVectorRegrid(torch.nn.Module):
         super().__init__()
         _validate_grid(source_grid, "source_grid")
         _validate_grid(target_grid, "target_grid")
-        selection = _resolve_spectral_range(truncation, lmin=lmin, lmax=lmax)
+        selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
         self.source_grid = source_grid
         self.target_grid = target_grid
@@ -320,7 +321,7 @@ class SHTVectorRegrid(torch.nn.Module):
             u,
             v,
             self._state,
-            self.truncation or SpectralRange(0, self._state.spec.lmax),
+            self._state.spec,
             self.taper,
             self.truncation is not None,
         )

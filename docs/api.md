@@ -23,11 +23,14 @@ The public `spharmgrid` API is fully type annotated and the package ships a `py.
 .. autoclass:: spharmgrid.Grid
    :members:
 
-.. autoclass:: spharmgrid.SpectralRange
+.. autoclass:: spharmgrid.TransformSpec
    :members:
 ```
 
 ## Grid and spectral selection
+
+`parse_spectral()` returns a `TransformSpec` for the requested triangular,
+trapezoidal, or rhomboidal coefficient domain.
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.gaussian_grid

@@ -2,6 +2,12 @@
 
 ## v0.2.0 development
 
+### Spectral truncation
+
+- Added shared `Tnxm` trapezoidal and `Rn` rhomboidal parsing; `Rn` executes on
+  the DUCC/Xarray path, while non-triangular Torch requests raise an explicit
+  error pending torch-harmonics support.
+
 ### PyTorch backend
 
 - Added the optional `spharmgrid.torch` tensor API and four reusable

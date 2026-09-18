@@ -36,6 +36,7 @@ Latitude may be ascending or descending. Longitude may use `[0, 360)`, `[-180, 1
 
 DUCC gives the latitude analysis limit as `nlat - 2` for CC and `nlat - 1` for GL. The azimuthal limit is `(nlon - 1) // 2`. A triangular `Tn` range requires both source and target grids to represent every degree and order through `n`.
 
-Without an explicit spectral range, regridding retains the content represented by both source and target sampling.
+Without an explicit truncation, regridding retains the content represented by
+both source and target sampling.
 
 `T42` denotes spectral truncation, not a physical grid. Construct the target grid explicitly.
