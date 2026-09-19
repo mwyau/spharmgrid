@@ -638,19 +638,22 @@ layer. Do not make model-training performance a spharmgrid benchmark suite.
 
 Keep accelerator and model stacks optional.
 
-Conceptually:
+`spharmgrid.torch` uses separately installed PyTorch and `torch-harmonics`.
+Repository development uses a separate dependency group:
 
 ```toml
+[dependency-groups]
+torch-dev = ["torch>=...", "torch-harmonics>=..."]
+
 [project.optional-dependencies]
-torch = ["torch-harmonics>=..."]
 jax = ["s2fft>=...", "jax>=..."]
 jax-xarray = ["xarray-jax>=..."] # only if this integration is adopted
 ```
 
 `neuraloperator` and Makani should not become dependencies merely because they
 are useful SFNO reference/consumer packages. If an optional interoperability
-test requires neuraloperator, keep it in a dedicated test/research extra rather
-than the runtime `torch` extra.
+test requires neuraloperator, keep it in a dedicated test/research dependency
+group.
 
 Determine exact supported versions during implementation. Do not add the
 `jax-xarray` extra unless that integration is actually implemented and tested.

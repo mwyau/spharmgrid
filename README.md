@@ -35,8 +35,11 @@ Optional groups are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
-- `spharmgrid[torch]` — PyTorch tensor operations backed by `torch-harmonics`;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
+
+The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`. See the
+[PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
+for installation instructions.
 
 Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
 
@@ -70,8 +73,8 @@ filtered = field.sg.filter("T6-42")
 
 See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
 
-For differentiable PyTorch workflows, install `spharmgrid[torch]` and use
-`spharmgrid.torch`:
+For differentiable PyTorch workflows, install PyTorch and `torch-harmonics`,
+then use `spharmgrid.torch`:
 
 ```python
 import torch

@@ -62,7 +62,7 @@ jobs:
             python: "3.14"
           - os: windows-2025
             name: Windows
-            python: "3.13"
+            python: "3.14"
           - os: macos-26
             name: macOS
             python: "3.14"
@@ -127,7 +127,18 @@ jobs:
           enable-cache: true
           save-cache: false
           python-version: "3.12"
-      - run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra torch --frozen
+      - run: uv sync --no-default-groups --group dev --extra cf --extra dask --frozen
+      - name: Install Torch binary test dependencies
+        run: |
+          uv pip install \
+            --python .venv/bin/python \
+            --index https://download.pytorch.org/whl/cpu \
+            "torch==2.11.0+cpu"
+          uv --no-config pip install \
+            --python .venv/bin/python \
+            --only-binary=:all: \
+            --no-deps \
+            "torch-harmonics==0.9.2"
       - name: Type-check with Torch installed
         run: uv run --no-sync ty check
       - name: Run Torch tests with coverage
@@ -321,8 +332,18 @@ jobs:
           --no-default-groups
           --group test
           --group parity
-          --extra torch
           --frozen
+      - name: Install Torch binary test dependencies
+        run: |
+          uv pip install \
+            --python .venv/bin/python \
+            --index https://download.pytorch.org/whl/cpu \
+            "torch==2.11.0+cpu"
+          uv --no-config pip install \
+            --python .venv/bin/python \
+            --only-binary=:all: \
+            --no-deps \
+            "torch-harmonics==0.9.2"
       # pyspharm-syl 1.2.1 is built against the NumPy 1.x C API, while the
       # frozen project environment intentionally resolves NumPy 2.x.
       - name: Verify pyspharm NumPy overlay

@@ -1,16 +1,33 @@
 # PyTorch backend
 
 The optional `spharmgrid.torch` namespace applies spharmgrid's spherical
-harmonic operations to PyTorch tensors. Install it with the `torch` extra:
+harmonic operations to PyTorch tensors. PyTorch and `torch-harmonics` are
+installed separately.
+
+Install spharmgrid normally:
 
 ```bash
-pip install "spharmgrid[torch]"
+pip install spharmgrid
 ```
 
-`spharmgrid[torch]` depends on PyTorch and `torch-harmonics`. Wheel and CUDA
-availability varies by Python version and platform; see the upstream
-[installation documentation](https://github.com/NVIDIA/torch-harmonics#installation)
-for current installation options.
+Install PyTorch using the
+[PyTorch installation instructions](https://pytorch.org/get-started/locally/),
+then install `torch-harmonics` using its upstream
+[installation instructions](https://github.com/NVIDIA/torch-harmonics#installation).
+Where a compatible PyPI wheel is available:
+
+```bash
+pip install torch-harmonics
+```
+
+## Development
+
+For a spharmgrid development checkout, install the Torch development
+dependencies with:
+
+```bash
+uv sync --group torch-dev
+```
 
 `torch-harmonics` computes the scalar and vector spherical harmonic transforms.
 spharmgrid maps its `Grid` descriptors to those transforms and applies the
