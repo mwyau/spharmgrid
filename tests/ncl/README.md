@@ -1,10 +1,12 @@
 # NCL/SPHEREPACK parity
 
-These tests compare spharmgrid with NCL 6.6.2/SPHEREPACK. They live under
-`tests/ncl/`, so `pytest tests/parity` does not collect them. The
-`.github/workflows/ncl-parity.yml` workflow runs on pull requests and can also
-be started with `workflow_dispatch`. It generates all numerical data for each
-run. No NCL-generated numerical data is stored in Git.
+This suite compares spharmgrid with NCL 6.6.2/SPHEREPACK on the same scalar
+and wind fields. It runs from `.github/workflows/ncl-parity.yml` only when
+started with `workflow_dispatch`. Each run generates its inputs, NCL output,
+and normalized comparison arrays. No NCL-generated numerical data is committed.
+
+The suite lives under `tests/ncl/`, so `pytest tests/parity` does not require
+NCL.
 
 ## Inputs
 
@@ -13,29 +15,32 @@ The comparison uses:
 - Gauss–Legendre (GL) `64 × 128`;
 - Clenshaw–Curtis (CC) `73 × 144`;
 - ascending latitude and non-cyclic longitude;
-- an analytic spherical-harmonic mixture spanning the truncation boundaries;
-- broadband random harmonic mixtures from `np.random.default_rng(42)`.
+- an analytic spherical-harmonic mixture with modes around the truncation
+  boundaries;
+- seeded broadband harmonic mixtures from `np.random.default_rng(42)`.
 
-Python evaluates the same seeded random harmonic coefficients on both grids,
-then writes each input array once for NCL and spharmgrid. The random fields are
-band-limited through degree 50 so the comparison does not depend on how the two
-transform libraries project unresolved grid-point noise. The random seed is
-stored with the input and copied to the NCL output. The normalizer checks the
-coordinates and converts NCL output to ascending latitude before pytest reads
-it.
+Python generates the arrays used by both implementations. The random case
+draws coefficients for modes through degree 50. The wind fields are multiplied
+by `cos(latitude)` so they are regular at the CC poles. The resulting fields
+are resolved by both test grids, which avoids comparing how NCL and DUCC
+project unresolved grid-point white noise.
+
+The random seed is stored in the input metadata and copied to the NCL output.
+Normalization checks the coordinates and converts NCL output to ascending
+latitude before pytest reads it.
 
 ## Spectral domains
 
-The NCL coefficient masks implement the spharmgrid domains independently:
+NCL applies the spectral domains from their degree and order definitions:
 
-- `T42`: `0 <= m <= l <= 42`;
-- `T5-42`: `5 <= l <= 42` and `0 <= m <= l`;
-- `T42x10`: `0 <= l <= 42` and `0 <= m <= min(l, 10)`;
-- `R21`: `0 <= m <= 21` and `0 <= l - m <= 21`.
+- `T42`: `0 ≤ m ≤ l ≤ 42`;
+- `T5-42`: `5 ≤ l ≤ 42` and `0 ≤ m ≤ l`;
+- `T42x10`: `0 ≤ l ≤ 42` and `0 ≤ m ≤ min(l, 10)`;
+- `R21`: `0 ≤ m ≤ 21` and `0 ≤ l - m ≤ 21`.
 
-Each domain is tested with a hard cutoff and with `taper=0.1`. The tests also
-include an untruncated analysis/synthesis case. The `T42x10` and `R21`
-masks are applied directly to NCL coefficients.
+Each domain is compared with a hard cutoff and with `taper=0.1`. An
+untruncated analysis/synthesis case tests the full transform bandwidth.
+`T42x10` and `R21` are applied as explicit coefficient masks.
 
 ## NCL operations
 
@@ -54,9 +59,9 @@ masks are applied directly to NCL coefficients.
 | Helmholtz wind components                        | combined vorticity/divergence analysis followed by `vr2uv*` and `dv2uv*` |
 | vector regridding                                | `vhaec`/`vhsec` (CC), `vhagc`/`vhsgc` (GL)                               |
 
-Tests for accessors, metadata, coordinate alignment, and command-line behavior
-remain in the normal test suite because they have no NCL/SPHEREPACK numerical
-equivalent.
+Accessor behavior, metadata handling, coordinate alignment, and command-line
+behavior are tested in the normal test suite because they have no
+NCL/SPHEREPACK numerical analogue.
 
 ## Taper
 
@@ -66,25 +71,33 @@ For `taper=0.1` at upper retained degree `L=42`, spharmgrid uses
 w_l = exp(log(0.1) * [l(l+1)/(42*43)]**2).
 ```
 
-NCL uses
-`S(l) = exp(-[l(l+1)/(N(N+1))]^2)`. Solving for the NCL mode gives
-`N ≈ 34.002499526`. The suite gets these weights from
-`exp_tapersh_wgts` and applies them explicitly by total degree. The tests
-compare the NCL weights with the spharmgrid expression before comparing spatial
-fields.
+NCL defines
+
+```text
+S(l) = exp(-[l(l+1)/(N(N+1))]**2).
+```
+
+Solving for the NCL mode gives `N ≈ 34.002499526`. The suite obtains these
+weights from `exp_tapersh_wgts` and applies each weight to coefficient row
+`l`. NCL 6.6.2 `exp_tapersh` applies the sequence with a one-row offset, so
+the parity calculation does not call it directly.
+
+The taper-weight test compares the NCL weights with the spharmgrid expression
+before comparing the spatial fields.
 
 ## Numerical comparison
 
-The tests use element-wise comparisons with operation-specific tolerances.
-Failures report maximum absolute error, root-mean-square error, and maximum
-relative error away from numerical zero.
+Parity is tested element-wise with operation-specific tolerances. Failures
+report the maximum absolute error, root-mean-square error, and maximum relative
+error away from numerical zero.
 
 ## Running locally
 
-Create an NCL 6.6.2 environment and install the Python test dependencies:
+Conda supplies NCL 6.6.2. uv supplies spharmgrid and the Python test
+dependencies:
 
 ```bash
-conda create -n spharmgrid-ncl -c conda-forge ncl=6.6.2
+conda create --yes --name spharmgrid-ncl --channel conda-forge ncl=6.6.2
 uv sync --no-default-groups --group test --frozen
 ```
 
@@ -102,8 +115,8 @@ for grid in gl cc; do
             SPHARMGRID_NCL_OUTPUT="$work/outputs/ncl-${grid}-${family}.nc" \
             SPHARMGRID_NCL_GRID="$grid" \
             SPHARMGRID_NCL_FAMILY="$family" \
-            conda run --no-capture-output -n spharmgrid-ncl ncl -Q \
-            tests/ncl/generate_references.ncl
+            conda run --no-capture-output --name spharmgrid-ncl \
+            ncl -Q tests/ncl/generate_references.ncl
     done
 done
 
@@ -116,5 +129,5 @@ SPHARMGRID_NCL_OUTPUT_DIR="$work/normalized" \
     uv run --no-sync pytest tests/ncl/test_ncl.py
 ```
 
-The dispatch workflow runs the same sequence and uploads the generated inputs,
-NCL output, normalized arrays, logs, and pytest output as workflow artifacts.
+The workflow uploads the generated inputs, raw NCL output, normalized arrays,
+logs, and pytest output as GitHub Actions artifacts for 14 days.

@@ -2,15 +2,14 @@
 ;
 ; SPDX-License-Identifier: BSD-3-Clause
 
-; Generate one NCL/SPHEREPACK comparison output. The input file is written by
-; generate_inputs.py and contains ascending-latitude, non-cyclic,
-; double-precision arrays. NCL's Gaussian routines are used for GL and its
-; fixed-grid routines are used for CC.
+; Generate one NCL/SPHEREPACK comparison output from the arrays written by
+; generate_inputs.py. Inputs use ascending latitude, non-cyclic longitude, and
+; double precision. Gaussian routines are used for GL and fixed-grid routines
+; for CC.
 ;
-; The spectral masks below use degree/order loops.
-; They are mathematical definitions, independent of spharmgrid's Python
-; TransformSpec implementation.  In particular, T42x10 is not approximated
-; by a triangular helper: it retains 0 <= l <= 42 and 0 <= m <= min(l,10).
+; The masks implement the degree/order definitions without calling
+; spharmgrid TransformSpec code. T42x10 retains 0 <= l <= 42 and
+; 0 <= m <= min(l,10).
 
 procedure mask_scalar(a, b, domain, l_upper, m_upper, tapered, taper_weights)
 local shape_a, nlat_a, ncoef_a, l, m, keep
@@ -23,8 +22,7 @@ begin
       keep = False
       if (m.le.l .and. l.le.l_upper .and. m.le.m_upper) then
         if (domain.eq."full") then
-          ; Full-resolution baseline: the caller supplies the common
-          ; transform bandwidth for the source/target geometry pair.
+          ; l_upper and m_upper set the common source/target bandwidth.
           keep = True
         elseif (domain.eq."T42") then
           ; Triangular T42: 0 <= m <= l <= 42.
@@ -47,9 +45,7 @@ begin
     end do
   end do
   if (tapered) then
-    ; exp_tapersh_wgts returns weights for degrees 1..L. taper_weights adds
-    ; the degree-zero weight at index 0, so apply each weight to the
-    ; corresponding coefficient row.
+    ; exp_tapersh_wgts returns degrees 1..L; index 0 stores the l=0 weight.
     do l = 0, min((/l_upper,nlat_a - 1/))
       do m = 0, ncoef_a - 1
         a(l,m) = a(l,m) * taper_weights(l)
@@ -238,9 +234,8 @@ begin
   output_file@taper = 0.1d0
   output_file@taper_mode = (-1d0 + sqrt(1d0 + 4d0 * 42d0 * 43d0 / sqrt(-log(0.1d0)))) / 2d0
 
-  ; Declare the canonical dimensions and coordinates before any dynamic
-  ; output variable is written.  This prevents NCL from inventing anonymous
-  ; dimensions while creating the reference file.
+  ; Define dimensions before dynamic output variables so NCL writes named
+  ; dimensions to the comparison file.
   lat!0 = "lat"
   lon!0 = "lon"
   target_lat_gl!0 = "target_lat_gl"
@@ -274,17 +269,16 @@ begin
   source_mmax = min((/source_lmax, (source_nlon - 1) / 2/))
   set_sphere_radius(6371220d0)
 
-  ; spharmgrid taper=0.1 sets the response at l=42. NCL exp_tapersh uses
-  ; exp(-1) at N(N+1), so solve exp(-(42*43/(N*(N+1)))^2)=0.1 for N.
+  ; spharmgrid taper=0.1 sets the response at l=42. Solve the NCL taper
+  ; definition exp(-(42*43/(N*(N+1)))^2)=0.1 for N.
   taper_mode = (-1d0 + sqrt(1d0 + 4d0 * 42d0 * 43d0 / sqrt(-log(0.1d0)))) / 2d0
   taper_weights = new(43, double, "No_FillValue")
   taper_weights!0 = "degree"
   taper_weights(0) = 1d0
   taper_weights(1:42) = exp_tapersh_wgts(42, taper_mode, 2)
 
-  ; Analyze the source scalar and vector fields once and reuse the coefficients
-  ; for filtering and regridding. These are NCL/SPHEREPACK transforms, not
-  ; spharmgrid transforms.
+  ; Analyze the source fields with NCL/SPHEREPACK and reuse the coefficients
+  ; for filtering and regridding.
   scalar_a_full = new((/source_nlat,source_ncoef/), double, "No_FillValue")
   scalar_b_full = new((/source_nlat,source_ncoef/), double, "No_FillValue")
   if (grid_kind.eq."gl") then
@@ -303,8 +297,7 @@ begin
     vhaec(u, v, vector_br_full, vector_bi_full, vector_cr_full, vector_ci_full)
   end if
 
-  ; Common untruncated scalar and vector operators.  Each comment names the
-  ; direct NCL/SPHEREPACK analogue used for that spharmgrid public function.
+  ; Untruncated scalar and vector operators.
   gradient_eastward = scalar
   gradient_northward = scalar
   if (grid_kind.eq."gl") then
@@ -392,8 +385,7 @@ begin
     ilapvf(u, v, inverse_vector_laplacian_u, inverse_vector_laplacian_v)
   end if
 
-  ; Scalar filters.  The explicit l/m domains are applied to NCL coefficients
-  ; before synthesis, including the independent T42x10 and R21 definitions.
+  ; Apply each l/m domain to NCL coefficients before scalar synthesis.
   domain_names = (/"T42", "T5_42", "T42x10", "R21"/)
   do domain_index = 0, 3
     domain = domain_names(domain_index)
@@ -422,8 +414,7 @@ begin
     output_file->$output_name$ = (/ scalar_filtered /)
   end do
 
-  ; The full-resolution, taper-disabled baseline is an analysis/synthesis
-  ; operation with spharmgrid's actual geometry bandwidth.
+  ; Full-band analysis/synthesis baseline without taper.
   scalar_a = scalar_a_full
   scalar_b = scalar_b_full
   mask_scalar(scalar_a, scalar_b, "full", source_lmax, source_mmax, False, taper_weights)
@@ -435,9 +426,8 @@ begin
   end if
   output_file->filter_full_hard = (/ scalar_filtered /)
 
-  ; Regridding analyzes on the source grid and synthesizes on the target grid.
-  ; Explicit coefficient masks allow the spharmgrid truncation domains and
-  ; taper to be compared without NCL's regridding wrappers.
+  ; Regridding analyzes on the source grid, applies the requested mask and
+  ; taper, then synthesizes on the target grid.
   do domain_index = -1, 3
     if (domain_index.eq.-1) then
       domain = "full"

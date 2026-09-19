@@ -68,9 +68,9 @@ def _target_grids() -> dict[GridKind, sg.Grid]:
 
 
 def _associated_legendre(degree: int, order: int, x: np.ndarray) -> np.ndarray:
-    """Return the associated Legendre factor used by the analytic field.
+    """Return the associated Legendre factor for the analytic test fields.
 
-    This recurrence does not call spharmgrid transform or spectral-mask code.
+    The local recurrence does not call spharmgrid transform or mask code.
     """
     pmm = np.ones_like(x, dtype=np.float64)
     if order:
@@ -117,9 +117,9 @@ def _analytic_fields(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray, np.ndarray]
     latitude = np.deg2rad(grid.latitude)
     longitude = np.deg2rad(grid.longitude)
 
-    # Terms straddle l=5, l=21, l=42, m=10, and the R21 diagonal.
-    # Degrees above 42 test truncation; l=30,m=22 and l=42,m=30
-    # distinguish R21 from T42.
+    # Terms cross l=5, l=21, l=42, m=10, and the R21 diagonal.
+    # Degrees above 42 test truncation. The l=30,m=22 and l=42,m=30
+    # terms distinguish R21 from T42.
     scalar_terms: tuple[ScalarTerm, ...] = (
         (0, 0, "cos", 0.70),
         (1, 0, "cos", 0.31),
@@ -168,7 +168,7 @@ def _random_fields(
     grid: sg.Grid,
     rng: np.random.Generator,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Return a seeded broadband field that is resolved on both test grids."""
+    """Return seeded broadband harmonic fields resolved on both test grids."""
     latitude = np.deg2rad(grid.latitude)
     longitude = np.deg2rad(grid.longitude)
     scalar = np.zeros((grid.nlat, grid.nlon), dtype=np.float64)

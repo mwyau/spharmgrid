@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Convert NCL NetCDF output to the arrays used by the parity tests."""
+"""Normalize NCL NetCDF output for the parity tests."""
 
 from __future__ import annotations
 
@@ -158,7 +158,7 @@ def _manifest(grid_kind: str) -> dict[str, dict[str, Any]]:
                 "source_grid": grid_kind,
                 "truncation": domain.replace("_", "-", 1),
                 "taper": taper,
-                "ncl_reference": "independent coefficient mask + exp_tapersh + "
+                "ncl_reference": "coefficient mask + exp_tapersh_wgts + "
                 "shaec/shsec (CC) or shagc/shsgc (GL)",
             }
     for target_kind in GRID_KINDS:
@@ -178,7 +178,7 @@ def _manifest(grid_kind: str) -> dict[str, dict[str, Any]]:
                         "truncation": truncation,
                         "taper": taper,
                         "ncl_reference": (
-                            "independent analysis/mask/synthesis using "
+                            "analysis/mask/synthesis using "
                             "shaec/shsec, shagc/shsgc, vhaec/vhsec, or "
                             "vhagc/vhsgc"
                         ),

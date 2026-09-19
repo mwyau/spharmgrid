@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Load runtime NCL output and orient arrays for pytest."""
+"""Load normalized NCL output for the parity tests."""
 
 from __future__ import annotations
 
