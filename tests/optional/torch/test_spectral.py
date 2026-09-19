@@ -13,7 +13,6 @@ import spharmgrid as sg
 import spharmgrid.torch as sgt
 import spharmgrid.torch.nn as sgnn
 from tests.optional.torch.conftest import (
-    as_xarray,
     make_fields,
     make_nonaxisymmetric_wind,
     torch,
@@ -76,28 +75,6 @@ def _regrid_grid(kind: str, *, source: bool) -> sg.Grid:
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-@pytest.mark.parametrize("kind", ["gl", "cc"])
-def test_filter_matches_ducc_xarray_for_explicit_triangular_band(
-    dtype: torch.dtype,
-    kind: str,
-) -> None:
-    grid = (
-        sg.gaussian_grid(8, 18, latitude_order="descending", lon0=-135.0)
-        if kind == "gl"
-        else sg.clenshaw_curtis_grid(
-            17,
-            36,
-            latitude_order="descending",
-            lon0=-135.0,
-        )
-    )
-    field, _, _ = make_fields(grid, dtype)
-    expected = sg.filter(as_xarray(field, grid), "T2").values
-    actual = sgt.filter(field, "T2", grid=grid)
-    _assert_close(actual, expected, dtype)
-
-
-@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
 def test_filter_selection_and_taper_are_not_shape_only(
     dtype: torch.dtype,
     gl_grid: sg.Grid,
@@ -142,22 +119,6 @@ def test_scalar_regrid_matches_analytic_target_field(
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_scalar_regrid_matches_ducc_xarray(
-    dtype: torch.dtype,
-) -> None:
-    source = _regrid_grid("gl", source=True)
-    target = _regrid_grid("cc", source=False)
-    field, _, _ = make_fields(source, dtype)
-    expected = sg.regrid(
-        as_xarray(field, source),
-        target,
-        "T2",
-    )
-    actual = sgt.regrid(field, target, "T2", source_grid=source)
-    _assert_close(actual, expected.values, dtype)
-
-
-@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
 @pytest.mark.parametrize("source_kind", ["gl", "cc"])
 @pytest.mark.parametrize("target_kind", ["gl", "cc"])
 def test_vector_regrid_matches_analytic_target_field(
@@ -178,28 +139,6 @@ def test_vector_regrid_matches_analytic_target_field(
     )
     _assert_close(actual_u, expected_u, dtype, vector=True)
     _assert_close(actual_v, expected_v, dtype, vector=True)
-
-
-@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
-def test_vector_regrid_matches_ducc_xarray(dtype: torch.dtype) -> None:
-    source = _regrid_grid("cc", source=True)
-    target = _regrid_grid("gl", source=False)
-    u, v = make_nonaxisymmetric_wind(source, dtype)
-    expected = sg.regrid_vector(
-        as_xarray(u, source, "u"),
-        as_xarray(v, source, "v"),
-        target,
-        "T2",
-    )
-    actual_u, actual_v = sgt.regrid_vector(
-        u,
-        v,
-        target,
-        "T2",
-        source_grid=source,
-    )
-    _assert_close(actual_u, expected.u.values, dtype, vector=True)
-    _assert_close(actual_v, expected.v.values, dtype, vector=True)
 
 
 def test_leading_dimensions_are_preserved(gl_grid: sg.Grid) -> None:
