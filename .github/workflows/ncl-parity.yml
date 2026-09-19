@@ -1,7 +1,8 @@
-name: NCL parity
+name: NCL parity tests
 
 on:
   workflow_dispatch:
+  pull_request:
 
 permissions:
   contents: read
@@ -13,9 +14,6 @@ jobs:
     timeout-minutes: 60
     env:
       UV_VERSION: "0.12.10"
-      NCL_INPUT_DIR: ${{ runner.temp }}/spharmgrid-ncl-inputs
-      NCL_OUTPUT_DIR: ${{ runner.temp }}/spharmgrid-ncl-outputs
-      NCL_NORMALIZED_DIR: ${{ runner.temp }}/spharmgrid-ncl-normalized
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -50,10 +48,13 @@ jobs:
         shell: bash -el {0}
         run: |
           set -o pipefail
-          mkdir -p "$NCL_INPUT_DIR" "$NCL_OUTPUT_DIR" "$NCL_NORMALIZED_DIR"
+          mkdir -p \
+            "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
+            "$RUNNER_TEMP/spharmgrid-ncl/outputs" \
+            "$RUNNER_TEMP/spharmgrid-ncl/normalized"
           uv run --no-sync python tests/ncl/generate_inputs.py \
-            --output-dir "$NCL_INPUT_DIR" \
-            2>&1 | tee "$NCL_OUTPUT_DIR/generate-inputs.log"
+            --output-dir "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
+            2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/generate-inputs.log"
 
       - name: Generate NCL outputs
         shell: bash -el {0}
@@ -61,12 +62,12 @@ jobs:
           set -o pipefail
           for grid in gl cc; do
             for family in analytic random; do
-              SPHARMGRID_NCL_INPUT="$NCL_INPUT_DIR/input-${grid}-${family}.nc" \
-              SPHARMGRID_NCL_OUTPUT="$NCL_OUTPUT_DIR/ncl-${grid}-${family}.nc" \
+              SPHARMGRID_NCL_INPUT="$RUNNER_TEMP/spharmgrid-ncl/inputs/input-${grid}-${family}.nc" \
+              SPHARMGRID_NCL_OUTPUT="$RUNNER_TEMP/spharmgrid-ncl/outputs/ncl-${grid}-${family}.nc" \
               SPHARMGRID_NCL_GRID="$grid" \
               SPHARMGRID_NCL_FAMILY="$family" \
               ncl -Q tests/ncl/generate_references.ncl \
-                2>&1 | tee "$NCL_OUTPUT_DIR/ncl-${grid}-${family}.log"
+                2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/ncl-${grid}-${family}.log"
             done
           done
 
@@ -75,28 +76,24 @@ jobs:
         run: |
           set -o pipefail
           uv run --no-sync python tests/ncl/normalize_references.py \
-            --input-dir "$NCL_INPUT_DIR" \
-            --ncl-output-dir "$NCL_OUTPUT_DIR" \
-            --output-dir "$NCL_NORMALIZED_DIR" \
-            2>&1 | tee "$NCL_OUTPUT_DIR/normalize-references.log"
+            --input-dir "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
+            --ncl-output-dir "$RUNNER_TEMP/spharmgrid-ncl/outputs" \
+            --output-dir "$RUNNER_TEMP/spharmgrid-ncl/normalized" \
+            2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/normalize-references.log"
 
       - name: Run spharmgrid against NCL outputs
         shell: bash -el {0}
-        env:
-          SPHARMGRID_NCL_OUTPUT_DIR: ${{ env.NCL_NORMALIZED_DIR }}
         run: |
           set -o pipefail
-          uv run --no-sync pytest tests/ncl/test_ncl.py \
-            2>&1 | tee "$NCL_OUTPUT_DIR/pytest-ncl.log"
+          SPHARMGRID_NCL_OUTPUT_DIR="$RUNNER_TEMP/spharmgrid-ncl/normalized" \
+            uv run --no-sync pytest tests/ncl/test_ncl.py \
+            2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/pytest-ncl.log"
 
       - name: Upload NCL parity diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: ncl-parity-output-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/spharmgrid-ncl-inputs
-            ${{ runner.temp }}/spharmgrid-ncl-outputs
-            ${{ runner.temp }}/spharmgrid-ncl-normalized
+          path: ${{ runner.temp }}/spharmgrid-ncl
           if-no-files-found: warn
           retention-days: 14
