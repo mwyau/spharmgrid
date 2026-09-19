@@ -2020,6 +2020,7 @@ dask = [
 [package.dev-dependencies]
 dev = [
     { name = "cftime" },
+    { name = "h5netcdf", extra = ["h5py"] },
     { name = "myst-parser" },
     { name = "pydata-sphinx-theme" },
     { name = "pytest" },
@@ -2040,6 +2041,7 @@ parity = [
 ]
 test = [
     { name = "cftime" },
+    { name = "h5netcdf", extra = ["h5py"] },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -2065,6 +2067,7 @@ provides-extras = ["cf", "dask", "cli"]
 [package.metadata.requires-dev]
 dev = [
     { name = "cftime", specifier = ">=1.6.5" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
     { name = "myst-parser", specifier = ">=5.1.0" },
     { name = "pydata-sphinx-theme", specifier = ">=0.21.0" },
     { name = "pytest", specifier = ">=9.1.1" },
@@ -2081,6 +2084,7 @@ docs = [
 parity = [{ name = "pyspharm-syl", marker = "python_full_version < '3.14'", specifier = ">=1.2.1" }]
 test = [
     { name = "cftime", specifier = ">=1.6.5" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
 ]
