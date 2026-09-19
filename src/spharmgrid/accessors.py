@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Thin xarray ``.sg`` accessors delegating to the direct public functions."""
 
 from __future__ import annotations

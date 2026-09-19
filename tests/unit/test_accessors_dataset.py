@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Dataset xarray accessor discovery and delegation contracts."""
 
 from __future__ import annotations

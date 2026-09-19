@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Execution-control tests for per-operation spherical harmonic transform threads."""
 
 from __future__ import annotations

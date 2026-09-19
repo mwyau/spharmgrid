@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Keep the tensor functional namespace aligned with the root API."""
 
 from __future__ import annotations

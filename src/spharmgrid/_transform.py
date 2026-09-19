@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Backend-neutral spherical harmonic transform descriptors."""
 
 from __future__ import annotations

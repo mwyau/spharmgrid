@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Optional autograd, dtype, and device checks for the Torch backend."""
 
 from __future__ import annotations

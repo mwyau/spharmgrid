@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Reusable ``torch.nn.Module`` wrappers for spharmgrid Torch operations."""
 
 from __future__ import annotations

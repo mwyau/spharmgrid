@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Reusable PyTorch spherical harmonic execution modules."""
 
 from ._modules import SHTFilter, SHTOperators, SHTRegrid, SHTVectorRegrid
