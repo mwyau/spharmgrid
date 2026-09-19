@@ -30,25 +30,19 @@ _SCALAR_OPERATOR_NTRUNC = 15
 
 def _tolerances(family: str) -> tuple[float, float]:
     """Return measured absolute-error floors with a small stability margin."""
-    # Measured maximum absolute errors: scalar_map 4.5e-7;
-    # vector_regrid 4.3e-6; gradient 1.9e-13; inverse_gradient 7.6e0;
-    # laplacian 1.1e-18; inverse_laplacian 3.4e6;
-    # vector_laplacian 7.2e-18; inverse_vector_laplacian 3.5e-6;
-    # kinematics 1.3e-12; potential 1.6e1; wind 2.9e-6;
-    # helmholtz 3.2e-6.
     atols = {
-        "scalar_map": 7.0e-7,
-        "vector_regrid": 6.0e-6,
-        "gradient": 3.0e-13,
-        "inverse_gradient": 1.0e1,
-        "laplacian": 2.0e-18,
-        "inverse_laplacian": 5.0e6,
-        "vector_laplacian": 1.0e-17,
-        "inverse_vector_laplacian": 5.0e-6,
-        "kinematics": 2.0e-12,
-        "potential": 2.0e1,
-        "wind": 4.0e-6,
-        "helmholtz": 5.0e-6,
+        "scalar_map": 7.0e-7,  # measured max 4.5e-7
+        "vector_regrid": 6.0e-6,  # measured max 4.3e-6
+        "gradient": 3.0e-13,  # measured max 1.9e-13
+        "inverse_gradient": 1.0e1,  # measured max 7.6e0
+        "laplacian": 2.0e-18,  # measured max 1.1e-18
+        "inverse_laplacian": 5.0e6,  # measured max 3.4e6
+        "vector_laplacian": 1.0e-17,  # measured max 7.2e-18
+        "inverse_vector_laplacian": 5.0e-6,  # measured max 3.5e-6
+        "kinematics": 2.0e-12,  # measured max 1.3e-12
+        "potential": 2.0e1,  # measured max 1.6e1
+        "wind": 4.0e-6,  # measured max 2.9e-6
+        "helmholtz": 5.0e-6,  # measured max 3.2e-6
     }
     return 0.0, atols[family]
 
@@ -232,8 +226,6 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
         ntrunc=7,
     )
 
-    # The regular-grid wrapper returns scalar maps at float32 precision; the
-    # measured cross-backend field error is below 5e-7.
     _assert_close(
         _north_to_south(np.asarray(filtered.values, dtype=np.float64)),
         reference_filtered,

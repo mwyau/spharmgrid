@@ -47,46 +47,34 @@ _TORCH_NUMERICAL_EXPORTS = {
 def _tolerances(dtype: torch.dtype, family: str) -> tuple[float, float]:
     """Return measured absolute-error floors with a small stability margin."""
     if dtype == torch.float64:
-        # Measured maximum absolute errors: scalar_map 1.8e-15;
-        # vector_regrid 6.6e-8; gradient 1.6e-21; inverse_gradient 9.0e-9;
-        # laplacian 1.4e-27; inverse_laplacian 7.8e-3;
-        # vector_laplacian 4.3e-20; inverse_vector_laplacian 3.7e5;
-        # kinematics 5.2e-14; potential 1.3e-1; wind 1.1e-14;
-        # helmholtz 6.8e-8.
         atols = {
-            "scalar_map": 5.0e-15,
-            "vector_regrid": 1.0e-7,
-            "gradient": 1.0e-20,
-            "inverse_gradient": 2.0e-8,
-            "laplacian": 3.0e-27,
-            "inverse_laplacian": 1.0e-2,
-            "vector_laplacian": 1.0e-19,
-            "inverse_vector_laplacian": 5.0e5,
-            "kinematics": 1.0e-13,
-            "potential": 2.0e-1,
-            "wind": 2.0e-14,
-            "helmholtz": 1.0e-7,
+            "scalar_map": 1.0e-14,  # measured max 6.7e-15
+            "vector_regrid": 1.0e-7,  # measured max 6.6e-8
+            "gradient": 1.0e-20,  # measured max 1.6e-21
+            "inverse_gradient": 2.0e-8,  # measured max 9.0e-9
+            "laplacian": 3.0e-27,  # measured max 1.4e-27
+            "inverse_laplacian": 5.0e-2,  # measured max 3.4e-2
+            "vector_laplacian": 1.0e-19,  # measured max 4.3e-20
+            "inverse_vector_laplacian": 5.0e5,  # measured max 3.7e5
+            "kinematics": 1.0e-13,  # measured max 5.2e-14
+            "potential": 2.0e-1,  # measured max 1.3e-1
+            "wind": 2.0e-14,  # measured max 1.1e-14
+            "helmholtz": 1.0e-7,  # measured max 6.8e-8
         }
     else:
-        # Measured maximum absolute errors: scalar_map 4.8e-7;
-        # vector_regrid 7.5e-7; gradient 7.1e-14; inverse_gradient 9.7e-8;
-        # laplacian 7.2e-20; inverse_laplacian 3.8e6;
-        # vector_laplacian 3.4e-19; inverse_vector_laplacian 7.4e6;
-        # kinematics 4.8e-13; potential 2.9e0; wind 9.1e-7;
-        # helmholtz 5.7e-7.
         atols = {
-            "scalar_map": 1.0e-6,
-            "vector_regrid": 1.0e-6,
-            "gradient": 2.0e-13,
-            "inverse_gradient": 2.0e-7,
-            "laplacian": 1.0e-19,
-            "inverse_laplacian": 5.0e6,
-            "vector_laplacian": 5.0e-19,
-            "inverse_vector_laplacian": 1.0e7,
-            "kinematics": 1.0e-12,
-            "potential": 4.0,
-            "wind": 1.5e-6,
-            "helmholtz": 1.0e-6,
+            "scalar_map": 1.0e-6,  # measured max 4.8e-7
+            "vector_regrid": 1.0e-6,  # measured max 7.5e-7
+            "gradient": 2.0e-13,  # measured max 7.1e-14
+            "inverse_gradient": 2.0e-7,  # measured max 9.7e-8
+            "laplacian": 1.0e-19,  # measured max 7.2e-20
+            "inverse_laplacian": 5.0e6,  # measured max 3.8e6
+            "vector_laplacian": 5.0e-19,  # measured max 3.4e-19
+            "inverse_vector_laplacian": 1.0e7,  # measured max 7.4e6
+            "kinematics": 1.0e-12,  # measured max 4.8e-13
+            "potential": 4.0,  # measured max 2.9e0
+            "wind": 1.5e-6,  # measured max 9.1e-7
+            "helmholtz": 1.0e-6,  # measured max 5.7e-7
         }
     return 0.0, atols[family]
 
