@@ -2,22 +2,46 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Command-line integration tests using optional xarray file backends."""
+"""Optional CLI integration and xarray file-backend dispatch tests."""
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
 import xarray as xr
 
 import spharmgrid as sg
-from spharmgrid.cli import main
+from spharmgrid.cli import _open_dataset, main
 from tests.conftest import scalar_field, solid_body_wind, supported_grid
 
-pytest.importorskip("h5netcdf")
-pytest.importorskip("zarr")
-pytest.importorskip("dask")
+
+def _require_cli_backends() -> None:
+    pytest.importorskip("h5netcdf")
+    pytest.importorskip("zarr")
+    pytest.importorskip("dask")
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="cfgrib lane is Linux-only")
+def test_grib_input_uses_xarray_backend_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The CLI leaves non-Zarr input selection to xarray and cfgrib."""
+    pytest.importorskip("cfgrib")
+    assert "cfgrib" in xr.backends.list_engines()
+
+    opened = xr.Dataset()
+    calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+
+    def fake_open_dataset(path: str, *args: object, **kwargs: object) -> xr.Dataset:
+        calls.append((path, args, kwargs))
+        return opened
+
+    monkeypatch.setattr(xr, "open_dataset", fake_open_dataset)
+
+    assert _open_dataset("input.grib") is opened
+    assert calls == [("input.grib", (), {})]
 
 
 def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
@@ -27,6 +51,7 @@ def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
 def test_info_and_filter_commands(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    _require_cli_backends()
     grid = supported_grid("cc")
     field = scalar_field(grid, name="msl")
     input_path = tmp_path / "input.nc"
@@ -59,6 +84,7 @@ def test_info_and_filter_commands(
     "specification.*:UserWarning"
 )
 def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
+    _require_cli_backends()
     grid = supported_grid("cc")
     field = scalar_field(grid, name="msl")
     input_path = tmp_path / "input.zarr"
@@ -85,6 +111,7 @@ def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
 
 
 def test_kinematics_command_uses_dataset_variable_discovery(tmp_path: Path) -> None:
+    _require_cli_backends()
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)
     input_path = tmp_path / "wind.nc"
@@ -100,6 +127,7 @@ def test_kinematics_command_uses_dataset_variable_discovery(tmp_path: Path) -> N
 
 
 def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
+    _require_cli_backends()
     grid = supported_grid("cc")
     scalar_input = tmp_path / "scalar.nc"
     regridded_output = tmp_path / "regridded.nc"
