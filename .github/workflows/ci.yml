@@ -62,7 +62,7 @@ jobs:
             python: "3.14"
           - os: windows-2025
             name: Windows
-            python: "3.13"
+            python: "3.14"
           - os: macos-26
             name: macOS
             python: "3.14"
