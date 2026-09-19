@@ -2,7 +2,6 @@ name: NCL parity tests
 
 on:
   workflow_dispatch:
-  pull_request:
 
 permissions:
   contents: read
@@ -22,14 +21,13 @@ jobs:
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v4
         with:
-          activate-environment: spharmgrid-ncl
-          auto-activate-base: false
+          auto-activate: false
           channels: conda-forge
           channel-priority: strict
 
       - name: Install NCL 6.6.2
-        shell: bash -el {0}
-        run: conda install --yes --channel conda-forge ncl=6.6.2
+        shell: bash
+        run: conda create --yes --name spharmgrid-ncl --channel conda-forge ncl=6.6.2
 
       - name: Set up Python environment
         uses: astral-sh/setup-uv@v10.1.0
@@ -39,13 +37,11 @@ jobs:
           python-version: "3.14"
 
       - name: Install Python test environment
-        shell: bash -el {0}
-        run: |
-          uv sync --no-default-groups --group test --frozen
-          uv pip install --python .venv/bin/python h5netcdf h5py
+        shell: bash
+        run: uv sync --no-default-groups --group test --frozen
 
       - name: Generate deterministic Python inputs
-        shell: bash -el {0}
+        shell: bash
         run: |
           set -o pipefail
           mkdir -p \
@@ -57,7 +53,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/generate-inputs.log"
 
       - name: Generate NCL outputs
-        shell: bash -el {0}
+        shell: bash
         run: |
           set -o pipefail
           for grid in gl cc; do
@@ -66,13 +62,14 @@ jobs:
               SPHARMGRID_NCL_OUTPUT="$RUNNER_TEMP/spharmgrid-ncl/outputs/ncl-${grid}-${family}.nc" \
               SPHARMGRID_NCL_GRID="$grid" \
               SPHARMGRID_NCL_FAMILY="$family" \
-              ncl -Q tests/ncl/generate_references.ncl \
+              conda run --no-capture-output --name spharmgrid-ncl \
+                ncl -Q tests/ncl/generate_references.ncl \
                 2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/ncl-${grid}-${family}.log"
             done
           done
 
       - name: Normalize NCL outputs
-        shell: bash -el {0}
+        shell: bash
         run: |
           set -o pipefail
           uv run --no-sync python tests/ncl/normalize_references.py \
@@ -82,7 +79,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/normalize-references.log"
 
       - name: Run spharmgrid against NCL outputs
-        shell: bash -el {0}
+        shell: bash
         run: |
           set -o pipefail
           SPHARMGRID_NCL_OUTPUT_DIR="$RUNNER_TEMP/spharmgrid-ncl/normalized" \

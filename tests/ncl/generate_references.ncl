@@ -12,7 +12,7 @@
 ; TransformSpec implementation.  In particular, T42x10 is not approximated
 ; by a triangular helper: it retains 0 <= l <= 42 and 0 <= m <= min(l,10).
 
-procedure mask_scalar(a, b, domain, l_upper, m_upper, tapered, taper_mode)
+procedure mask_scalar(a, b, domain, l_upper, m_upper, tapered, taper_weights)
 local shape_a, nlat_a, ncoef_a, l, m, keep
 begin
   shape_a = dimsizes(a)
@@ -47,13 +47,19 @@ begin
     end do
   end do
   if (tapered) then
-    ; exp_tapersh applies S(l) to coefficients indexed by total degree l and
-    ; zonal order m.
-    exp_tapersh(a, b, taper_mode, 2)
+    ; exp_tapersh_wgts returns weights for degrees 1..L. taper_weights adds
+    ; the degree-zero weight at index 0, so apply each weight to the
+    ; corresponding coefficient row.
+    do l = 0, min((/l_upper,nlat_a - 1/))
+      do m = 0, ncoef_a - 1
+        a(l,m) = a(l,m) * taper_weights(l)
+        b(l,m) = b(l,m) * taper_weights(l)
+      end do
+    end do
   end if
 end
 
-procedure mask_vector(br, bi, cr, ci, domain, l_upper, m_upper, tapered, taper_mode)
+procedure mask_vector(br, bi, cr, ci, domain, l_upper, m_upper, tapered, taper_weights)
 local shape_b, nlat_b, ncoef_b, l, m, keep
 begin
   shape_b = dimsizes(br)
@@ -84,8 +90,14 @@ begin
     end do
   end do
   if (tapered) then
-    exp_tapersh(br, bi, taper_mode, 2)
-    exp_tapersh(cr, ci, taper_mode, 2)
+    do l = 0, min((/l_upper,nlat_b - 1/))
+      do m = 0, ncoef_b - 1
+        br(l,m) = br(l,m) * taper_weights(l)
+        bi(l,m) = bi(l,m) * taper_weights(l)
+        cr(l,m) = cr(l,m) * taper_weights(l)
+        ci(l,m) = ci(l,m) * taper_weights(l)
+      end do
+    end do
   end if
 end
 
@@ -387,7 +399,7 @@ begin
     domain = domain_names(domain_index)
     scalar_a = scalar_a_full
     scalar_b = scalar_b_full
-    mask_scalar(scalar_a, scalar_b, domain, 42, 42, False, taper_mode)
+    mask_scalar(scalar_a, scalar_b, domain, 42, 42, False, taper_weights)
     scalar_filtered = scalar
     if (grid_kind.eq."gl") then
       shsgc(scalar_a, scalar_b, scalar_filtered)
@@ -399,7 +411,7 @@ begin
 
     scalar_a = scalar_a_full
     scalar_b = scalar_b_full
-    mask_scalar(scalar_a, scalar_b, domain, 42, 42, True, taper_mode)
+    mask_scalar(scalar_a, scalar_b, domain, 42, 42, True, taper_weights)
     scalar_filtered = scalar
     if (grid_kind.eq."gl") then
       shsgc(scalar_a, scalar_b, scalar_filtered)
@@ -414,7 +426,7 @@ begin
   ; operation with spharmgrid's actual geometry bandwidth.
   scalar_a = scalar_a_full
   scalar_b = scalar_b_full
-  mask_scalar(scalar_a, scalar_b, "full", source_lmax, source_mmax, False, taper_mode)
+  mask_scalar(scalar_a, scalar_b, "full", source_lmax, source_mmax, False, taper_weights)
   scalar_filtered = scalar
   if (grid_kind.eq."gl") then
     shsgc(scalar_a, scalar_b, scalar_filtered)
@@ -437,12 +449,12 @@ begin
       ; GL supports at most l=63 on the requested 64 x 128 target.
       scalar_a = scalar_a_full
       scalar_b = scalar_b_full
-      mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_mode)
+      mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_weights)
       vector_br = vector_br_full
       vector_bi = vector_bi_full
       vector_cr = vector_cr_full
       vector_ci = vector_ci_full
-      mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_mode)
+      mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_weights)
       write_regrid_case(output_file, "gl", target_lat_gl, target_lon_gl, scalar_a, scalar_b, vector_br, vector_bi, vector_cr, vector_ci, domain, taper_suffix)
 
       ; CC supports at most l=71 on the requested 73 x 144 target.  Retain
@@ -451,12 +463,12 @@ begin
       case_mmax = min((/source_mmax,71/))
       scalar_a = scalar_a_full
       scalar_b = scalar_b_full
-      mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_mode)
+      mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_weights)
       vector_br = vector_br_full
       vector_bi = vector_bi_full
       vector_cr = vector_cr_full
       vector_ci = vector_ci_full
-      mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_mode)
+      mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_weights)
       write_regrid_case(output_file, "cc", target_lat_cc, target_lon_cc, scalar_a, scalar_b, vector_br, vector_bi, vector_cr, vector_ci, domain, taper_suffix)
     else
       domain = domain_names(domain_index)
@@ -471,12 +483,12 @@ begin
 
         scalar_a = scalar_a_full
         scalar_b = scalar_b_full
-        mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_mode)
+        mask_scalar(scalar_a, scalar_b, domain, case_lmax, case_mmax, tapered, taper_weights)
         vector_br = vector_br_full
         vector_bi = vector_bi_full
         vector_cr = vector_cr_full
         vector_ci = vector_ci_full
-        mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_mode)
+        mask_vector(vector_br, vector_bi, vector_cr, vector_ci, domain, case_lmax, case_mmax, tapered, taper_weights)
         write_regrid_case(output_file, "gl", target_lat_gl, target_lon_gl, scalar_a, scalar_b, vector_br, vector_bi, vector_cr, vector_ci, domain, taper_suffix)
         write_regrid_case(output_file, "cc", target_lat_cc, target_lon_cc, scalar_a, scalar_b, vector_br, vector_bi, vector_cr, vector_ci, domain, taper_suffix)
       end do

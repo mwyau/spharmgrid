@@ -76,6 +76,7 @@ docs = [
 ]
 test = [
     "cftime>=1.6.5",
+    "h5netcdf[h5py]>=1.8.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
 ]

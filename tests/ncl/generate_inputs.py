@@ -21,6 +21,40 @@ GRID_KINDS = ("gl", "cc")
 INPUT_FAMILIES = ("analytic", "random")
 GridKind = Literal["gl", "cc"]
 ScalarTerm: TypeAlias = tuple[int, int, Literal["cos", "sin"], float]
+RANDOM_MODES: tuple[tuple[int, int], ...] = (
+    (0, 0),
+    (1, 0),
+    (2, 1),
+    (3, 2),
+    (4, 2),
+    (5, 1),
+    (5, 5),
+    (8, 3),
+    (10, 10),
+    (11, 1),
+    (11, 11),
+    (15, 7),
+    (20, 3),
+    (21, 0),
+    (21, 21),
+    (22, 0),
+    (22, 10),
+    (22, 11),
+    (25, 12),
+    (30, 9),
+    (30, 22),
+    (35, 17),
+    (41, 9),
+    (42, 0),
+    (42, 10),
+    (42, 11),
+    (42, 30),
+    (43, 0),
+    (43, 11),
+    (47, 23),
+    (50, 25),
+    (50, 50),
+)
 
 
 def _grid(grid_kind: GridKind) -> sg.Grid:
@@ -134,12 +168,28 @@ def _random_fields(
     grid: sg.Grid,
     rng: np.random.Generator,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    shape = (grid.nlat, grid.nlon)
-    return (
-        rng.standard_normal(shape, dtype=np.float64),
-        rng.standard_normal(shape, dtype=np.float64),
-        rng.standard_normal(shape, dtype=np.float64),
-    )
+    """Return a seeded broadband field that is resolved on both test grids."""
+    latitude = np.deg2rad(grid.latitude)
+    longitude = np.deg2rad(grid.longitude)
+    scalar = np.zeros((grid.nlat, grid.nlon), dtype=np.float64)
+    u = np.zeros_like(scalar)
+    v = np.zeros_like(scalar)
+
+    for degree, order in RANDOM_MODES:
+        phases: tuple[Literal["cos", "sin"], ...]
+        phases = ("cos",) if order == 0 else ("cos", "sin")
+        scale = 0.5 / math.sqrt(degree + 1)
+        for phase in phases:
+            basis = _real_harmonic(latitude, longitude, degree, order, phase)
+            scalar_amplitude, u_amplitude, v_amplitude = rng.normal(scale=scale, size=3)
+            scalar += scalar_amplitude * basis
+            u += u_amplitude * basis
+            v += v_amplitude * basis
+
+    cosine_latitude = np.cos(latitude)[:, None]
+    u *= cosine_latitude
+    v *= cosine_latitude
+    return scalar, u, v
 
 
 def build_input(
