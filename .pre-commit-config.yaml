@@ -23,10 +23,10 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.81
+    rev: v0.0.82
     hooks:
       - id: ty
-        args: [--isolated, --python=3.11, --all-extras]
+        args: [--isolated, --python=3.11, --extra=cf, --extra=dask]
 
   - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0

@@ -37,6 +37,7 @@ jobs:
       - run: uv run --no-sync ruff check src tests docs/conf.py
       - run: uv run --no-sync ruff format --check src tests docs/conf.py
       - run: uv run --no-sync ty check
+      - run: uvx prek run spdx --all-files
 
   tests:
     name: Unit tests (${{ matrix.name }}, Python ${{ matrix.python }})
