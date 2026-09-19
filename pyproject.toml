@@ -109,7 +109,7 @@ strict_config = true
 strict_markers = true
 markers = [
     "parity: compares against an independently implemented transform package",
-    "ncl: tests requiring a live NCL installation",
+    "ncl: tests requiring NCL 6.6.2/SPHEREPACK",
 ]
 
 [tool.ruff]

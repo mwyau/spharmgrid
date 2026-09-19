@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Normalize NCL NetCDF output into the runtime reference-output schema."""
+"""Convert NCL NetCDF output to the arrays used by the parity tests."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from typing import Any, cast
 
 import numpy as np
 import xarray as xr
-from generate_inputs import GRID_KINDS, INPUT_FAMILIES, SEED
+from generate_inputs import GRID_KINDS, INPUT_FAMILIES, RANDOM_SEED
 
 SCHEMA_VERSION = 1
 DOMAINS = ("T42", "T5_42", "T42x10", "R21")
@@ -28,6 +28,8 @@ COMMON_FIELDS = (
     "inverse_laplacian",
     "vorticity",
     "divergence",
+    "kinematic_vorticity",
+    "kinematic_divergence",
     "streamfunction",
     "velocity_potential",
     "rotational_u",
@@ -92,7 +94,6 @@ def _field(
     name: str,
     *,
     shape: tuple[int, int],
-    coordinate: str,
     reverse_latitude: bool,
 ) -> np.ndarray:
     values = _as_double(dataset, name)
@@ -112,6 +113,8 @@ def _manifest(grid_kind: str) -> dict[str, dict[str, Any]]:
         "inverse_laplacian": "ilapsg (GL) or ilapsf (CC)",
         "vorticity": "uv2vrg (GL) or uv2vrf (CC)",
         "divergence": "uv2dvg (GL) or uv2dvf (CC)",
+        "kinematic_vorticity": "uv2vrdvg (GL) or uv2vrdvf (CC)",
+        "kinematic_divergence": "uv2vrdvg (GL) or uv2vrdvf (CC)",
         "streamfunction": "uv2sfvpg (GL) or uv2sfvpf (CC)",
         "velocity_potential": "uv2sfvpg (GL) or uv2sfvpf (CC)",
         "rotational_u": "vr2uvg (GL) or vr2uvf (CC)",
@@ -234,12 +237,9 @@ def _normalize_one(
                 ncl,
                 ncl_name,
                 shape=shape,
-                coordinate="lat",
                 reverse_latitude=reverse_latitude,
             )
             source_values = np.asarray(source[normalized_name].values, dtype=np.float64)
-            if reverse_latitude:
-                source_values = source_values[::-1, :]
             np.testing.assert_array_equal(values, source_values)
             arrays[normalized_name] = values
 
@@ -248,7 +248,6 @@ def _normalize_one(
                 ncl,
                 name,
                 shape=shape,
-                coordinate="lat",
                 reverse_latitude=reverse_latitude,
             )
         arrays["taper_weights"] = _as_double(ncl, "taper_weights")
@@ -263,7 +262,6 @@ def _normalize_one(
                     ncl,
                     filter_name,
                     shape=shape,
-                    coordinate="lat",
                     reverse_latitude=reverse_latitude,
                 )
                 for target_kind in GRID_KINDS:
@@ -274,11 +272,12 @@ def _normalize_one(
                             ncl,
                             name,
                             shape=target_shape,
-                            coordinate=f"target_lat_{target_kind}",
                             reverse_latitude=target_reversals[target_kind],
                         )
 
-        if family == "random" and str(source.attrs.get("random_seed")) != str(SEED):
+        if family == "random" and str(source.attrs.get("random_seed")) != str(
+            RANDOM_SEED
+        ):
             raise ValueError("random input seed metadata does not match the fixed seed")
         if str(_required_attr(attrs, "random_seed")) != str(
             source.attrs.get("random_seed")
@@ -326,7 +325,7 @@ def main() -> None:
     for grid_kind in GRID_KINDS:
         for family in INPUT_FAMILIES:
             _normalize_one(
-                args.ncl_output_dir / f"ref-{grid_kind}-{family}.nc",
+                args.ncl_output_dir / f"ncl-{grid_kind}-{family}.nc",
                 args.input_dir / f"input-{grid_kind}-{family}.nc",
                 args.output_dir / f"{grid_kind}-{family}.npz",
             )

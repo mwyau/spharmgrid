@@ -2,18 +2,18 @@
 ;
 ; SPDX-License-Identifier: BSD-3-Clause
 
-; Generate one complete NCL/SPHEREPACK reference file.  The input file is
-; written by generate_inputs.py and contains ascending-latitude, non-cyclic,
-; double-precision arrays.  NCL's Gaussian routines are used for GL and its
+; Generate one NCL/SPHEREPACK comparison output. The input file is written by
+; generate_inputs.py and contains ascending-latitude, non-cyclic,
+; double-precision arrays. NCL's Gaussian routines are used for GL and its
 ; fixed-grid routines are used for CC.
 ;
-; The spectral masks below are deliberately expressed as degree/order loops.
+; The spectral masks below use degree/order loops.
 ; They are mathematical definitions, independent of spharmgrid's Python
 ; TransformSpec implementation.  In particular, T42x10 is not approximated
 ; by a triangular helper: it retains 0 <= l <= 42 and 0 <= m <= min(l,10).
 
 procedure mask_scalar(a, b, domain, l_upper, m_upper, tapered, taper_mode)
-local shape_a, nlat_a, ncoef_a, l, m, keep, weight, correction, ratio, actual_weight
+local shape_a, nlat_a, ncoef_a, l, m, keep
 begin
   shape_a = dimsizes(a)
   nlat_a = shape_a(0)
@@ -47,35 +47,14 @@ begin
     end do
   end do
   if (tapered) then
-    ; exp_tapersh uses the NCL packed-array row convention: row l receives
-    ; the l+1 weight.  Call the NCL routine first, then correct that indexing
-    ; detail with the same fourth-order curve so the mathematical total-degree
-    ; weight is exact, including the sectoral m=l boundary.
+    ; exp_tapersh applies S(l) to coefficients indexed by total degree l and
+    ; zonal order m.
     exp_tapersh(a, b, taper_mode, 2)
-    do l = 0, nlat_a - 1
-      weight = 1d0
-      if (l.gt.0) then
-        ratio = (l * (l + 1d0)) / (taper_mode * (taper_mode + 1d0))
-        weight = exp(-(ratio * ratio))
-      end if
-      ratio = ((l + 1d0) * (l + 2d0)) / (taper_mode * (taper_mode + 1d0))
-      actual_weight = exp(-(ratio * ratio))
-      correction = weight / actual_weight
-      if (l.eq.0) then
-        a(l,0) = a(l,0) * correction
-        b(l,0) = b(l,0) * correction
-      else
-        do m = 0, min((/l + 1,ncoef_a/)) - 1
-          a(l,m) = a(l,m) * correction
-          b(l,m) = b(l,m) * correction
-        end do
-      end if
-    end do
   end if
 end
 
 procedure mask_vector(br, bi, cr, ci, domain, l_upper, m_upper, tapered, taper_mode)
-local shape_b, nlat_b, ncoef_b, l, m, keep, weight, correction, ratio, actual_weight
+local shape_b, nlat_b, ncoef_b, l, m, keep
 begin
   shape_b = dimsizes(br)
   nlat_b = shape_b(0)
@@ -107,29 +86,6 @@ begin
   if (tapered) then
     exp_tapersh(br, bi, taper_mode, 2)
     exp_tapersh(cr, ci, taper_mode, 2)
-    do l = 0, nlat_b - 1
-      weight = 1d0
-      if (l.gt.0) then
-        ratio = (l * (l + 1d0)) / (taper_mode * (taper_mode + 1d0))
-        weight = exp(-(ratio * ratio))
-      end if
-      ratio = ((l + 1d0) * (l + 2d0)) / (taper_mode * (taper_mode + 1d0))
-      actual_weight = exp(-(ratio * ratio))
-      correction = weight / actual_weight
-      if (l.eq.0) then
-        br(l,0) = br(l,0) * correction
-        bi(l,0) = bi(l,0) * correction
-        cr(l,0) = cr(l,0) * correction
-        ci(l,0) = ci(l,0) * correction
-      else
-        do m = 0, min((/l + 1,ncoef_b/)) - 1
-          br(l,m) = br(l,m) * correction
-          bi(l,m) = bi(l,m) * correction
-          cr(l,m) = cr(l,m) * correction
-          ci(l,m) = ci(l,m) * correction
-        end do
-      end if
-    end do
   end if
 end
 
@@ -263,10 +219,7 @@ begin
   output_file@grid_kind = grid_kind
   output_file@input_family = family
   output_file@input_schema_version = "1"
-  output_file@random_seed = "not_applicable"
-  if (family.eq."random") then
-    output_file@random_seed = "20260919"
-  end if
+  output_file@random_seed = input_file@random_seed
   output_file@latitude_order = "ascending"
   output_file@longitude_convention = "0_to_360_noncyclic"
   output_file@earth_radius_m = 6371220d0
@@ -309,19 +262,17 @@ begin
   source_mmax = min((/source_lmax, (source_nlon - 1) / 2/))
   set_sphere_radius(6371220d0)
 
-  ; The public taper=0.1 is the response at the upper retained degree.  NCL's
-  ; exp_tapersh uses exp(-1) at N(N+1), so solve
-  ; exp(-(42*43/(N*(N+1)))^2)=0.1 independently here.  NCL expects the
-  ; mode N, not the product N(N+1).
+  ; spharmgrid taper=0.1 sets the response at l=42. NCL exp_tapersh uses
+  ; exp(-1) at N(N+1), so solve exp(-(42*43/(N*(N+1)))^2)=0.1 for N.
   taper_mode = (-1d0 + sqrt(1d0 + 4d0 * 42d0 * 43d0 / sqrt(-log(0.1d0)))) / 2d0
   taper_weights = new(43, double, "No_FillValue")
   taper_weights!0 = "degree"
   taper_weights(0) = 1d0
   taper_weights(1:42) = exp_tapersh_wgts(42, taper_mode, 2)
 
-  ; Full-resolution scalar and vector analyses are reused by all explicit
-  ; filtering and regridding cases.  The routines are the independent NCL
-  ; SPHEREPACK coefficient entry points, not spharmgrid adapters.
+  ; Analyze the source scalar and vector fields once and reuse the coefficients
+  ; for filtering and regridding. These are NCL/SPHEREPACK transforms, not
+  ; spharmgrid transforms.
   scalar_a_full = new((/source_nlat,source_ncoef/), double, "No_FillValue")
   scalar_b_full = new((/source_nlat,source_ncoef/), double, "No_FillValue")
   if (grid_kind.eq."gl") then
@@ -402,16 +353,16 @@ begin
   helmholtz_u_divergent = u
   helmholtz_v_divergent = v
   if (grid_kind.eq."gl") then
-    vr2uvg(kinematic_vorticity, rotational_u, rotational_v)      ; rotational_wind
-    dv2uvg(kinematic_divergence, divergent_u, divergent_v)       ; divergent_wind
-    vrdv2uvg(kinematic_vorticity, kinematic_divergence, wind_vo_d_u, wind_vo_d_v)
+    vr2uvg(vorticity, rotational_u, rotational_v)      ; rotational_wind
+    dv2uvg(divergence, divergent_u, divergent_v)       ; divergent_wind
+    vrdv2uvg(vorticity, divergence, wind_vo_d_u, wind_vo_d_v)
     sfvp2uvg(streamfunction, velocity_potential, wind_potentials_u, wind_potentials_v)
     vr2uvg(kinematic_vorticity, helmholtz_u_rotational, helmholtz_v_rotational)
     dv2uvg(kinematic_divergence, helmholtz_u_divergent, helmholtz_v_divergent)
   else
-    vr2uvf(kinematic_vorticity, rotational_u, rotational_v)
-    dv2uvf(kinematic_divergence, divergent_u, divergent_v)
-    vrdv2uvf(kinematic_vorticity, kinematic_divergence, wind_vo_d_u, wind_vo_d_v)
+    vr2uvf(vorticity, rotational_u, rotational_v)
+    dv2uvf(divergence, divergent_u, divergent_v)
+    vrdv2uvf(vorticity, divergence, wind_vo_d_u, wind_vo_d_v)
     sfvp2uvf(streamfunction, velocity_potential, wind_potentials_u, wind_potentials_v)
     vr2uvf(kinematic_vorticity, helmholtz_u_rotational, helmholtz_v_rotational)
     dv2uvf(kinematic_divergence, helmholtz_u_divergent, helmholtz_v_divergent)
@@ -472,11 +423,9 @@ begin
   end if
   output_file->filter_full_hard = (/ scalar_filtered /)
 
-  ; Regridding uses independent source analysis and target synthesis.  Both
-  ; scalar (f2fsh/f2gsh/g2fsh/g2gsh family) and vector (f2fshv/f2gshv/
-  ; g2fshv/g2gshv family) coefficient paths are expressed explicitly here so
-  ; arbitrary spharmgrid domains and tapering do not depend on NCL convenience
-  ; truncation arguments.
+  ; Regridding analyzes on the source grid and synthesizes on the target grid.
+  ; Explicit coefficient masks allow the spharmgrid truncation domains and
+  ; taper to be compared without NCL's regridding wrappers.
   do domain_index = -1, 3
     if (domain_index.eq.-1) then
       domain = "full"
@@ -542,8 +491,10 @@ begin
   output_file->inverse_gradient = (/ inverse_gradient /)
   output_file->laplacian = (/ laplacian /)
   output_file->inverse_laplacian = (/ inverse_laplacian /)
-  output_file->vorticity = (/ kinematic_vorticity /)
-  output_file->divergence = (/ kinematic_divergence /)
+  output_file->vorticity = (/ vorticity /)
+  output_file->divergence = (/ divergence /)
+  output_file->kinematic_vorticity = (/ kinematic_vorticity /)
+  output_file->kinematic_divergence = (/ kinematic_divergence /)
   output_file->streamfunction = (/ streamfunction /)
   output_file->velocity_potential = (/ velocity_potential /)
   output_file->rotational_u = (/ rotational_u /)

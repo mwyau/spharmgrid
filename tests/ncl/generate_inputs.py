@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Create the byte-stable scalar and wind inputs used by the NCL suite."""
+"""Generate deterministic scalar and wind inputs for NCL parity tests."""
 
 from __future__ import annotations
 
@@ -16,15 +16,15 @@ import xarray as xr
 
 import spharmgrid as sg
 
-SEED = 42
+RANDOM_SEED = 42
 GRID_KINDS = ("gl", "cc")
 INPUT_FAMILIES = ("analytic", "random")
 GridKind = Literal["gl", "cc"]
 ScalarTerm: TypeAlias = tuple[int, int, Literal["cos", "sin"], float]
 
 
-def _grid(kind: GridKind) -> sg.Grid:
-    if kind == "gl":
+def _grid(grid_kind: GridKind) -> sg.Grid:
+    if grid_kind == "gl":
         return sg.gaussian_grid(64, 128, latitude_order="ascending")
     return sg.clenshaw_curtis_grid(73, 144, latitude_order="ascending")
 
@@ -33,34 +33,34 @@ def _target_grids() -> dict[GridKind, sg.Grid]:
     return {"gl": _grid("gl"), "cc": _grid("cc")}
 
 
-def _associated_legendre(degree: int, m: int, x: np.ndarray) -> np.ndarray:
-    """Return a Schmidt-normalized real associated Legendre factor.
+def _associated_legendre(degree: int, order: int, x: np.ndarray) -> np.ndarray:
+    """Return the associated Legendre factor used by the analytic field.
 
-    The recurrence is intentionally local to input construction.  It does not
-    call spharmgrid's transform or spectral-mask implementation.
+    This recurrence does not call spharmgrid transform or spectral-mask code.
     """
     pmm = np.ones_like(x, dtype=np.float64)
-    if m:
-        odd_product = math.prod(range(1, 2 * m, 2))
-        pmm = ((-1.0) ** m) * odd_product * (1.0 - x * x) ** (m / 2.0)
-    if degree == m:
+    if order:
+        odd_product = math.prod(range(1, 2 * order, 2))
+        pmm = ((-1.0) ** order) * odd_product * (1.0 - x * x) ** (order / 2.0)
+    if degree == order:
         value = pmm
     else:
-        pm1 = (2 * m + 1) * x * pmm
-        if degree == m + 1:
+        pm1 = (2 * order + 1) * x * pmm
+        if degree == order + 1:
             value = pm1
         else:
-            for current_degree in range(m + 2, degree + 1):
+            for current_degree in range(order + 2, degree + 1):
                 current = (
-                    (2 * current_degree - 1) * x * pm1 - (current_degree + m - 1) * pmm
-                ) / (current_degree - m)
+                    (2 * current_degree - 1) * x * pm1
+                    - (current_degree + order - 1) * pmm
+                ) / (current_degree - order)
                 pmm, pm1 = pm1, current
             value = pm1
 
     normalization = math.sqrt(
         (2 * degree + 1)
         / (4.0 * math.pi)
-        * math.exp(math.lgamma(degree - m + 1) - math.lgamma(degree + m + 1))
+        * math.exp(math.lgamma(degree - order + 1) - math.lgamma(degree + order + 1))
     )
     return normalization * value
 
@@ -69,12 +69,12 @@ def _real_harmonic(
     latitude: np.ndarray,
     longitude: np.ndarray,
     degree: int,
-    m: int,
+    order: int,
     phase: Literal["cos", "sin"],
 ) -> np.ndarray:
     x = np.sin(latitude)[:, None]
-    legendre = _associated_legendre(degree, m, x)
-    angle = m * longitude[None, :]
+    legendre = _associated_legendre(degree, order, x)
+    angle = order * longitude[None, :]
     zonal = np.cos(angle) if phase == "cos" else np.sin(angle)
     return legendre * zonal
 
@@ -83,9 +83,9 @@ def _analytic_fields(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray, np.ndarray]
     latitude = np.deg2rad(grid.latitude)
     longitude = np.deg2rad(grid.longitude)
 
-    # These terms deliberately straddle l=5, l=21, l=42, m=10, and the
-    # R21 diagonal.  Terms above l=42 verify that explicit truncations remove
-    # them, while the l=30,m=22 and l=42,m=30 terms distinguish R21 from T42.
+    # Terms straddle l=5, l=21, l=42, m=10, and the R21 diagonal.
+    # Degrees above 42 test truncation; l=30,m=22 and l=42,m=30
+    # distinguish R21 from T42.
     scalar_terms: tuple[ScalarTerm, ...] = (
         (0, 0, "cos", 0.70),
         (1, 0, "cos", 0.31),
@@ -116,9 +116,8 @@ def _analytic_fields(grid: sg.Grid) -> tuple[np.ndarray, np.ndarray, np.ndarray]
     for degree, order, phase, amplitude in scalar_terms:
         scalar += amplitude * _real_harmonic(latitude, longitude, degree, order, phase)
 
-    # The cos(latitude) factor makes both geographic components regular at
-    # the CC poles.  The same broadband harmonic terms are used in distinct
-    # mixtures so vector diagnostics exercise both E and B content.
+    # cos(latitude) makes both wind components regular at the CC poles.
+    # Different amplitudes keep the u and v fields from being proportional.
     cosine_latitude = np.cos(latitude)[:, None]
     u = np.zeros_like(scalar)
     v = np.zeros_like(scalar)
@@ -143,13 +142,15 @@ def _random_fields(
     )
 
 
-def build_input(kind: GridKind, family: Literal["analytic", "random"]) -> xr.Dataset:
-    grid = _grid(kind)
+def build_input(
+    grid_kind: GridKind, family: Literal["analytic", "random"]
+) -> xr.Dataset:
+    grid = _grid(grid_kind)
     target_grids = _target_grids()
     if family == "analytic":
         scalar, u, v = _analytic_fields(grid)
     else:
-        rng = np.random.default_rng(SEED)
+        rng = np.random.default_rng(RANDOM_SEED)
         scalar, u, v = _random_fields(grid, rng)
     coordinates = {"lat": grid.latitude, "lon": grid.longitude}
     dataset = xr.Dataset(
@@ -172,11 +173,11 @@ def build_input(kind: GridKind, family: Literal["analytic", "random"]) -> xr.Dat
         },
         attrs={
             "schema_version": "1",
-            "grid_kind": kind,
+            "grid_kind": grid_kind,
             "input_family": family,
             "latitude_order": "ascending",
             "longitude_convention": "0_to_360_noncyclic",
-            "random_seed": str(SEED) if family == "random" else "not_applicable",
+            "random_seed": str(RANDOM_SEED) if family == "random" else "not_applicable",
         },
     )
     return dataset
@@ -188,13 +189,13 @@ def main() -> None:
     parser.add_argument("--grid", choices=GRID_KINDS)
     parser.add_argument("--family", choices=INPUT_FAMILIES)
     args = parser.parse_args()
-    kinds = (args.grid,) if args.grid else GRID_KINDS
-    families = (args.family,) if args.family else INPUT_FAMILIES
+    grid_kinds = (args.grid,) if args.grid else GRID_KINDS
+    input_families = (args.family,) if args.family else INPUT_FAMILIES
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    for kind in kinds:
-        for family in families:
-            dataset = build_input(kind, family)
-            path = args.output_dir / f"input-{kind}-{family}.nc"
+    for grid_kind in grid_kinds:
+        for family in input_families:
+            dataset = build_input(grid_kind, family)
+            path = args.output_dir / f"input-{grid_kind}-{family}.nc"
             dataset.to_netcdf(path, engine="h5netcdf")
             print(path)
 

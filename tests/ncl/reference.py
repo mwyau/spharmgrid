@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Load and orient runtime-generated NCL reference outputs for pytest."""
+"""Load runtime NCL output and orient arrays for pytest."""
 
 from __future__ import annotations
 
@@ -16,32 +16,32 @@ import xarray as xr
 from numpy.typing import NDArray
 
 import spharmgrid as sg
+from tests.ncl.generate_inputs import RANDOM_SEED
 
 GridKind: TypeAlias = Literal["gl", "cc"]
 InputFamily: TypeAlias = Literal["analytic", "random"]
 LatitudeOrder: TypeAlias = Literal["ascending", "descending"]
 
 SCHEMA_VERSION = 1
-SEED = 20260919
 DOMAINS = ("T42", "T5_42", "T42x10", "R21")
 GRID_KINDS: tuple[GridKind, GridKind] = ("gl", "cc")
 INPUT_FAMILIES: tuple[InputFamily, InputFamily] = ("analytic", "random")
 
 
-def reference_directory() -> Path:
-    override = os.environ.get("SPHARMGRID_NCL_REFERENCE_DIR")
+def ncl_output_directory() -> Path:
+    override = os.environ.get("SPHARMGRID_NCL_OUTPUT_DIR")
     if not override:
         raise RuntimeError(
-            "SPHARMGRID_NCL_REFERENCE_DIR must point to normalized NCL "
-            "reference outputs generated for this test run"
+            "SPHARMGRID_NCL_OUTPUT_DIR must point to normalized NCL output "
+            "generated for this test run"
         )
     return Path(override)
 
 
-def load_reference(
+def load_ncl_output(
     grid_kind: GridKind, input_family: InputFamily
 ) -> tuple[dict[str, NDArray[np.float64]], dict[str, Any]]:
-    path = reference_directory() / f"{grid_kind}-{input_family}.npz"
+    path = ncl_output_directory() / f"{grid_kind}-{input_family}.npz"
     if not path.exists():
         raise FileNotFoundError(
             f"missing generated NCL reference output {path}; run the "
@@ -64,7 +64,7 @@ def load_reference(
         raise ValueError(f"NCL reference input metadata disagrees with {path}")
     if metadata.get("latitude_order") != "ascending":
         raise ValueError(f"NCL reference is not in canonical latitude order: {path}")
-    if input_family == "random" and int(metadata.get("random_seed", -1)) != SEED:
+    if input_family == "random" and int(metadata.get("random_seed", -1)) != RANDOM_SEED:
         raise ValueError(f"NCL random seed metadata disagrees with {path}")
     return arrays, metadata
 
