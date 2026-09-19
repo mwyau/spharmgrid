@@ -1,20 +1,40 @@
 # Changelog
 
-## v0.2.0 development
+## v0.2.0.dev0 - 2026-09-18
 
 ### Spectral truncation
 
-- Added `Tnxm` trapezoidal and `Rn` rhomboidal truncation. The Torch API
-  supports `Tn` and `Ta-b`; `Tnxm` and `Rn` raise `NotImplementedError`.
+- Added `Tnxm` trapezoidal and `Rn` symmetric rhomboidal truncation to the
+  Xarray/NumPy filtering and regridding API.
+- The Torch API supports triangular `Tn` and total-degree band-pass `Ta-b`
+  truncation. `Tnxm` and `Rn` raise `NotImplementedError` because the
+  current torch-harmonics transforms do not support those coefficient domains.
 
-### PyTorch backend
+### PyTorch
 
-- Added the optional `spharmgrid.torch` tensor API and four reusable
-  `torch.nn` execution modules, backed by `torch-harmonics`.
-- Added explicit GL/CC bandwidth validation, PyTorch autograd coverage, and a
-  dedicated Python 3.12 CI lane for the optional dependency.
+- Added the optional `spharmgrid.torch` tensor API backed by
+  `torch-harmonics`, covering filtering, scalar and vector regridding,
+  differential operators, atmospheric wind diagnostics, Helmholtz
+  decomposition, and inverse wind transforms.
+- Added reusable `spharmgrid.torch.nn` modules: `SHTFilter`, `SHTRegrid`,
+  `SHTVectorRegrid`, and `SHTOperators`.
+- Added explicit GL/CC bandwidth validation and tests for autograd, numerical
+  agreement with the DUCC-backed API, CPU/CUDA execution, and dtype and device
+  preservation.
+- Added the `torch` optional dependency group, PyTorch installation
+  documentation, and dedicated CI coverage for the optional backend.
+
+### API
+
 - Renamed the `quantity=` argument of `rotational_wind()` and
-  `divergent_wind()` to `source=`.
+  `divergent_wind()` to `source=`, aligning the Xarray and Torch APIs.
+
+### Packaging and maintenance
+
+- Excluded repository benchmarks from source distributions and expanded
+  distribution-content checks.
+- Added SPDX BSD-3-Clause copyright and license headers to package and test
+  files, with automated SPDX checks in development and CI tooling.
 
 ## v0.1.3 - 2026-09-13
 
