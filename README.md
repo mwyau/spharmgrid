@@ -37,8 +37,7 @@ Optional groups are:
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
-The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`, installed
-separately for the Python version, platform, and accelerator in use. See the
+The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`. See the
 [PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
 for installation instructions.
 
@@ -74,8 +73,8 @@ filtered = field.sg.filter("T6-42")
 
 See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
 
-For differentiable PyTorch workflows, install PyTorch and `torch-harmonics`
-for your environment, then use `spharmgrid.torch`:
+For differentiable PyTorch workflows, install PyTorch and `torch-harmonics`,
+then use `spharmgrid.torch`:
 
 ```python
 import torch

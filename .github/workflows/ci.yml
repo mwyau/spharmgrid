@@ -134,7 +134,7 @@ jobs:
             --python .venv/bin/python \
             --index https://download.pytorch.org/whl/cpu \
             "torch==2.11.0+cpu"
-          uv pip install \
+          uv --no-config pip install \
             --python .venv/bin/python \
             --only-binary=:all: \
             --no-deps \
@@ -339,7 +339,7 @@ jobs:
             --python .venv/bin/python \
             --index https://download.pytorch.org/whl/cpu \
             "torch==2.11.0+cpu"
-          uv pip install \
+          uv --no-config pip install \
             --python .venv/bin/python \
             --only-binary=:all: \
             --no-deps \

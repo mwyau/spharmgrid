@@ -638,10 +638,8 @@ layer. Do not make model-training performance a spharmgrid benchmark suite.
 
 Keep accelerator and model stacks optional.
 
-`spharmgrid.torch` uses PyTorch and `torch-harmonics` installed for the
-user's Python version, platform, and accelerator. Do not declare a public
-`torch` extra that selects those builds on the user's behalf. Repository
-development uses a separate dependency group:
+`spharmgrid.torch` uses separately installed PyTorch and `torch-harmonics`.
+Repository development uses a separate dependency group:
 
 ```toml
 [dependency-groups]

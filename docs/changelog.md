@@ -21,9 +21,8 @@
 - Added explicit GL/CC bandwidth validation and tests for autograd, numerical
   agreement with the DUCC-backed API, CPU/CUDA execution, and dtype and device
   preservation.
-- Added PyTorch installation documentation and dedicated CI coverage for the
-  optional backend. PyTorch and `torch-harmonics` are installed separately
-  from spharmgrid.
+- PyTorch and `torch-harmonics` are installed separately from spharmgrid;
+  added installation documentation and dedicated CI coverage.
 
 ### API
 
