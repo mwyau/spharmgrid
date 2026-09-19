@@ -1,8 +1,9 @@
-# PyTorch backend
+# PyTorch API
 
-The optional `spharmgrid.torch` namespace applies spharmgrid's spherical
-harmonic operations to PyTorch tensors. PyTorch and `torch-harmonics` are
-installed separately.
+spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
+DUCC through `ducc0` for spherical harmonic transforms; the optional
+`spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors. PyTorch
+and `torch-harmonics` are installed separately.
 
 Install spharmgrid normally:
 
@@ -34,7 +35,7 @@ spharmgrid maps its `Grid` descriptors to those transforms and applies the
 spectral selections, radius factors, and atmospheric vector conventions.
 Import `spharmgrid.torch` to load the PyTorch API.
 
-The Xarray/DUCC API handles file and metadata workflows:
+The Xarray/NumPy API uses DUCC and handles file and metadata workflows:
 
 ```python
 vo = sg.vorticity(u, v)
@@ -82,7 +83,7 @@ an explicit `source=` because tensors do not carry CF metadata.
 
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators
 set the degree-zero coefficient to zero, and vector inverse operations remove
-the nonphysical degree-zero vector slot. The backend supports `float32` and
+the nonphysical degree-zero vector slot. The PyTorch API supports `float32` and
 `float64` tensors. Tensor operations use PyTorch throughout, so gradients can
 flow through the transforms and spectral multipliers.
 

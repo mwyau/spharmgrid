@@ -21,6 +21,6 @@ keywords:
   - regridding
   - spectral filtering
   - atmospheric kinematics
-  - xarray
+  - Xarray
   - PyTorch
   - Python
