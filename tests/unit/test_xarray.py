@@ -53,6 +53,8 @@ def test_cftime_calendar_coordinate_is_preserved() -> None:
 
 
 def test_dask_input_stays_lazy_with_rechunked_horizontal_core_dimensions() -> None:
+    pytest.importorskip("dask")
+
     field = scalar_field(supported_grid("cc"), leading=True).chunk(
         {"member": 1, "lat": 8, "lon": 12}
     )
@@ -66,6 +68,8 @@ def test_dask_input_stays_lazy_with_rechunked_horizontal_core_dimensions() -> No
 
 
 def test_mixed_eager_and_dask_wind_inputs_stay_lazy() -> None:
+    pytest.importorskip("dask")
+
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)
     dask_v = v.chunk({"lat": 8, "lon": 12})
@@ -78,6 +82,8 @@ def test_mixed_eager_and_dask_wind_inputs_stay_lazy() -> None:
 
 
 def test_new_vector_operations_keep_dask_inputs_lazy() -> None:
+    pytest.importorskip("dask")
+
     grid = supported_grid("cc")
     target = supported_grid("gl")
     eager_u, eager_v = solid_body_wind(grid)
