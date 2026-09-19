@@ -324,12 +324,14 @@ jobs:
           --extra torch
           --frozen
       # pyspharm-syl 1.2.1 is built against the NumPy 1.x C API, while the
-      # frozen lock currently resolves the direct NumPy dependency to 2.x.
-      - name: Install pyspharm-compatible NumPy
-        run: uv pip install --python .venv/bin/python "numpy<2"
+      # frozen project environment intentionally resolves NumPy 2.x.
+      - name: Verify pyspharm NumPy overlay
+        run: >-
+          uv run --no-sync --with "numpy==1.26.4" python -c
+          "import numpy, spharm; assert numpy.__version__ == '1.26.4'"
       - name: Run parity tests with coverage
         run: >-
-          uv run --no-sync pytest
+          uv run --no-sync --with "numpy==1.26.4" pytest
           tests/parity
           --cov=spharmgrid
           --cov-branch

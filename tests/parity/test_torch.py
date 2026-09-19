@@ -45,73 +45,50 @@ _TORCH_NUMERICAL_EXPORTS = {
 
 
 def _tolerances(dtype: torch.dtype, family: str) -> tuple[float, float]:
-    """Return measured cross-backend tolerances with a small stability margin."""
+    """Return measured absolute-error floors with a small stability margin."""
     if dtype == torch.float64:
-        # Scalar spatial values measured max 7.2e-15; use a 1e-12 absolute floor.
-        scalar_spatial = (5.0e-12, 1.0e-12)
-        # Scalar gradients measured max 3.1e-21; retain an explicit near-zero floor.
-        gradient = (5.0e-8, 1.0e-20)
-        # Inverse gradients measured max 9.1e-9 in physical-space values.
-        inverse_gradient = (5.0e-8, 1.0e-8)
-        # Scalar Laplacians measured max 2.0e-27; the floor covers zero modes.
-        laplacian = (1.0e-7, 1.0e-24)
-        # Inverse scalar Laplacians measured max 3.4e-2 at O(1e13) output scale.
-        inverse_laplacian = (5.0e-13, 1.0e-1)
-        # Vector regrids measured max 6.6e-8; this is their physical-space floor.
-        vector_regrid = (5.0e-7, 1.0e-7)
-        # Vorticity/divergence measured max 5.3e-14 at O(1e-6) output scale.
-        kinematics = (2.0e-7, 1.0e-14)
-        # Vector Laplacians measured max 4.3e-20 at O(1e-12) output scale.
-        vector_laplacian = (1.0e-6, 5.0e-20)
-        # Inverse vector Laplacians measured max 3.7e5 at O(1e13) output scale.
-        inverse_vector_laplacian = (2.0e-6, 1.0e-2)
-        # Potentials measured max 1.4e-1 at O(1e7) output scale.
-        potential = (3.0e-6, 2.0e-2)
-        # Source reconstruction branches measured max 1.3e-14 for O(1) winds.
-        wind = (1.0e-7, 1.0e-8)
-        # Helmholtz components measured max 6.8e-8 for O(1) winds.
-        helmholtz = (5.0e-7, 1.0e-7)
+        # Measured maximum absolute errors: scalar_map 1.8e-15;
+        # vector_regrid 6.6e-8; gradient 1.6e-21; inverse_gradient 9.0e-9;
+        # laplacian 1.4e-27; inverse_laplacian 7.8e-3;
+        # vector_laplacian 4.3e-20; inverse_vector_laplacian 3.7e5;
+        # kinematics 5.2e-14; potential 1.3e-1; wind 1.1e-14;
+        # helmholtz 6.8e-8.
+        atols = {
+            "scalar_map": 5.0e-15,
+            "vector_regrid": 1.0e-7,
+            "gradient": 1.0e-20,
+            "inverse_gradient": 2.0e-8,
+            "laplacian": 3.0e-27,
+            "inverse_laplacian": 1.0e-2,
+            "vector_laplacian": 1.0e-19,
+            "inverse_vector_laplacian": 5.0e5,
+            "kinematics": 1.0e-13,
+            "potential": 2.0e-1,
+            "wind": 2.0e-14,
+            "helmholtz": 1.0e-7,
+        }
     else:
-        # Scalar spatial values measured max 4.9e-7; retain a 1e-6 floor.
-        scalar_spatial = (2.0e-6, 1.0e-6)
-        # Scalar gradients measured max 7.1e-14; their physical scale is O(1e-7).
-        gradient = (1.0e-4, 1.0e-13)
-        # Inverse gradients measured max 9.6e-8 in physical-space values.
-        inverse_gradient = (3.0e-6, 1.0e-7)
-        # Scalar Laplacians measured max 7.2e-20 at O(1e-14) output scale.
-        laplacian = (1.0e-4, 5.0e-18)
-        # Inverse scalar Laplacians measured max 3.9e6 at O(1e13) output scale.
-        inverse_laplacian = (3.0e-5, 1.0e-3)
-        # Vector regrids measured max 7.6e-7; use a 1e-4 relative floor.
-        vector_regrid = (1.0e-4, 2.0e-6)
-        # Vorticity/divergence measured max 4.8e-13 at O(1e-6) output scale.
-        kinematics = (5.0e-4, 1.0e-12)
-        # Vector Laplacians measured max 3.4e-19 at O(1e-12) output scale.
-        vector_laplacian = (1.0e-5, 1.0e-18)
-        # Inverse vector Laplacians measured max 7.5e6 at O(1e13) output scale.
-        inverse_vector_laplacian = (1.0e-4, 1.0e-2)
-        # Potentials measured max 3.0 at O(1e7) output scale.
-        potential = (5.0e-5, 2.0)
-        # Source reconstruction branches measured max 8.0e-7 for O(1) winds.
-        wind = (2.0e-4, 2.0e-6)
-        # Helmholtz components measured max 5.7e-7 for O(1) winds.
-        helmholtz = (1.0e-4, 2.0e-6)
-
-    tolerances = {
-        "scalar_spatial": scalar_spatial,
-        "gradient": gradient,
-        "inverse_gradient": inverse_gradient,
-        "laplacian": laplacian,
-        "inverse_laplacian": inverse_laplacian,
-        "vector_regrid": vector_regrid,
-        "kinematics": kinematics,
-        "vector_laplacian": vector_laplacian,
-        "inverse_vector_laplacian": inverse_vector_laplacian,
-        "potential": potential,
-        "wind": wind,
-        "helmholtz": helmholtz,
-    }
-    return tolerances[family]
+        # Measured maximum absolute errors: scalar_map 4.8e-7;
+        # vector_regrid 7.5e-7; gradient 7.1e-14; inverse_gradient 9.7e-8;
+        # laplacian 7.2e-20; inverse_laplacian 3.8e6;
+        # vector_laplacian 3.4e-19; inverse_vector_laplacian 7.4e6;
+        # kinematics 4.8e-13; potential 2.9e0; wind 9.1e-7;
+        # helmholtz 5.7e-7.
+        atols = {
+            "scalar_map": 1.0e-6,
+            "vector_regrid": 1.0e-6,
+            "gradient": 2.0e-13,
+            "inverse_gradient": 2.0e-7,
+            "laplacian": 1.0e-19,
+            "inverse_laplacian": 5.0e6,
+            "vector_laplacian": 5.0e-19,
+            "inverse_vector_laplacian": 1.0e7,
+            "kinematics": 1.0e-12,
+            "potential": 4.0,
+            "wind": 1.5e-6,
+            "helmholtz": 1.0e-6,
+        }
+    return 0.0, atols[family]
 
 
 def _assert_close(
@@ -149,6 +126,17 @@ def _as_xarray(
 def _as_tensor(field: xr.DataArray, dtype: torch.dtype) -> torch.Tensor:
     """Create a Torch input from an explicitly compared Xarray field."""
     return torch.as_tensor(field.values.copy(), dtype=dtype)
+
+
+def _matching_source(
+    field: xr.DataArray,
+    grid: sg.Grid,
+    dtype: torch.dtype,
+) -> tuple[torch.Tensor, xr.DataArray]:
+    """Return identical dtype-specific source values for both backends."""
+    tensor = _as_tensor(field, dtype)
+    name = field.name if isinstance(field.name, str) else "field"
+    return tensor, _as_xarray(tensor, grid, name)
 
 
 def _scalar_values(grid: sg.Grid) -> np.ndarray:
@@ -245,15 +233,15 @@ def test_gl_scalar_spectral_parity(
 
     expected_hard = sg.filter(xarray_field, "T2")
     actual_hard = sgt.filter(field, "T2", grid=gl_grid)
-    _assert_close(actual_hard, expected_hard, dtype, "scalar_spatial")
+    _assert_close(actual_hard, expected_hard, dtype, "scalar_map")
 
     expected_band = sg.filter(xarray_field, "T1-3")
     actual_band = sgt.filter(field, "T1-3", grid=gl_grid)
-    _assert_close(actual_band, expected_band, dtype, "scalar_spatial")
+    _assert_close(actual_band, expected_band, dtype, "scalar_map")
 
     expected_taper = sg.filter(xarray_field, "T3", taper=0.1)
     actual_taper = sgt.filter(field, "T3", taper=0.1, grid=gl_grid)
-    _assert_close(actual_taper, expected_taper, dtype, "scalar_spatial")
+    _assert_close(actual_taper, expected_taper, dtype, "scalar_map")
 
     assert np.max(np.abs(expected_hard.values - xarray_field.values)) > 1.0e-2
     assert np.max(np.abs(expected_band.values - xarray_field.values)) > 1.0e-2
@@ -265,11 +253,11 @@ def test_gl_scalar_spectral_parity(
         "T4",
         source_grid=gl_grid,
     )
-    _assert_close(actual_gl, expected_gl, dtype, "scalar_spatial")
+    _assert_close(actual_gl, expected_gl, dtype, "scalar_map")
 
     expected_cc = sg.regrid(xarray_field, cc_grid, "T4")
     actual_cc = sgt.regrid(field, cc_grid, "T4", source_grid=gl_grid)
-    _assert_close(actual_cc, expected_cc, dtype, "scalar_spatial")
+    _assert_close(actual_cc, expected_cc, dtype, "scalar_map")
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
@@ -326,13 +314,23 @@ def test_gl_scalar_differential_parity(
         "gradient",
     )
 
-    expected_inverse_gradient = sg.inverse_gradient(
+    gradient_eastward, xarray_gradient_eastward = _matching_source(
         expected_gradient.gradient_eastward,
+        gl_grid,
+        dtype,
+    )
+    gradient_northward, xarray_gradient_northward = _matching_source(
         expected_gradient.gradient_northward,
+        gl_grid,
+        dtype,
+    )
+    expected_inverse_gradient = sg.inverse_gradient(
+        xarray_gradient_eastward,
+        xarray_gradient_northward,
     )
     actual_inverse_gradient = sgt.inverse_gradient(
-        _as_tensor(expected_gradient.gradient_eastward, dtype),
-        _as_tensor(expected_gradient.gradient_northward, dtype),
+        gradient_eastward,
+        gradient_northward,
         grid=gl_grid,
     )
     _assert_close(
@@ -465,9 +463,14 @@ def test_gl_vector_operator_parity_and_source_branches(
         "velocity_potential": expected_velocity_potential,
     }
     for source in ("vorticity", "streamfunction"):
-        expected = sg.rotational_wind(reference_sources[source], source=source)
+        source_tensor, source_xarray = _matching_source(
+            reference_sources[source],
+            gl_grid,
+            dtype,
+        )
+        expected = sg.rotational_wind(source_xarray, source=source)
         actual = sgt.rotational_wind(
-            _as_tensor(reference_sources[source], dtype),
+            source_tensor,
             grid=gl_grid,
             source=source,
         )
@@ -475,9 +478,14 @@ def test_gl_vector_operator_parity_and_source_branches(
         _assert_close(actual[1], expected.v_rotational, dtype, "wind")
 
     for source in ("divergence", "velocity_potential"):
-        expected = sg.divergent_wind(reference_sources[source], source=source)
+        source_tensor, source_xarray = _matching_source(
+            reference_sources[source],
+            gl_grid,
+            dtype,
+        )
+        expected = sg.divergent_wind(source_xarray, source=source)
         actual = sgt.divergent_wind(
-            _as_tensor(reference_sources[source], dtype),
+            source_tensor,
             grid=gl_grid,
             source=source,
         )
@@ -488,14 +496,24 @@ def test_gl_vector_operator_parity_and_source_branches(
         ("vorticity_divergence", ("vorticity", "divergence")),
         ("potentials", ("streamfunction", "velocity_potential")),
     ):
-        expected = sg.wind(
+        first_tensor, first_xarray = _matching_source(
             reference_sources[names[0]],
+            gl_grid,
+            dtype,
+        )
+        second_tensor, second_xarray = _matching_source(
             reference_sources[names[1]],
+            gl_grid,
+            dtype,
+        )
+        expected = sg.wind(
+            first_xarray,
+            second_xarray,
             source=source,
         )
         actual = sgt.wind(
-            _as_tensor(reference_sources[names[0]], dtype),
-            _as_tensor(reference_sources[names[1]], dtype),
+            first_tensor,
+            second_tensor,
             grid=gl_grid,
             source=source,
         )
@@ -514,7 +532,7 @@ def test_cc_triangular_band_parity(
     xarray_scalar = _as_xarray(scalar, cc_grid)
     actual_filter = sgt.filter(scalar, "T4", grid=cc_grid)
     expected_filter = sg.filter(xarray_scalar, "T4")
-    _assert_close(actual_filter, expected_filter, dtype, "scalar_spatial")
+    _assert_close(actual_filter, expected_filter, dtype, "scalar_map")
 
     for target_grid in (cc_target_grid, gl_grid):
         actual_scalar = sgt.regrid(
@@ -524,7 +542,7 @@ def test_cc_triangular_band_parity(
             source_grid=cc_grid,
         )
         expected_scalar = sg.regrid(xarray_scalar, target_grid, "T4")
-        _assert_close(actual_scalar, expected_scalar, dtype, "scalar_spatial")
+        _assert_close(actual_scalar, expected_scalar, dtype, "scalar_map")
 
     eastward_values, northward_values = _vector_values(cc_grid)
     eastward = torch.as_tensor(eastward_values, dtype=dtype)
