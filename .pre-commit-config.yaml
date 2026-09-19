@@ -50,7 +50,7 @@ repos:
         language: system
         args:
           - --copyright=Albert M. W. Yau
-          - --exclude-year
           - --license=BSD-3-Clause
+          - --merge-copyrights
           - --skip-unrecognised
-        files: '^(pyproject\.toml|src/|tests/)'
+        files: '^(pyproject\.toml|(?:src|tests)/.*\.(?:py|pyi))$'
