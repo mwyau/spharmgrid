@@ -17,7 +17,7 @@ except ModuleNotFoundError as error:
     if error.name == "torch" or (error.name or "").startswith("torch."):
         raise ImportError(
             "spharmgrid.torch requires PyTorch and torch-harmonics; install "
-            "the optional dependency with `pip install spharmgrid[torch]`"
+            "both backend dependencies before importing spharmgrid.torch"
         ) from error
     raise
 
@@ -28,8 +28,8 @@ except ModuleNotFoundError as error:
         "torch_harmonics."
     ):
         raise ImportError(
-            "spharmgrid.torch requires torch-harmonics; install the optional "
-            "dependency with `pip install spharmgrid[torch]`"
+            "spharmgrid.torch requires torch-harmonics; install a compatible "
+            "torch-harmonics build before importing spharmgrid.torch"
         ) from error
     raise
 
