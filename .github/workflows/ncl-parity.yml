@@ -1,0 +1,102 @@
+name: NCL Parity tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ncl-parity:
+    name: NCL/SPHEREPACK parity tests
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    env:
+      UV_VERSION: "0.12.10"
+      NCL_INPUT_DIR: ${{ runner.temp }}/spharmgrid-ncl-inputs
+      NCL_OUTPUT_DIR: ${{ runner.temp }}/spharmgrid-ncl-outputs
+      NCL_REFERENCE_DIR: ${{ runner.temp }}/spharmgrid-ncl-references
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          activate-environment: spharmgrid-ncl
+          auto-activate-base: false
+          channels: conda-forge
+          channel-priority: strict
+
+      - name: Install NCL 6.6.2
+        shell: bash -el {0}
+        run: conda install --yes --channel conda-forge ncl=6.6.2
+
+      - name: Set up Python environment
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python test environment
+        shell: bash -el {0}
+        run: |
+          uv sync --no-default-groups --group test --frozen
+          uv pip install --python .venv/bin/python h5netcdf h5py
+
+      - name: Generate deterministic Python inputs
+        shell: bash -el {0}
+        run: |
+          set -o pipefail
+          mkdir -p "$NCL_INPUT_DIR" "$NCL_OUTPUT_DIR" "$NCL_REFERENCE_DIR"
+          uv run --no-sync python tests/ncl/generate_inputs.py \
+            --output-dir "$NCL_INPUT_DIR" \
+            2>&1 | tee "$NCL_OUTPUT_DIR/generate-inputs.log"
+
+      - name: Generate NCL reference outputs
+        shell: bash -el {0}
+        run: |
+          set -o pipefail
+          for grid in gl cc; do
+            for family in analytic random; do
+              SPHARMGRID_NCL_INPUT="$NCL_INPUT_DIR/input-${grid}-${family}.nc" \
+              SPHARMGRID_NCL_OUTPUT="$NCL_OUTPUT_DIR/ref-${grid}-${family}.nc" \
+              SPHARMGRID_NCL_GRID="$grid" \
+              SPHARMGRID_NCL_FAMILY="$family" \
+              ncl -Q tests/ncl/generate_references.ncl \
+                2>&1 | tee "$NCL_OUTPUT_DIR/ncl-${grid}-${family}.log"
+            done
+          done
+
+      - name: Normalize NCL reference outputs
+        shell: bash -el {0}
+        run: |
+          set -o pipefail
+          uv run --no-sync python tests/ncl/normalize_references.py \
+            --input-dir "$NCL_INPUT_DIR" \
+            --ncl-output-dir "$NCL_OUTPUT_DIR" \
+            --output-dir "$NCL_REFERENCE_DIR" \
+            2>&1 | tee "$NCL_OUTPUT_DIR/normalize-references.log"
+
+      - name: Run spharmgrid against NCL outputs
+        shell: bash -el {0}
+        env:
+          SPHARMGRID_NCL_REFERENCE_DIR: ${{ env.NCL_REFERENCE_DIR }}
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest tests/ncl/test_ncl.py \
+            2>&1 | tee "$NCL_OUTPUT_DIR/pytest-ncl.log"
+
+      - name: Upload NCL parity diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ncl-parity-output-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/spharmgrid-ncl-inputs
+            ${{ runner.temp }}/spharmgrid-ncl-outputs
+            ${{ runner.temp }}/spharmgrid-ncl-references
+          if-no-files-found: warn
+          retention-days: 14
