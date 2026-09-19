@@ -20,6 +20,15 @@ Where a compatible PyPI wheel is available:
 pip install torch-harmonics
 ```
 
+## Development
+
+For a spharmgrid development checkout, install the Torch development
+dependencies with:
+
+```bash
+uv sync --group torch-dev
+```
+
 `torch-harmonics` computes the scalar and vector spherical harmonic transforms.
 spharmgrid maps its `Grid` descriptors to those transforms and applies the
 spectral selections, radius factors, and atmospheric vector conventions.
