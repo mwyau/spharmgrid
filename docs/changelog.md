@@ -1,14 +1,16 @@
 # Changelog
 
-## v0.2.0.dev0 - 2026-09-18
+## v0.2.0 - 2026-09-19
 
 ### Spectral truncation
 
 - Added `Tnxm` trapezoidal and `Rn` symmetric rhomboidal truncation to the
-  Xarray/NumPy filtering and regridding API.
+  Xarray/NumPy filtering, regridding, and CLI APIs.
+- Added public `TransformSpec` objects for parsed spectral degree/order limits
+  and truncation type.
 - The Torch API supports triangular `Tn` and total-degree band-pass `Ta-b`
-  truncation. `Tnxm` and `Rn` raise `NotImplementedError` because the
-  current torch-harmonics transforms do not support those coefficient domains.
+  truncation. `Tnxm` and `Rn` are outside the coefficient domains supported
+  by the current torch-harmonics transforms.
 
 ### PyTorch
 
@@ -18,9 +20,9 @@
   decomposition, and inverse wind transforms.
 - Added reusable `spharmgrid.torch.nn` modules: `SHTFilter`, `SHTRegrid`,
   `SHTVectorRegrid`, and `SHTOperators`.
-- Added explicit GL/CC bandwidth validation and tests for autograd, numerical
-  agreement with the DUCC-backed API, CPU/CUDA execution, and dtype and device
-  preservation.
+- Added `float32` and `float64` support, CPU/CUDA execution, leading batch
+  dimensions, dtype/device preservation, and autograd through the Torch
+  operations.
 - PyTorch and `torch-harmonics` are installed separately from spharmgrid;
   added installation documentation and dedicated CI coverage.
 
@@ -29,10 +31,16 @@
 - Renamed the `quantity=` argument of `rotational_wind()` and
   `divergent_wind()` to `source=`, aligning the Xarray and Torch APIs.
 
-### Packaging and maintenance
+### Validation
 
-- Excluded repository benchmarks from source distributions and expanded
-  distribution-content checks.
+- Added numerical comparisons between the Torch and DUCC APIs across the public
+  Torch operations, supported GL/CC paths, and both supported floating dtypes.
+- Added an NCL 6.6.2/SPHEREPACK parity suite for GL and CC scalar/vector
+  operations, regridding, triangular, trapezoidal, and rhomboidal truncation,
+  and hard and tapered filtering.
+
+### Packaging
+
 - Added SPDX BSD-3-Clause copyright and license headers to package and test
   files, with automated SPDX checks in development and CI tooling.
 

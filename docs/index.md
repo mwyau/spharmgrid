@@ -1,10 +1,10 @@
 # spharmgrid
 
-Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray and PyTorch.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields. It computes relative vorticity (`vo`), divergence (`d`), streamfunction (`strf`), velocity potential (`vp`), Helmholtz decomposition, and inverse wind transforms. [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) performs the numerical spherical harmonic transforms.
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields and PyTorch tensors. It computes relative vorticity (`vo`), divergence (`d`), streamfunction (`strf`), velocity potential (`vp`), Helmholtz decomposition, and inverse wind transforms. The Xarray/NumPy API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
 
-Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids. Leading dimensions and Xarray coordinates are preserved, so fields such as `(time, level, lat, lon)` can be transformed without reshaping them first.
+Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids. Xarray operations preserve leading dimensions and coordinates; PyTorch operations preserve leading tensor dimensions.
 
 [GitHub](https://github.com/mwyau/spharmgrid) · [PyPI](https://pypi.org/project/spharmgrid/) · [conda-forge](https://anaconda.org/conda-forge/spharmgrid)
 
@@ -22,6 +22,8 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
+The PyTorch API requires PyTorch and `torch-harmonics`, installed separately; see {doc}`torch`.
+
 ## Quick start
 
 Importing `spharmgrid` registers the `.sg` accessor on Xarray objects. This example applies a T6–42 spectral filter to a `DataArray`:
@@ -32,6 +34,18 @@ import spharmgrid
 
 field = xr.open_dataarray("msl.nc")
 filtered = field.sg.filter("T6-42")
+```
+
+For PyTorch tensors, use `spharmgrid.torch`:
+
+```python
+import torch
+import spharmgrid as sg
+import spharmgrid.torch as sgt
+
+grid = sg.gaussian_grid(64, 128)
+field = torch.randn(grid.nlat, grid.nlon)
+filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
 ```{toctree}

@@ -9,9 +9,9 @@
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22559210-blue.svg)](https://doi.org/10.5281/zenodo.22559210)
 
-Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray and PyTorch.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) performs the numerical spherical harmonic transforms.
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields and PyTorch tensors. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. The Xarray/NumPy API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
 
 Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids.
 
@@ -38,7 +38,7 @@ Optional groups are:
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
 
 The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`. See the
-[PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
+[PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
 for installation instructions.
 
 Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
@@ -86,7 +86,7 @@ field = torch.randn(grid.nlat, grid.nlon)
 filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
-See the [PyTorch backend documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and backend bandwidth limits.
+See the [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and PyTorch bandwidth limits.
 
 ## Documentation
 

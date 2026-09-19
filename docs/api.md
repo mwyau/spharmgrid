@@ -8,8 +8,9 @@ For Xarray workflows, the `.sg` accessor is usually the simplest way to use spha
 
 The module-level functions documented below expose the same core operations for direct function calls. Accessor-based examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
 
-The optional PyTorch tensor API is documented in {doc}`torch` and imported as
-`spharmgrid.torch`.
+The Xarray/NumPy API uses DUCC through `ducc0` for spherical harmonic transforms.
+The optional PyTorch tensor API uses `torch-harmonics`, is imported as
+`spharmgrid.torch`, and is documented in {doc}`torch`.
 
 ## Typing
 

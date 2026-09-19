@@ -32,8 +32,10 @@ scientific text.
 ## Scientific and API invariants
 
 - spharmgrid exposes atmospheric and geophysical spherical harmonic operations
-  on Xarray objects. `ducc0` performs the numerical spherical harmonic
-  transforms; do not describe spharmgrid as a new transform implementation.
+  through Xarray/NumPy and optional PyTorch tensor APIs. `ducc0` performs the
+  spherical harmonic transforms for Xarray/NumPy; `torch-harmonics` performs
+  them for `spharmgrid.torch`. Do not describe spharmgrid as a new transform
+  implementation.
 - Supported horizontal grids are full Gauss–Legendre (GL) and Clenshaw–Curtis
   (CC) grids. CC uses equally spaced latitudes from -90 to 90 degrees. Do not
   reinterpret another latitude-longitude grid as CC.
