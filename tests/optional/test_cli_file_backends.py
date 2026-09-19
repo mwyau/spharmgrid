@@ -50,6 +50,10 @@ def test_info_and_filter_commands(
         xr.testing.assert_allclose(result["msl"], sg.filter(field, "T3"))
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Consolidated metadata is currently not part in the Zarr format 3 "
+    "specification.*:UserWarning"
+)
 def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
     grid = supported_grid("cc")
     field = scalar_field(grid, name="msl")

@@ -282,6 +282,14 @@ def test_fixed_filter_module_runs_under_torch_compile_eager() -> None:
     torch.testing.assert_close(compiled(field), layer(field))
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Torchinductor does not support code generation for complex "
+    "operators.*:UserWarning"
+)
+@pytest.mark.filterwarnings(
+    "ignore:TensorFloat32 tensor cores for float32 matrix multiplication "
+    "available but not enabled.*:UserWarning"
+)
 @pytest.mark.skipif(
     not hasattr(torch, "compile") or not torch.cuda.is_available(),
     reason="real torch.compile CUDA validation requires CUDA",
@@ -311,14 +319,16 @@ def test_fixed_filter_module_supports_real_torch_compile_on_cuda() -> None:
             torch.cuda.synchronize()
             outputs.append(output)
     except RuntimeError as error:
-        if not (
-            torch.__version__.startswith("2.11.")
-            and "KeyError: 'complex64'" in str(error)
-        ):
+
+        def _torch_version() -> tuple[int, int]:
+            major, minor = torch.__version__.split(".", 2)[:2]
+            return int(major), int(minor)
+
+        if not (_torch_version() < (2, 14) and "KeyError: 'complex64'" in str(error)):
             raise
         pytest.xfail(
-            "Torch 2.11 CUDA Inductor cannot lower the complex64 output graph "
-            "from torch-harmonics RealSHT"
+            "Torch <2.14 CUDA Inductor fails compiling torch-harmonics RealSHT "
+            "with KeyError: 'complex64'"
         )
 
     for output in outputs:

@@ -41,7 +41,7 @@ cf = ["cf-xarray>=0.10.4"]
 dask = ["dask[array]>=2024.1.0"]
 torch = [
     "torch>=2.11,<2.12; python_version < '3.13'",
-    "torch>=2.11; python_version >= '3.13'",
+    "torch>=2.13; python_version >= '3.13'",
     "torch-harmonics>=0.9.2",
 ]
 cli = [
@@ -80,10 +80,9 @@ test = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
 ]
-# pyspharm-syl supplies the independent SPHEREPACK comparison implementation.
-# Keep it out of normal test environments because it currently supports
-# CPython through 3.13 rather than spharmgrid's full production matrix.
-parity = ["pyspharm-syl>=1.2.1; python_version < '3.14'"]
+parity = [
+    "pyspharm-syl>=1.2.1; python_version < '3.14'",
+]
 
 [tool.uv.sources]
 torch-harmonics = { git = "https://github.com/NVIDIA/torch-harmonics.git", tag = "v0.9.2", marker = "python_version >= '3.13'" }
@@ -96,6 +95,9 @@ requires-dist = ["torch>=2.6.0", "numpy>=1.22.4"]
 
 [tool.uv.extra-build-dependencies]
 torch-harmonics = [{ requirement = "torch", match-runtime = true }]
+
+[tool.uv.extra-build-variables]
+torch-harmonics = { CUDA_VISIBLE_DEVICES = "" }
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]
