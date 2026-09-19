@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Analytic scalar filtering, regridding, and operator tests."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Spherical harmonic operations for PyTorch tensors, backed by torch-harmonics.
 
 Import ``spharmgrid.torch`` to load this optional API and its PyTorch dependencies.

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """PyTorch execution helpers backed by ``torch-harmonics``.
 
 The adapter translates spharmgrid's rectangular grid and coefficient

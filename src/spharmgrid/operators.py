@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Spectral scalar differential operators on supported global grids."""
 
 from __future__ import annotations

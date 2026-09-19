@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Optional xarray file-backend checks for the CLI dispatch boundary."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Supported global spherical grids and coordinate discovery.
 
 The public grid descriptor is small.  ``ducc0`` performs the

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Optional GL/CC parity checks against pyspharm-syl/SPHEREPACK."""
 
 from __future__ import annotations

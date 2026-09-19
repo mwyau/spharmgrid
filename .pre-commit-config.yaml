@@ -26,10 +26,7 @@ repos:
     rev: v0.0.81
     hooks:
       - id: ty
-        # The normal hook checks src/spharmgrid/torch with unresolved optional
-        # imports allowed. Torch CI repeats the type check with the torch extra.
-        args: [--isolated, --python=3.12, --group=dev, --extra=cf, --extra=dask]
-        pass_filenames: false
+        args: [--isolated, --python=3.11, --all-extras]
 
   - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0
@@ -44,3 +41,16 @@ repos:
           - mdformat-myst
           - mdformat-simple-breaks
           - mdformat-web
+
+  - repo: local
+    hooks:
+      - id: spdx
+        name: Add SPDX headers
+        entry: uvx reuse==6.2.0 annotate
+        language: system
+        args:
+          - --copyright=Albert M. W. Yau
+          - --exclude-year
+          - --license=BSD-3-Clause
+          - --skip-unrecognised
+        files: '^(pyproject\.toml|src/|tests/)'

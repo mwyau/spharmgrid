@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Atmospheric spherical harmonic operations for Xarray objects using ``ducc0``.
 
 Importing :mod:`spharmgrid` registers the ``.sg`` accessors on Xarray

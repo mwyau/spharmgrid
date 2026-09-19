@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """CF-aware atmospheric variable discovery and output metadata."""
 
 from __future__ import annotations

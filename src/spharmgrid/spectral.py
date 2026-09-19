@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Scalar spherical harmonic filtering primitives built on DUCC."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Small file-oriented command line interface that delegates I/O to xarray."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Fixtures for the optional torch-harmonics backend tests."""
 
 from __future__ import annotations

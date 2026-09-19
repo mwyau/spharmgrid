@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Albert M. W. Yau
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Small internal adapters around DUCC0's spherical-harmonic functions."""
 
 from __future__ import annotations
