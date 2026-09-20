@@ -819,6 +819,16 @@ wheels = [
 ]
 
 [[package]]
+name = "gdm-xarray-jax"
+version = "0.1.1"
+source = { git = "https://github.com/google-deepmind/xarray_jax.git?tag=v0.1.1#0291d0c8e91ca04b00f5f01ea29a53c0e575eeee" }
+dependencies = [
+    { name = "jax", version = "0.11.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "xarray" },
+]
+
+[[package]]
 name = "google-crc32c"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2580,6 +2590,7 @@ jax = [
 [package.dev-dependencies]
 cuda-dev = [
     { name = "cftime" },
+    { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'" },
     { name = "h5netcdf", extra = ["h5py"] },
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, extra = ["cuda13"], marker = "python_full_version < '3.12' and sys_platform == 'linux'" },
@@ -2611,6 +2622,7 @@ docs = [
 ]
 jax-dev = [
     { name = "cftime" },
+    { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'" },
     { name = "h5netcdf", extra = ["h5py"] },
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "jax", version = "0.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2651,6 +2663,7 @@ provides-extras = ["cf", "dask", "cli", "jax"]
 [package.metadata.requires-dev]
 cuda-dev = [
     { name = "cftime", specifier = ">=1.6.5" },
+    { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'", git = "https://github.com/google-deepmind/xarray_jax.git?tag=v0.1.1" },
     { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "jax", extras = ["cuda13"], marker = "sys_platform == 'linux'" },
@@ -2678,6 +2691,7 @@ docs = [
 ]
 jax-dev = [
     { name = "cftime", specifier = ">=1.6.5" },
+    { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'", git = "https://github.com/google-deepmind/xarray_jax.git?tag=v0.1.1" },
     { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "pytest", specifier = ">=9.1.1" },
