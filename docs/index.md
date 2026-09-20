@@ -67,8 +67,8 @@ import spharmgrid as sg
 import spharmgrid.jax as sgj
 
 grid = sg.gaussian_grid(64, 127)
-field = jnp.ones((grid.nlat, grid.nlon), dtype=jnp.float64)
-filtered = sgj.filter(field, "T42", grid=grid)
+field = jnp.ones((grid.nlat, grid.nlon))
+filtered = sgj.filter(field, grid=grid, truncation="T42")
 ```
 
 ```{toctree}
