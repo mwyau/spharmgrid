@@ -31,7 +31,7 @@ def test_exact_gl_and_mwss_shapes_accept_both_latitude_orders(
     result = sgj.filter(jnp.asarray(values, dtype=jnp.float64), grid=grid)
 
     assert result.shape == values.shape
-    np.testing.assert_allclose(result, values, rtol=2.0e-10, atol=2.0e-11)
+    np.testing.assert_allclose(result, values, rtol=0.0, atol=3.0e-13)
 
 
 @pytest.mark.parametrize("kind", ["gl", "cc"])
@@ -56,12 +56,12 @@ def test_cyclic_longitude_order_and_nonzero_origin_are_restored(
         "T4",
         source_grid=grid,
     )
-    np.testing.assert_allclose(filtered, expected, rtol=2.0e-10, atol=2.0e-11)
+    np.testing.assert_allclose(filtered, expected, rtol=0.0, atol=3.0e-13)
     np.testing.assert_allclose(
         filtered,
         as_xarray(values, grid).values,
-        rtol=2.0e-10,
-        atol=2.0e-11,
+        rtol=0.0,
+        atol=3.0e-13,
     )
 
 
@@ -88,12 +88,6 @@ def test_scalar_and_vector_leading_dimensions_are_preserved(
     assert filtered.shape == scalar_batch.shape
     assert output_u.shape == eastward_batch.shape
     assert output_v.shape == northward_batch.shape
-    np.testing.assert_allclose(
-        filtered[1], 2.0 * filtered[0], rtol=2.0e-10, atol=2.0e-11
-    )
-    np.testing.assert_allclose(
-        output_u[1], 2.0 * output_u[0], rtol=2.0e-10, atol=2.0e-11
-    )
-    np.testing.assert_allclose(
-        output_v[1], 2.0 * output_v[0], rtol=2.0e-10, atol=2.0e-11
-    )
+    np.testing.assert_allclose(filtered[1], 2.0 * filtered[0], rtol=0.0, atol=3.0e-13)
+    np.testing.assert_allclose(output_u[1], 2.0 * output_u[0], rtol=0.0, atol=3.0e-13)
+    np.testing.assert_allclose(output_v[1], 2.0 * output_v[0], rtol=0.0, atol=3.0e-13)

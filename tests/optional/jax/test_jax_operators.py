@@ -26,14 +26,14 @@ def _as_dtype(values: np.ndarray, dtype: object) -> Array:
     return jnp.asarray(values, dtype=dtype)
 
 
-def _assert_close(actual: object, expected: object) -> None:
+def _assert_close(actual: object, expected: object, *, atol: float) -> None:
     actual_values = np.asarray(actual)
     expected_values = np.broadcast_to(np.asarray(expected), actual_values.shape)
     np.testing.assert_allclose(
         actual_values,
         expected_values,
-        rtol=2.0e-10,
-        atol=2.0e-11,
+        rtol=0.0,
+        atol=atol,
     )
 
 
@@ -44,6 +44,8 @@ def test_scalar_harmonic_identities(
     grid_name: str,
     dtype: object,
 ) -> None:
+    # CI measured a 3.63e-13 maximum absolute Laplacian error on GL.
+    atol = 5.0e-13
     grid = request.getfixturevalue(grid_name)
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
@@ -68,13 +70,14 @@ def test_scalar_harmonic_identities(
         grid=grid,
         taper=0.2,
     )
-    _assert_close(low, 1.25 + 0.5 * degree_one)
+    _assert_close(low, 1.25 + 0.5 * degree_one, atol=atol)
     _assert_close(
         band,
         0.75 * degree_two_zonal + 0.2 * degree_two_sectoral,
+        atol=atol,
     )
-    _assert_close(explicit_band, band)
-    _assert_close(tapered, 0.2 * degree_two_sectoral)
+    _assert_close(explicit_band, band, atol=atol)
+    _assert_close(tapered, 0.2 * degree_two_sectoral, atol=atol)
 
     expected_laplacian = (
         -1.0 * degree_one - 4.5 * degree_two_zonal - 1.2 * degree_two_sectoral
@@ -84,10 +87,15 @@ def test_scalar_harmonic_identities(
         - 0.125 * degree_two_zonal
         - (0.2 / 6.0) * degree_two_sectoral
     )
-    _assert_close(sgj.laplacian(array, grid=grid, radius=radius), expected_laplacian)
+    _assert_close(
+        sgj.laplacian(array, grid=grid, radius=radius),
+        expected_laplacian,
+        atol=atol,
+    )
     _assert_close(
         sgj.inverse_laplacian(array, grid=grid, radius=radius),
         expected_inverse,
+        atol=atol,
     )
 
 
@@ -98,6 +106,7 @@ def test_gradient_and_inverse_gradient_use_geographic_components(
     grid_name: str,
     dtype: object,
 ) -> None:
+    atol = 2.0e-13
     grid = request.getfixturevalue(grid_name)
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
@@ -110,10 +119,10 @@ def test_gradient_and_inverse_gradient_use_geographic_components(
         np.broadcast_to(-np.sin(longitude) / radius, scalar.shape),
         np.broadcast_to(-sine * np.cos(longitude) / radius, scalar.shape),
     )
-    _assert_close(actual[0], expected[0])
-    _assert_close(actual[1], expected[1])
+    _assert_close(actual[0], expected[0], atol=atol)
+    _assert_close(actual[1], expected[1], atol=atol)
     recovered = sgj.inverse_gradient(*actual, grid=grid, radius=radius)
-    _assert_close(recovered, scalar)
+    _assert_close(recovered, scalar, atol=atol)
 
 
 @pytest.mark.parametrize("grid_name", ["gl_grid", "cc_grid"])
@@ -123,6 +132,7 @@ def test_spin_one_signs_and_atmospheric_operations(
     grid_name: str,
     dtype: object,
 ) -> None:
+    atol = 3.0e-13
     grid = request.getfixturevalue(grid_name)
     radius = 2.5
     velocity_potential, streamfunction = scalar_potentials(grid)
@@ -153,31 +163,31 @@ def test_spin_one_signs_and_atmospheric_operations(
         grid=grid,
         radius=radius,
     )
-    _assert_close(pure_divergent[0], np.zeros(shape))
-    _assert_close(pure_divergent[1], lap_velocity_potential)
+    _assert_close(pure_divergent[0], np.zeros(shape), atol=atol)
+    _assert_close(pure_divergent[1], lap_velocity_potential, atol=atol)
     pure_rotational = sgj.kinematics(
         _as_dtype(rotational_u, dtype),
         _as_dtype(rotational_v, dtype),
         grid=grid,
         radius=radius,
     )
-    _assert_close(pure_rotational[0], lap_streamfunction)
-    _assert_close(pure_rotational[1], np.zeros(shape))
+    _assert_close(pure_rotational[0], lap_streamfunction, atol=atol)
+    _assert_close(pure_rotational[1], np.zeros(shape), atol=atol)
 
     actual_gradient = sgj.gradient(
         _as_dtype(velocity_potential, dtype),
         grid=grid,
         radius=radius,
     )
-    _assert_close(actual_gradient[0], divergent_u)
-    _assert_close(actual_gradient[1], divergent_v)
+    _assert_close(actual_gradient[0], divergent_u, atol=atol)
+    _assert_close(actual_gradient[1], divergent_v, atol=atol)
     recovered_velocity_potential = sgj.inverse_gradient(
         _as_dtype(divergent_u, dtype),
         _as_dtype(divergent_v, dtype),
         grid=grid,
         radius=radius,
     )
-    _assert_close(recovered_velocity_potential, velocity_potential)
+    _assert_close(recovered_velocity_potential, velocity_potential, atol=atol)
 
     projected_rotational = sgj.inverse_gradient(
         _as_dtype(rotational_u, dtype),
@@ -185,7 +195,7 @@ def test_spin_one_signs_and_atmospheric_operations(
         grid=grid,
         radius=radius,
     )
-    _assert_close(projected_rotational, np.zeros(shape))
+    _assert_close(projected_rotational, np.zeros(shape), atol=atol)
 
     projected_mixed = sgj.inverse_gradient(
         _as_dtype(divergent_u + rotational_u, dtype),
@@ -193,24 +203,26 @@ def test_spin_one_signs_and_atmospheric_operations(
         grid=grid,
         radius=radius,
     )
-    _assert_close(projected_mixed, velocity_potential)
+    _assert_close(projected_mixed, velocity_potential, atol=atol)
 
     u = _as_dtype(eastward, dtype)
     v = _as_dtype(northward, dtype)
     vo, div = sgj.kinematics(u, v, grid=grid, radius=radius)
-    _assert_close(vo, lap_streamfunction)
-    _assert_close(div, lap_velocity_potential)
+    _assert_close(vo, lap_streamfunction, atol=atol)
+    _assert_close(div, lap_velocity_potential, atol=atol)
 
     actual_potentials = sgj.potentials(u, v, grid=grid, radius=radius)
-    _assert_close(actual_potentials[0], streamfunction)
-    _assert_close(actual_potentials[1], velocity_potential)
+    _assert_close(actual_potentials[0], streamfunction, atol=atol)
+    _assert_close(actual_potentials[1], velocity_potential, atol=atol)
     _assert_close(
         sgj.streamfunction(u, v, grid=grid, radius=radius),
         streamfunction,
+        atol=atol,
     )
     _assert_close(
         sgj.velocity_potential(u, v, grid=grid, radius=radius),
         velocity_potential,
+        atol=atol,
     )
 
     actual_helmholtz = sgj.helmholtz(u, v, grid=grid, radius=radius)
@@ -219,7 +231,7 @@ def test_spin_one_signs_and_atmospheric_operations(
         (divergent_u, divergent_v, rotational_u, rotational_v),
         strict=True,
     ):
-        _assert_close(actual, expected)
+        _assert_close(actual, expected, atol=atol)
 
     # The vector Laplacian applies the scalar eigenvalue to each potential.
     vector_laplacian_u = (
@@ -237,18 +249,20 @@ def test_spin_one_signs_and_atmospheric_operations(
     _assert_close(
         sgj.vector_laplacian(u, v, grid=grid, radius=radius)[0],
         np.broadcast_to(vector_laplacian_u, shape),
+        atol=atol,
     )
     _assert_close(
         sgj.vector_laplacian(u, v, grid=grid, radius=radius)[1],
         np.broadcast_to(vector_laplacian_v, shape),
+        atol=atol,
     )
     inverse_vector = sgj.inverse_vector_laplacian(
         *sgj.vector_laplacian(u, v, grid=grid, radius=radius),
         grid=grid,
         radius=radius,
     )
-    _assert_close(inverse_vector[0], eastward)
-    _assert_close(inverse_vector[1], northward)
+    _assert_close(inverse_vector[0], eastward, atol=atol)
+    _assert_close(inverse_vector[1], northward, atol=atol)
 
     for source, field in (
         ("vorticity", lap_streamfunction),
@@ -260,8 +274,8 @@ def test_spin_one_signs_and_atmospheric_operations(
             source=source,
             radius=radius,
         )
-        _assert_close(actual[0], rotational_u)
-        _assert_close(actual[1], rotational_v)
+        _assert_close(actual[0], rotational_u, atol=atol)
+        _assert_close(actual[1], rotational_v, atol=atol)
     for source, field in (
         ("divergence", lap_velocity_potential),
         ("velocity_potential", velocity_potential),
@@ -272,8 +286,8 @@ def test_spin_one_signs_and_atmospheric_operations(
             source=source,
             radius=radius,
         )
-        _assert_close(actual[0], divergent_u)
-        _assert_close(actual[1], divergent_v)
+        _assert_close(actual[0], divergent_u, atol=atol)
+        _assert_close(actual[1], divergent_v, atol=atol)
 
     for source, first, second in (
         (
@@ -290,5 +304,5 @@ def test_spin_one_signs_and_atmospheric_operations(
             source=source,
             radius=radius,
         )
-        _assert_close(actual[0], eastward)
-        _assert_close(actual[1], northward)
+        _assert_close(actual[0], eastward, atol=atol)
+        _assert_close(actual[1], northward, atol=atol)

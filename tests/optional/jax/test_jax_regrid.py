@@ -18,10 +18,10 @@ from spharmgrid import Grid
 from tests.optional.jax._fields import make_grid, scalar_values, vector_values
 
 
-def _assert_close(actual: object, expected: np.ndarray) -> None:
+def _assert_close(actual: object, expected: np.ndarray, *, atol: float) -> None:
     if not config.read("jax_enable_x64"):
         pytest.skip("float64 validation requires JAX x64 enabled")
-    np.testing.assert_allclose(np.asarray(actual), expected, rtol=2.0e-10, atol=2.0e-11)
+    np.testing.assert_allclose(np.asarray(actual), expected, rtol=0.0, atol=atol)
 
 
 @pytest.mark.parametrize(
@@ -40,6 +40,7 @@ def test_scalar_regrid_resizes_s2fft_coefficients(
     target_name: str,
     dtype: object,
 ) -> None:
+    atol = 2.0e-13
     source_grid = request.getfixturevalue(source_name)
     target_grid = request.getfixturevalue(target_name)
     source_values = scalar_values(source_grid)
@@ -49,7 +50,7 @@ def test_scalar_regrid_resizes_s2fft_coefficients(
         target_grid,
         source_grid=source_grid,
     )
-    _assert_close(result, expected)
+    _assert_close(result, expected, atol=atol)
 
 
 @pytest.mark.parametrize(
@@ -68,6 +69,7 @@ def test_vector_regrid_resizes_centered_m_modes(
     target_name: str,
     dtype: object,
 ) -> None:
+    atol = 3.0e-13
     source_grid = request.getfixturevalue(source_name)
     target_grid = request.getfixturevalue(target_name)
     source_u, source_v = vector_values(source_grid)
@@ -79,8 +81,8 @@ def test_vector_regrid_resizes_centered_m_modes(
         "T4",
         source_grid=source_grid,
     )
-    _assert_close(actual_u, expected_u)
-    _assert_close(actual_v, expected_v)
+    _assert_close(actual_u, expected_u, atol=atol)
+    _assert_close(actual_v, expected_v, atol=atol)
 
 
 def _grid_for_bandlimit(kind: Literal["gl", "cc"], bandlimit: int) -> Grid:
@@ -118,6 +120,7 @@ def test_regrid_preserves_near_edge_sectoral_mode(
     kind: Literal["gl", "cc"],
     dtype: object,
 ) -> None:
+    atol = 2.0e-11
     source_grid = _grid_for_bandlimit(kind, 12)
     target_grid = _grid_for_bandlimit(kind, 16)
     values = _sectoral_values(source_grid, 11)
@@ -129,7 +132,7 @@ def test_regrid_preserves_near_edge_sectoral_mode(
         source_grid=source_grid,
     )
 
-    _assert_close(actual, expected)
+    _assert_close(actual, expected, atol=atol)
 
 
 @pytest.mark.parametrize("kind", ["gl", "cc"])
@@ -138,6 +141,7 @@ def test_regrid_removes_above_target_sectoral_mode(
     kind: Literal["gl", "cc"],
     dtype: object,
 ) -> None:
+    atol = 2.0e-11
     source_grid = _grid_for_bandlimit(kind, 16)
     target_grid = _grid_for_bandlimit(kind, 12)
     values = _sectoral_values(source_grid, 3, amplitude=0.6) + _sectoral_values(
@@ -151,7 +155,7 @@ def test_regrid_removes_above_target_sectoral_mode(
         source_grid=source_grid,
     )
 
-    _assert_close(actual, expected)
+    _assert_close(actual, expected, atol=atol)
 
 
 @pytest.mark.parametrize("kind", ["gl", "cc"])
@@ -160,6 +164,7 @@ def test_vector_regrid_preserves_near_edge_sectoral_mode(
     kind: Literal["gl", "cc"],
     dtype: object,
 ) -> None:
+    atol = 2.0e-10
     source_grid = _grid_for_bandlimit(kind, 12)
     target_grid = _grid_for_bandlimit(kind, 16)
     source_u, source_v = _sectoral_gradient(source_grid, 11)
@@ -172,5 +177,5 @@ def test_vector_regrid_preserves_near_edge_sectoral_mode(
         source_grid=source_grid,
     )
 
-    _assert_close(actual_u, expected_u)
-    _assert_close(actual_v, expected_v)
+    _assert_close(actual_u, expected_u, atol=atol)
+    _assert_close(actual_v, expected_v, atol=atol)
