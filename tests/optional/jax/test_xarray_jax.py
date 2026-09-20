@@ -16,12 +16,12 @@ import pytest
 import xarray as xr
 from jax import Array, grad, jit, make_jaxpr
 
-pytest.importorskip("xarray_jax")
-
 import spharmgrid as sg
 import spharmgrid.jax as sgj
 from spharmgrid.metadata import find_variable
 from tests.optional.jax._fields import scalar_values, vector_values
+
+pytest.importorskip("xarray_jax")
 
 
 def _coords(field: xr.DataArray, grid: sg.Grid) -> dict[str, object]:
