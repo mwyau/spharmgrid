@@ -1,4 +1,4 @@
-# JAX API
+# JAX
 
 The optional `spharmgrid.jax` namespace applies the spherical harmonic
 operations to JAX arrays. S2FFT computes the scalar and spin-1 transforms;
@@ -72,7 +72,7 @@ import jax.numpy as jnp
 
 grid = sg.gaussian_grid(16, 31)
 field = jnp.ones((2, grid.nlat, grid.nlon), dtype=jnp.float64)
-filtered = sgj.filter(field, "T6", grid=grid)
+filtered = sgj.filter(field, grid=grid, truncation="T6")
 laplacian = sgj.laplacian(filtered, grid=grid)
 ```
 
@@ -81,7 +81,7 @@ using JAX transformations rather than passing a `Grid` as a dynamic JIT
 argument:
 
 ```python
-compiled_filter = jax.jit(lambda values: sgj.filter(values, "T6", grid=grid))
+compiled_filter = jax.jit(lambda values: sgj.filter(values, grid=grid, truncation="T6"))
 filtered = compiled_filter(field)
 ```
 
