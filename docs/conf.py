@@ -15,6 +15,8 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 
+autodoc_mock_imports = ["jax", "s2fft", "torch", "torch_harmonics"]
+
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_title = project
 html_theme = "pydata_sphinx_theme"

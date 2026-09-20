@@ -1,4 +1,4 @@
-# JAX API
+# JAX
 
 The optional `spharmgrid.jax` namespace applies the spherical harmonic
 operations to JAX arrays. S2FFT computes the scalar and spin-1 transforms;

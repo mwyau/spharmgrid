@@ -1,4 +1,4 @@
-# PyTorch API
+# PyTorch
 
 spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
 DUCC through `ducc0` for spherical harmonic transforms; the optional
