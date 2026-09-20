@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Atmospheric spherical harmonic operations for Xarray and PyTorch.
+"""Atmospheric spherical harmonic operations for Xarray, PyTorch, and JAX.
 
 Importing :mod:`spharmgrid` registers the ``.sg`` accessors on Xarray
 ``DataArray`` and ``Dataset`` objects. DUCC through ``ducc0`` performs the
 spherical harmonic transforms for the Xarray/NumPy API. The optional
-:mod:`spharmgrid.torch` API uses ``torch-harmonics`` for PyTorch tensors.
+:mod:`spharmgrid.torch` API uses ``torch-harmonics`` for PyTorch tensors, and
+:mod:`spharmgrid.jax` uses S2FFT for JAX arrays.
 """
 
 # Import for Xarray accessor registration after direct functions exist.

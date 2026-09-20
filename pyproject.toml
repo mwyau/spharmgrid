@@ -8,8 +8,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "spharmgrid"
-version = "0.2.0"
-description = "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray and PyTorch"
+version = "0.3.0.dev0"
+description = "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX"
 readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
     "ducc0>=0.39.0",
     "numpy>=1.24.0",
-    "xarray>=2024.9.0",
+    "xarray>=2025.1.1",
 ]
 
 [project.scripts]
@@ -49,6 +49,10 @@ cli = [
     "cfgrib>=0.9.15",
     "eccodeslib>=2.48.0; sys_platform != 'win32'",
 ]
+jax = [
+    "jax>=0.5.0",
+    "s2fft>=1.4.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spharmgrid"]
@@ -58,6 +62,7 @@ exclude = [
     "/.github",
     "/AGENTS.md",
     "/benchmarks",
+    "/.venv*",
     "/plans",
     "/skills",
 ]
@@ -83,6 +88,16 @@ test = [
 torch-dev = [
     "torch>=2.13",
     "torch-harmonics>=0.9.2",
+]
+jax-dev = [
+    { include-group = "test" },
+    "jax>=0.5.0",
+    "s2fft>=1.4.0",
+]
+cuda-dev = [
+    { include-group = "jax-dev" },
+    { include-group = "torch-dev" },
+    "jax[cuda13]; sys_platform == 'linux'",
 ]
 parity = [
     "pyspharm-syl>=1.2.1; python_version < '3.14'",
@@ -130,6 +145,10 @@ include = ["src", "tests"]
 allowed-unresolved-imports = [
     "ducc0",
     "ducc0.*",
+    "jax",
+    "jax.*",
+    "s2fft",
+    "s2fft.*",
     "torch",
     "torch.*",
     "torch_harmonics",
