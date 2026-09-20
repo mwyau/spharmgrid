@@ -2,13 +2,12 @@
 
 ## Goal
 
-Add the backend boundary and optional accelerator implementations after the
-DUCC0 scientific operation suite is stable, while the public grid model is
-still limited to rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC)
-grids.
+Complete the rectangular-grid accelerator support by adding a JAX API backed
+by S2FFT after the PyTorch API introduced in v0.2.0. The public grid model
+remains limited to rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC)
+grids for this phase.
 
-The intended architecture is one spharmgrid scientific API over three transform
-engines:
+The scientific operation set is shared across three transform engines:
 
 ```text
 DUCC0             CPU/reference implementation
@@ -60,54 +59,35 @@ Do not delay Phase 3 for reduced Gaussian or HEALPix. Those become Phase 4.
 
 ---
 
-## 2. Refactor only as required by real backends
+## 2. Refactor only where the implementations actually share code
 
-Extract the smallest internal transform boundary that the current DUCC
-implementation and real alternate implementations require.
+Add the S2FFT/JAX implementation without first routing DUCC0 and torch-harmonics
+through a new common backend class. If the JAX work exposes an identical
+internal transform interface that removes real duplication, extract only that
+shared piece.
 
-Conceptually:
+Do not create a plugin framework or move atmospheric operations such as
+`vorticity()` or `helmholtz()` into backend classes.
 
-```python
-class SHTBackend(Protocol):
-    def scalar_analysis(...): ...
-    def scalar_synthesis(...): ...
-    def vector_analysis(...): ...
-    def vector_synthesis(...): ...
-    def supports_grid(...): ...
-```
-
-The exact interface should be derived from the current code plus the installed
-`torch-harmonics` and S2FFT APIs. Do not design a general plugin framework.
-
-Before adding an alternate backend, route the current DUCC path through the
-minimal boundary and prove that existing numerical results, metadata, Dask
-behavior, and public APIs are unchanged.
-
-Do not put atmospheric functions such as `vorticity()` or `helmholtz()` inside
-backend classes.
-
-The intended layering is:
+The implementation layers remain:
 
 ```text
-spharmgrid scientific operation
+spharmgrid scientific definition
         |
-        +-- spectral/physical definition
-        |
-        +-- backend transform primitive
-              DUCC0
-              torch-harmonics
-              S2FFT
+        +-- Xarray/NumPy implementation using DUCC0
+        +-- PyTorch implementation using torch-harmonics
+        +-- JAX implementation using S2FFT
 ```
 
 ---
 
 ## 3. One scientific definition, framework-native execution
 
-Keep one source of truth for the scientific definitions:
+Keep one scientific definition for:
 
 ```text
 spectral range parsing
-Sardeshmukh--Hoskins taper
+Sardeshmukh–Hoskins taper
 scalar Laplacian and inverse multipliers
 zero/null-mode conventions
 Earth-radius factors
@@ -141,15 +121,28 @@ identified as backend-native rather than a package-wide coefficient format.
 Backend support is capability-based. Do not promise every engine supports every
 grid, bandwidth, dtype, or operation identically.
 
-For Phase 3, focus on the existing rectangular grids:
+For S2FFT in v0.3.0, both rectangular samplings are required:
 
 ```text
-GL
-CC where exact sampling equivalence and supported bandwidth are demonstrated
+GL:
+    L = nlat
+    require nlon = 2L - 1
+    map to S2FFT sampling="gl"
+
+CC:
+    L = nlat - 1
+    require nlon = 2L
+    map to S2FFT sampling="mwss"
 ```
 
+The MWSS colatitudes are the same pole-including equally spaced latitude nodes
+as spharmgrid CC for these dimensions. CC/MWSS support is a v0.3.0 requirement,
+not a later extension. Other spharmgrid GL/CC shapes are unsupported by the JAX
+API unless exact S2FFT sampling equivalence is established; do not resample them
+implicitly.
+
 Current torch-harmonics uses triangular truncation and its
-Clenshaw--Curtis/equiangular bandwidth behavior differs from DUCC's full
+Clenshaw–Curtis/equiangular bandwidth behavior differs from DUCC's full
 representable `lmax`/`mmax` behavior when spharmgrid is called without an
 explicit `Tn` range.
 
@@ -271,7 +264,7 @@ input channels on sphere
 
 Its learned weights depend on spherical-harmonic degree and are part of a neural
 operator. This is not the same operation as spharmgrid's fixed `T42`, `T6-42`,
-or Sardeshmukh--Hoskins filter response.
+or Sardeshmukh–Hoskins filter response.
 
 ### 6.1 `SpectralConvS2` is not required for the scientific operation API
 
@@ -341,11 +334,11 @@ SFNO architecture                                      neuraloperator or Makani,
 If research establishes a missing reusable layer between torch-harmonics and
 these model packages, add the smallest justified spharmgrid adapter then.
 
-### 6.4 SFNO interoperability acceptance
+### 6.4 Optional SFNO interoperability check
 
-Phase 3 should include at least one small interoperability example/test showing
-that data and grids prepared for `spharmgrid.torch` can be used in an SFNO-style
-PyTorch workflow without NumPy/device breaks.
+An optional interoperability example/test may show that data and grids prepared
+for `spharmgrid.torch` can be used in an SFNO-style PyTorch workflow without
+NumPy/device breaks.
 
 This may use torch-harmonics `SpectralConvS2` directly or a current
 `neuraloperator` SFNO/SphericalConv layer. It does not require spharmgrid to own
@@ -353,27 +346,55 @@ a full SFNO model.
 
 ---
 
-## 7. S2FFT adapter
+## 7. S2FFT/JAX implementation
 
-Implement S2FFT as the JAX/arbitrary-spin accelerator backend.
+Add `spharmgrid.jax` as a JAX-array API backed by S2FFT. It should expose the
+same 19 scientific functions listed in Section 1 as `spharmgrid.torch`.
 
-Initial Phase-3 target:
+The v0.3.0 grid requirement is:
 
 ```text
-JAX-native scalar and spin operations
-GL
-supported differentiable operation paths
+GL       S2FFT "gl" sampling with shape (L, 2L - 1)
+CC       S2FFT "mwss" sampling with shape (L + 1, 2L)
 ```
 
-Map geographic eastward/northward wind to and from S2FFT spin-1 coefficients
-explicitly and verify the mapping independently.
+Support both scalar and spin-1 transforms. Map geographic eastward/northward
+wind to and from S2FFT spin-1 coefficients explicitly and verify the mapping
+with analytic vector fields and DUCC comparisons.
 
-S2FFT's HEALPix support is important, but HEALPix becomes a Phase-4 grid feature.
-The Phase-3 S2FFT adapter should be designed so Phase 4 can add HEALPix without
-replacing the backend interface.
+Regridding should resize the S2FFT coefficient domain in JAX before synthesis on
+the target grid. Keep coefficient masking, degree multipliers, phase handling,
+and resizing inside JAX so `jit`, `vmap`, and automatic differentiation are
+preserved.
 
-Do not require S2FFT's PyTorch wrapper to become a second public PyTorch API if
-torch-harmonics already covers that use case.
+Use S2FFT's ordinary public JAX transforms with externally generated
+Price–McEwen recursion precomputations. Materialize the O(L²) arrays before
+passing them to the S2FFT transform and cache them in a bounded Python LRU keyed
+by the static transform settings `(bandlimit, sampling, spin, direction)`, with
+`maxsize=32`. Generate them through the public
+`s2fft.generate_precomputes_jax` function. Scalar transforms use
+`reality=True`; spin-1 transforms use `reality=False`. The scalar
+`reality=True` path still returns the full centered coefficient array required
+by spharmgrid.
+
+Measured comparisons showed that the external precomputations materially
+reduced warmed CUDA transform time for the tested `L=16`, `64`, and `128`
+cases; this justifies retaining the cache. Generated precompute arrays were
+uncommitted (`Array.committed == False`) for all five arrays in each precompute
+tuple on Python 3.11 with JAX/jaxlib 0.5.0 on CPU and with JAX/jaxlib 0.10.2
+on the RTX 5070 CUDA environment. Direct S2FFT generation and the spharmgrid
+helper had the same placement behavior, so the cache key does not include a
+device identifier for the tested execution model. Only one CUDA device was
+available; multi-GPU behavior was not tested.
+
+When the first cache miss occurs during an outer `jax.jit`,
+`jax.ensure_compile_time_eval()` is required. Removing it leaves the S2FFT
+precomputations as `DynamicJaxprTracer` values, and `block_until_ready()` then
+fails. This reproduced on JAX/jaxlib 0.5.0 CPU and JAX/jaxlib 0.10.2 CUDA.
+With the context restored, the outer-JIT check under
+`jax.checking_leaks()` passed with concrete cached arrays.
+
+HEALPix remains a Phase-4 grid feature.
 
 ---
 
@@ -382,7 +403,7 @@ torch-harmonics already covers that use case.
 For each engine document and test:
 
 - spherical-harmonic normalization;
-- Condon--Shortley phase convention;
+- Condon–Shortley phase convention;
 - coefficient ordering and real-field storage;
 - `lmax`/`mmax` inclusivity and truncation;
 - spin basis definition;
@@ -466,7 +487,7 @@ Use the spharmgrid grid description rather than exposing backend-specific grid
 strings in the scientific API:
 
 ```python
-grid = sg.gaussian_grid(128, 256)
+grid = sg.gaussian_grid(128, 255)
 sgt.filter(x, grid=grid, truncation="T42")
 sgj.filter(x, grid=grid, truncation="T42")
 ```
@@ -563,12 +584,13 @@ model API. Never auto-select an accelerator because hardware is present.
 
 For tensor-native paths:
 
-- keep Torch autograd/JAX transformations intact;
+- keep Torch autograd and JAX transformations intact;
 - do not convert tensors to NumPy inside differentiable operations;
+- test JAX execution under `jit` and `vmap`;
 - add automatic-gradient tests for representative scalar and vector operations;
 - compare with finite differences on small problems where numerically useful.
 
-Test at least representative paths for:
+Test at least:
 
 ```text
 filter
@@ -577,26 +599,24 @@ kinematics
 wind reconstruction
 ```
 
-Do not claim spharmgrid differentiability solely because the transform library
-is differentiable.
+Do not infer spharmgrid differentiability solely from the transform library.
 
 ---
 
 ## 11. Precision
 
-Establish explicit expectations for:
+The supported `spharmgrid.jax` execution mode is float64/complex128 with JAX
+x64 enabled by the application or test process. The adapter must not change
+the process-wide `jax_enable_x64` setting and must reject x64-disabled or
+single-precision input before entering the transform path.
 
-```text
-float32
-float64
-internal complex precision
-```
-
-Do not silently cast all GPU work to float32.
-
-Do not require bitwise equality between independent implementations. Use
-operation/grid/dtype-specific tolerances justified by analytic and cross-backend
-error measurements.
+Float32 characterization of the ordinary S2FFT GL and MWSS paths found that
+ordinary MWSS scalar float32 has field-scale errors of order `10^-1`; GL and
+spin-1 cases are more accurate, but float32 is unsupported so the JAX API has
+one conservative precision contract. O(L²) precomputations do not repair the
+float32 Price–McEwen recurrence, and O(L³) kernels are not a scalable remedy.
+Use analytic and cross-backend error measurements to set float64 tolerances;
+do not require bitwise equality.
 
 ---
 
@@ -639,24 +659,49 @@ layer. Do not make model-training performance a spharmgrid benchmark suite.
 Keep accelerator and model stacks optional.
 
 `spharmgrid.torch` uses separately installed PyTorch and `torch-harmonics`.
-Repository development uses a separate dependency group:
+The JAX API should use both a user-facing extra and a development group:
 
 ```toml
+[project.optional-dependencies]
+jax = ["jax>=0.5.0", "s2fft>=1.4.0"]
+
 [dependency-groups]
 torch-dev = ["torch>=...", "torch-harmonics>=..."]
-
-[project.optional-dependencies]
-jax = ["s2fft>=...", "jax>=..."]
-jax-xarray = ["xarray-jax>=..."] # only if this integration is adopted
+jax-dev = [
+  { include-group = "test" },
+  "jax>=0.5.0",
+  "s2fft>=1.4.0",
+]
+cuda-dev = [
+  { include-group = "jax-dev" },
+  { include-group = "torch-dev" },
+  "jax[cuda13]; sys_platform == 'linux'",
+]
 ```
 
-`neuraloperator` and Makani should not become dependencies merely because they
-are useful SFNO reference/consumer packages. If an optional interoperability
-test requires neuraloperator, keep it in a dedicated test/research dependency
-group.
+spharmgrid imports JAX directly, so JAX should be a direct optional dependency
+rather than only a transitive S2FFT dependency. Determine the JAX lower bound
+from tests with S2FFT 1.4.0 and the oldest supported Python version. The
+verified floor is Python `>=3.11`, JAX/JAXLIB `>=0.5.0`, and S2FFT `>=1.4.0`.
 
-Determine exact supported versions during implementation. Do not add the
-`jax-xarray` extra unless that integration is actually implemented and tested.
+For portable local JAX development and testing, use:
+
+```bash
+uv sync --group jax-dev
+```
+
+For local Linux NVIDIA development of both JAX and Torch, use the development
+only CUDA group:
+
+```bash
+uv sync --group cuda-dev
+```
+
+The CUDA group is not part of the published `spharmgrid[jax]` extra.
+
+Do not add a `jax-xarray` extra unless that integration is implemented and
+tested. `neuraloperator` and Makani remain external consumer/reference
+packages rather than spharmgrid dependencies.
 
 Do not make Torch, JAX, CUDA, torch-harmonics, S2FFT, xarray-jax,
 neuraloperator, or Makani part of the base install. Normal CPU CI must remain
@@ -752,8 +797,8 @@ redesign.
 Expected Phase-4 capability direction:
 
 ```text
-GL                DUCC0 + torch-harmonics + S2FFT where validated
-CC                DUCC0 + torch-harmonics where validated
+GL                DUCC0 + torch-harmonics + S2FFT on validated shapes
+CC                DUCC0 + torch-harmonics + S2FFT on MWSS-compatible shapes
 HEALPix           DUCC0 + S2FFT
 reduced Gaussian  DUCC0 initially
 ```
@@ -767,17 +812,16 @@ identical analysis semantics or bandwidth on every engine.
 
 Phase 3 is complete when:
 
-- current DUCC results and public CPU behavior remain unchanged through the new
-  internal transform boundary;
-- the backend abstraction is no larger than required by the three actual
-  engines;
-- torch-harmonics is used as the PyTorch numerical SHT implementation rather
-  than copied or independently reimplemented;
-- torch-harmonics is a tested optional backend on its accepted rectangular
-  grids;
-- S2FFT is a tested optional JAX/spin backend on its accepted Phase-3 grid(s);
+- existing DUCC and PyTorch results and public behavior are unchanged;
+- shared backend code is extracted only where the implementations require it;
+- torch-harmonics remains the PyTorch numerical SHT implementation;
+- S2FFT 1.4 or later is the JAX numerical SHT implementation;
+- `spharmgrid.jax` supports both required rectangular samplings: GL
+  `(L, 2L - 1)` and CC/MWSS `(L + 1, 2L)`;
+- `spharmgrid.jax` exports the same 19 scientific functions as
+  `spharmgrid.torch`;
 - `spharmgrid.torch` and `spharmgrid.jax` provide tensor-native differentiable
-  APIs for the supported scientific operation set;
+  APIs for their supported grids;
 - accelerator APIs use spharmgrid grid objects rather than backend sampling
   strings as their scientific grid contract;
 - rectangular tensor APIs use trailing horizontal dimensions with arbitrary
@@ -787,12 +831,18 @@ Phase 3 is complete when:
 - the supported Phase-2 operation graph is shared semantically rather than
   duplicated as independent atmospheric implementations;
 - geographic-vector/spin conventions are independently proven for each backend;
-- differentiable tensor-native paths contain no NumPy breaks;
+- JAX paths are tested under `jit`, `vmap`, and automatic differentiation
+  without NumPy breaks;
+- float32 accuracy is characterized and recorded but unsupported;
+- float64/complex128 with JAX x64 enabled is the supported JAX execution mode;
+- x64-disabled execution is tested for clean deterministic rejection;
+- S2FFT O(L²) recursion precomputations are ordinary transform setup and are
+  cached privately by static transform settings;
+- O(L³) full transform kernels are not a production requirement;
 - unsupported grid/bandwidth/backend combinations fail clearly;
 - explicit spectral requests are never silently clamped;
-- accelerator precision and performance are measured with realistic overhead;
-- an SFNO-style interoperability smoke test works without requiring spharmgrid
-  to own a full SFNO model;
+- accelerator precision and performance are measured with recursion setup,
+  trace/lowering/compile, transfer, and steady-state execution costs separated;
 - `SpectralConvS2` is not used as a substitute for deterministic atmospheric
   filters/operators;
 - model-level packages such as neuraloperator or Makani remain optional
@@ -805,10 +855,10 @@ Phase 3 is complete when:
 
 ## 17. v0.2 Torch slice
 
-The first Phase-3 implementation is the optional PyTorch namespace in the
-`0.2.0.dev0` development series. It uses the installed `torch-harmonics`
-`RealSHT`, `InverseRealSHT`, `RealVectorSHT`, and `InverseRealVectorSHT` modules;
-DUCC0 remains the reference engine for the Xarray API.
+v0.2.0 added the optional PyTorch namespace using the installed
+`torch-harmonics` `RealSHT`, `InverseRealSHT`, `RealVectorSHT`, and
+`InverseRealVectorSHT` modules. DUCC0 remains the reference engine for the
+Xarray API.
 
 The implemented tensor API covers the scalar, vector, kinematic, potential,
 Helmholtz, and inverse-wind operations listed in the preconditions, plus
@@ -828,8 +878,33 @@ The current torch-harmonics equiangular transform has a narrower CC latitude
 bandwidth than DUCC. The adapter therefore accepts explicit triangular `Tn`
 ranges only through `min((nlat - 1) // 2, (nlon - 1) // 2)` on CC (and the
 corresponding GL limit `min(nlat - 1, (nlon - 1) // 2)`). It raises a clear
-error for a non-triangular or over-wide request instead of clamping it. S2FFT,
-HEALPix, reduced Gaussian grids, and SFNO remain future work.
+error for a non-triangular or over-wide request instead of clamping it.
+
+---
+
+## 18. v0.3 JAX/S2FFT slice
+
+v0.3.0 adds `spharmgrid.jax` backed by S2FFT. The JAX API includes all 19
+current scientific functions on both exact S2FFT rectangular samplings:
+
+```text
+GL       (L, 2L - 1)
+CC/MWSS  (L + 1, 2L)
+```
+
+CC/MWSS is supported alongside GL. Scalar and spin-1 conventions are tested
+independently, and the complete JAX operation set is compared with DUCC on
+identical fields. Float32 accuracy is characterized and recorded but
+unsupported; the supported execution mode is float64/complex128 with JAX x64
+enabled, and x64-disabled execution is tested for clean rejection.
+
+The JAX namespace uses trailing latitude/longitude dimensions with arbitrary
+leading dimensions. Regridding resizes the spectral coefficient domain in JAX.
+The base package does not import JAX or S2FFT.
+
+v0.3.0 does not add HEALPix, `xarray_jax`, Flax/Equinox wrappers, or an xarray
+`backend=` selector. Those additions require their own demonstrated use case or
+grid-validation work.
 
 ---
 

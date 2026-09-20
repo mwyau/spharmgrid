@@ -9,9 +9,9 @@
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22559210-blue.svg)](https://doi.org/10.5281/zenodo.22559210)
 
-Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray and PyTorch.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields and PyTorch tensors. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. The Xarray/NumPy API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields, PyTorch tensors, and JAX arrays. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. The Xarray/NumPy API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics), and the optional JAX API uses [S2FFT](https://github.com/astro-informatics/s2fft).
 
 Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids.
 
@@ -31,15 +31,26 @@ uv add spharmgrid
 conda install -c conda-forge spharmgrid
 ```
 
-Optional groups are:
+Optional extras are:
 
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
-- `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O.
+- `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O;
+- `spharmgrid[jax]` — JAX arrays and S2FFT transforms.
 
 The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`. See the
 [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
 for installation instructions.
+
+The `spharmgrid.jax` API requires JAX and S2FFT. See the
+[JAX API documentation](https://spharmgrid.readthedocs.io/en/latest/jax.html)
+for supported GL and CC/MWSS dimensions, x64 and dtype requirements, and
+examples. For CPU use, `spharmgrid[jax]` installs JAX and S2FFT. For GPU or
+TPU use, install the appropriate JAX accelerator build first by following the
+[official JAX installation instructions](https://docs.jax.dev/en/latest/installation.html),
+then install `spharmgrid[jax]`; spharmgrid does not bundle or select CUDA or
+TPU builds. The JAX API currently requires JAX x64 mode and `float64` spatial
+inputs; it does not enable x64 globally.
 
 Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
 
@@ -87,6 +98,25 @@ filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
 See the [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and PyTorch bandwidth limits.
+
+For differentiable JAX workflows, configure JAX x64 mode before creating
+arrays and use `spharmgrid.jax`:
+
+```python
+import jax
+
+jax.config.update("jax_enable_x64", True)
+
+import jax.numpy as jnp
+import spharmgrid as sg
+import spharmgrid.jax as sgj
+
+grid = sg.gaussian_grid(64, 127)
+field = jnp.ones((grid.nlat, grid.nlon), dtype=jnp.float64)
+filtered = sgj.filter(field, "T42", grid=grid)
+```
+
+The last two array dimensions are latitude and longitude.
 
 ## Documentation
 

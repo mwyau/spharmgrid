@@ -1,6 +1,6 @@
 {
   "title": "spharmgrid",
-  "description": "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray and PyTorch.",
+  "description": "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX.",
   "creators": [
     {
       "name": "Yau, Albert M. W.",
@@ -19,6 +19,7 @@
     "atmospheric kinematics",
     "Xarray",
     "PyTorch",
+    "JAX",
     "Python"
   ],
   "related_identifiers": [
