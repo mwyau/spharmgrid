@@ -23,9 +23,6 @@ import spharmgrid.jax as sgj
 from spharmgrid.metadata import find_variable
 from tests.optional.jax._fields import scalar_values, vector_values
 
-_RTOL = 2.0e-10
-_ATOL = 2.0e-11
-
 
 def _coords(field: xr.DataArray, grid: sg.Grid) -> dict[str, object]:
     """Build static output coordinates for a field on ``grid``."""
@@ -203,6 +200,7 @@ assert isinstance(result.data, jax.Array)
 def test_dataarray_filter_jit_and_grad_match_raw_jax_api(
     gl_grid: sg.Grid,
 ) -> None:
+    atol = 2.0e-13
     values = scalar_values(gl_grid)
     field = _field(
         values,
@@ -219,10 +217,10 @@ def test_dataarray_filter_jit_and_grad_match_raw_jax_api(
     assert actual.name == field.name
     _assert_horizontal_coordinates(actual, gl_grid)
     np.testing.assert_allclose(
-        np.asarray(eager.data), np.asarray(expected), rtol=_RTOL, atol=_ATOL
+        np.asarray(eager.data), np.asarray(expected), rtol=0.0, atol=atol
     )
     np.testing.assert_allclose(
-        np.asarray(actual.data), np.asarray(expected), rtol=_RTOL, atol=_ATOL
+        np.asarray(actual.data), np.asarray(expected), rtol=0.0, atol=atol
     )
 
     def loss(value: xr.DataArray) -> Array:
@@ -240,14 +238,15 @@ def test_dataarray_filter_jit_and_grad_match_raw_jax_api(
     np.testing.assert_allclose(
         np.asarray(gradient.data),
         np.asarray(expected_gradient),
-        rtol=_RTOL,
-        atol=_ATOL,
+        rtol=0.0,
+        atol=atol,
     )
 
 
 def test_static_coordinates_retrace_and_leading_dimensions_survive(
     gl_grid: sg.Grid,
 ) -> None:
+    atol = 2.0e-13
     values = np.stack((scalar_values(gl_grid), 2.0 * scalar_values(gl_grid)))
     field = _field(
         values,
@@ -264,7 +263,7 @@ def test_static_coordinates_retrace_and_leading_dimensions_survive(
     np.testing.assert_array_equal(actual.coords["time"], field.coords["time"])
     _assert_horizontal_coordinates(actual, gl_grid)
     np.testing.assert_allclose(
-        np.asarray(actual.data), np.asarray(expected), rtol=_RTOL, atol=_ATOL
+        np.asarray(actual.data), np.asarray(expected), rtol=0.0, atol=atol
     )
 
     def identity(value: xr.DataArray) -> xr.DataArray:
@@ -289,6 +288,7 @@ def test_regrid_jit_builds_new_target_coordinates(
     gl_grid: sg.Grid,
     gl_target_grid: sg.Grid,
 ) -> None:
+    atol = 2.0e-13
     field = _field(scalar_values(gl_grid), gl_grid, name="field")
     expected = sgj.regrid(
         field.data,
@@ -304,13 +304,14 @@ def test_regrid_jit_builds_new_target_coordinates(
     assert actual.name == field.name
     _assert_horizontal_coordinates(actual, gl_target_grid)
     np.testing.assert_allclose(
-        np.asarray(actual.data), np.asarray(expected), rtol=_RTOL, atol=_ATOL
+        np.asarray(actual.data), np.asarray(expected), rtol=0.0, atol=atol
     )
 
 
 def test_vector_kinematics_jit_and_grad_match_raw_jax_api(
     cc_grid: sg.Grid,
 ) -> None:
+    atol = 2.0e-19
     u_values, v_values = vector_values(cc_grid)
     u = _field(u_values, cc_grid, name="u", attrs={"units": "m s-1"})
     v = _field(v_values, cc_grid, name="v", attrs={"units": "m s-1"})
@@ -335,14 +336,14 @@ def test_vector_kinematics_jit_and_grad_match_raw_jax_api(
         np.testing.assert_allclose(
             np.asarray(outputs[0].data),
             np.asarray(expected_vorticity),
-            rtol=_RTOL,
-            atol=_ATOL,
+            rtol=0.0,
+            atol=atol,
         )
         np.testing.assert_allclose(
             np.asarray(outputs[1].data),
             np.asarray(expected_divergence),
-            rtol=_RTOL,
-            atol=_ATOL,
+            rtol=0.0,
+            atol=atol,
         )
 
     def loss(first: xr.DataArray) -> Array:
@@ -361,8 +362,8 @@ def test_vector_kinematics_jit_and_grad_match_raw_jax_api(
     np.testing.assert_allclose(
         np.asarray(gradient.data),
         np.asarray(expected_gradient),
-        rtol=_RTOL,
-        atol=_ATOL,
+        rtol=0.0,
+        atol=atol,
     )
 
 
@@ -414,6 +415,7 @@ def test_dataset_cf_discovery_does_not_survive_jax_boundary() -> None:
 def test_dataset_kinematics_is_jittable_with_labeled_outputs(
     cc_grid: sg.Grid,
 ) -> None:
+    atol = 2.0e-19
     u_values, v_values = vector_values(cc_grid)
     u = _field(u_values, cc_grid, name="u")
     v = _field(v_values, cc_grid, name="v")
@@ -435,14 +437,14 @@ def test_dataset_kinematics_is_jittable_with_labeled_outputs(
     np.testing.assert_allclose(
         np.asarray(actual["vo"].data),
         np.asarray(expected_vorticity),
-        rtol=_RTOL,
-        atol=_ATOL,
+        rtol=0.0,
+        atol=atol,
     )
     np.testing.assert_allclose(
         np.asarray(actual["d"].data),
         np.asarray(expected_divergence),
-        rtol=_RTOL,
-        atol=_ATOL,
+        rtol=0.0,
+        atol=atol,
     )
 
 

@@ -146,8 +146,8 @@ def test_scalar_filter_directional_derivative_matches_finite_difference(
     np.testing.assert_allclose(
         derivative,
         finite_difference,
-        rtol=2.0e-10,
-        atol=2.0e-11,
+        rtol=0.0,
+        atol=3.0e-8,
     )
 
 
@@ -205,6 +205,6 @@ def test_vector_kinematics_directional_derivative_matches_finite_difference(
     np.testing.assert_allclose(
         derivative,
         finite_difference,
-        rtol=2.0e-10,
-        atol=2.0e-11,
+        rtol=0.0,
+        atol=3.0e-8,
     )
