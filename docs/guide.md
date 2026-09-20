@@ -1,6 +1,6 @@
 # User guide
 
-Learn the main spharmgrid workflows for Xarray and PyTorch, from filtering and regridding to atmospheric kinematics and differential operators.
+Learn the main spharmgrid workflows for Xarray, PyTorch, and JAX, from filtering and regridding to atmospheric kinematics and differential operators.
 
 ```{toctree}
 ---
@@ -14,4 +14,5 @@ operators
 grids
 cf
 torch
+jax
 ```

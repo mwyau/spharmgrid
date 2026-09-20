@@ -11,6 +11,10 @@ The module-level functions documented below expose the same core operations for 
 The Xarray/NumPy API uses DUCC through `ducc0` for spherical harmonic transforms.
 The optional PyTorch tensor API uses `torch-harmonics`, is imported as
 `spharmgrid.torch`, and is documented in {doc}`torch`.
+The optional JAX array API uses S2FFT, is imported as `spharmgrid.jax`, and is
+documented in {doc}`jax`.
+It requires JAX x64 mode and `float64` input arrays; spharmgrid does not change
+the process-wide JAX precision setting.
 
 ## Typing
 

@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.0.dev0
+
+### JAX
+
+- Added the optional `spharmgrid.jax` array API backed by S2FFT for scalar and
+  spin-1 spherical harmonic operations on exact GL and CC/MWSS grids.
+- Added JAX-native coefficient filtering, spectral regridding, atmospheric
+  kinematics, automatic differentiation, and `jit`/`vmap` execution.
+- Added the JAX installation and API documentation, CPU CI coverage, and DUCC
+  parity tests for GL and CC/MWSS sampling.
+- JAX transforms use cached S2FFT O(L²) Price–McEwen recursion precomputations;
+  scalar transforms use S2FFT's real-field path and spin-1 transforms use the
+  complex path.
+- The JAX API requires JAX x64 mode and `float64` inputs; spharmgrid does not
+  enable x64 globally.
+
+### Compatibility
+
+- Raised the minimum Xarray version to 2025.1.1, including the Zarr v3 support
+  used by the CLI.
+
 ## v0.2.0 - 2026-09-19
 
 ### Spectral truncation

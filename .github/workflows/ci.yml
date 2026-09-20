@@ -173,6 +173,60 @@ jobs:
           disable_search: true
           fail_ci_if_error: false
 
+  jax:
+    name: JAX tests (Python 3.12)
+    needs: code-quality
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.12"
+      - run: uv sync --no-default-groups --group jax-dev --extra jax --frozen
+      - name: Verify unsupported JAX single precision is rejected
+        env:
+          JAX_ENABLE_X64: "0"
+        run: uv run --no-sync pytest tests/optional/jax/test_jax_precision.py
+      - name: Run JAX tests with coverage (x64)
+        env:
+          JAX_ENABLE_X64: "1"
+        run: >-
+          uv run --no-sync pytest
+          tests/optional/jax
+          --cov=src/spharmgrid/jax
+          --cov-branch
+          --cov-report=term-missing
+          --cov-report=xml:coverage-jax.xml
+          --junitxml=junit-jax.xml
+          -o junit_family=legacy
+      - name: Upload JAX test results
+        if: ${{ !cancelled() && hashFiles('junit-jax.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./junit-jax.xml
+          report_type: test_results
+          flags: jax
+          name: jax-py312
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+      - name: Upload JAX coverage
+        if: ${{ !cancelled() && hashFiles('coverage-jax.xml') != '' }}
+        uses: codecov/codecov-action@v7.0.0
+        with:
+          files: ./coverage-jax.xml
+          flags: jax
+          name: jax-py312
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+
   optional:
     name: Optional tests (Python 3.14)
     needs: code-quality
@@ -199,9 +253,9 @@ jobs:
       - name: Run optional tests with coverage
         run: >-
           uv run --no-sync pytest
-          tests/optional/test_cf_xarray.py
-          tests/optional/test_dask.py
-          tests/optional/test_cli_backends.py
+          tests/optional
+          --ignore=tests/optional/jax
+          --ignore=tests/optional/torch
           --cov=spharmgrid
           --cov-branch
           --cov-report=term-missing
@@ -287,12 +341,22 @@ jobs:
           enable-cache: true
           save-cache: false
           python-version: "3.11"
-      - run: uv sync --no-default-groups --group test --extra cf --extra dask --resolution lowest-direct
       - run: >-
+          uv sync
+          --no-default-groups
+          --group test
+          --extra cf
+          --extra dask
+          --extra cli
+          --extra jax
+          --resolution lowest-direct
+      - name: Run minimum-dependency tests
+        env:
+          JAX_ENABLE_X64: "1"
+        run: >-
           uv run --no-sync pytest
           tests/unit
-          tests/optional/test_cf_xarray.py
-          tests/optional/test_dask.py
+          tests/optional
 
   docs:
     name: Docs tests (Python 3.14)
@@ -333,6 +397,13 @@ jobs:
           --group test
           --group parity
           --frozen
+      - name: Install jointly compatible JAX parity dependencies
+        run: >-
+          uv pip install
+          --python .venv/bin/python
+          --upgrade
+          ".[jax]"
+          "numpy<2"
       - name: Install Torch binary test dependencies
         run: |
           uv pip install \
@@ -344,15 +415,11 @@ jobs:
             --only-binary=:all: \
             --no-deps \
             "torch-harmonics==0.9.2"
-      # pyspharm-syl 1.2.1 is built against the NumPy 1.x C API, while the
-      # frozen project environment intentionally resolves NumPy 2.x.
-      - name: Verify pyspharm NumPy overlay
-        run: >-
-          uv run --no-sync --with "numpy==1.26.4" python -c
-          "import numpy, spharm; assert numpy.__version__ == '1.26.4'"
       - name: Run parity tests with coverage
+        env:
+          JAX_ENABLE_X64: "1"
         run: >-
-          uv run --no-sync --with "numpy==1.26.4" pytest
+          uv run --no-sync pytest
           tests/parity
           --cov=spharmgrid
           --cov-branch
