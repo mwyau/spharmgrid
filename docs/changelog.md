@@ -4,17 +4,42 @@
 
 ### JAX
 
-- Added the optional `spharmgrid.jax` array API backed by S2FFT for scalar and
-  spin-1 spherical harmonic operations on exact GL and CC/MWSS grids.
-- Added JAX-native coefficient filtering, spectral regridding, atmospheric
-  kinematics, automatic differentiation, and `jit`/`vmap` execution.
-- Added the JAX installation and API documentation, CPU CI coverage, and DUCC
-  parity tests for GL and CC/MWSS sampling.
-- JAX transforms use cached S2FFT O(L²) Price–McEwen recursion precomputations;
-  scalar transforms use S2FFT's real-field path and spin-1 transforms use the
+- Added the optional `spharmgrid.jax` array API backed by S2FFT, with the same
+  19 scientific operations as `spharmgrid.torch` on exact GL and CC/MWSS
+  grids.
+- Added scalar and spin-1 spherical harmonic filtering, spectral regridding,
+  differential operators, atmospheric kinematics, Helmholtz decomposition, and
+  inverse wind transforms for JAX arrays.
+- Added leading array dimensions, `jit`, `vmap`, and automatic
+  differentiation. The JAX API requires JAX x64 mode and `float64` spatial
+  inputs; spharmgrid does not change the process-wide JAX precision setting.
+- JAX transforms cache S2FFT O(L²) Price–McEwen recursion precomputations.
+  Scalar transforms use S2FFT's real-field path; spin-1 transforms use its
   complex path.
-- The JAX API requires JAX x64 mode and `float64` inputs; spharmgrid does not
-  enable x64 globally.
+
+### Validation and interoperability
+
+- Added numerical comparisons between the JAX and DUCC APIs across GL and
+  CC/MWSS grids, scalar and vector operations, regridding, differential
+  operators, and atmospheric wind diagnostics.
+- Added JAX tests for `jit`, `vmap`, automatic differentiation, cold-cache
+  precomputation, inverse-gradient projection, near-bandlimit regridding, and
+  the supported dependency floor.
+- Added development tests with `gdm-xarray-jax` for Xarray `DataArray` and
+  `Dataset` PyTrees, including JIT, automatic differentiation, regridding,
+  vector kinematics, leading dimensions, and static coordinates.
+- Added dedicated JAX CI coverage and joint JAX, PyTorch, DUCC, and pyspharm
+  parity environments where the dependencies are compatible.
+
+### Documentation
+
+- Added separate PyTorch and JAX API reference pages for all public tensor and
+  array operations and the four public `spharmgrid.torch.nn` modules.
+- Added a separate Xarray accessor API reference for `DataArray.sg` and
+  `Dataset.sg`.
+- Added docstrings for the public PyTorch module methods and corrected their
+  generated constructor signatures when optional PyTorch dependencies are
+  mocked during documentation builds.
 
 ### Compatibility
 
