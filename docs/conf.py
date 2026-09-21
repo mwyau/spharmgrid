@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import inspect
 from datetime import UTC, datetime
+
+from sphinx.application import Sphinx
 
 project = "spharmgrid"
 author = "Albert Yau"
@@ -45,3 +48,39 @@ html_context = {
 myst_heading_anchors = 3
 myst_enable_extensions = ["dollarmath"]
 myst_fence_as_directive = ["math"]
+
+
+def _torch_module_signature(
+    app: Sphinx,
+    obj_type: str,
+    name: str,
+    obj: object,
+    options: object,
+    signature: str | None,
+    return_annotation: str | None,
+) -> tuple[str, None] | None:
+    """Use each mocked PyTorch module's real constructor signature."""
+    del app, options, signature, return_annotation
+    if obj_type != "class" or not name.startswith("spharmgrid.torch.nn."):
+        return None
+
+    init = obj.__dict__.get("__init__")
+    if init is None:
+        return None
+
+    try:
+        init_signature = inspect.signature(init, eval_str=True)
+    except (NameError, TypeError, ValueError):
+        return None
+
+    parameters = list(init_signature.parameters.values())[1:]
+    class_signature = init_signature.replace(
+        parameters=parameters,
+        return_annotation=inspect.Signature.empty,
+    )
+    return str(class_signature), None
+
+
+def setup(app: Sphinx) -> None:
+    """Register local Sphinx hooks."""
+    app.connect("autodoc-process-signature", _torch_module_signature)
