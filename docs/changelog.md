@@ -25,11 +25,13 @@
 - Added JAX tests for `jit`, `vmap`, automatic differentiation, cold-cache
   precomputation, inverse-gradient projection, near-bandlimit regridding, and
   the supported dependency floor.
-- Added development tests with `gdm-xarray-jax` for Xarray `DataArray` and
-  `Dataset` PyTrees, including JIT, automatic differentiation, regridding,
-  vector kinematics, leading dimensions, and static coordinates.
-- Added dedicated JAX CI coverage and joint JAX, PyTorch, DUCC, and pyspharm
-  parity environments where the dependencies are compatible.
+- Added development-only `gdm-xarray-jax` v0.1.1 tests for Xarray `DataArray`
+  and `Dataset` PyTrees, including JIT, automatic differentiation, regridding,
+  vector kinematics, leading dimensions, and static coordinates. Names,
+  dimensions, and static coordinates survive the tested JAX transformations;
+  ordinary Xarray attrs do not.
+- Added dedicated JAX CI coverage and ran JAX, PyTorch, and pyspharm parity
+  tests in a jointly compatible environment.
 
 ### Documentation
 
@@ -37,9 +39,9 @@
   array operations and the four public `spharmgrid.torch.nn` modules.
 - Added a separate Xarray accessor API reference for `DataArray.sg` and
   `Dataset.sg`.
-- Added docstrings for the public PyTorch module methods and corrected their
-  generated constructor signatures when optional PyTorch dependencies are
-  mocked during documentation builds.
+- Documentation builds mock the optional PyTorch and JAX dependencies. PyTorch
+  module constructor signatures are derived from their Python `__init__`
+  methods, and all public module methods now have docstrings.
 
 ### Compatibility
 
