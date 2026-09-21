@@ -11,8 +11,9 @@
   differential operators, atmospheric kinematics, Helmholtz decomposition, and
   inverse wind transforms for JAX arrays.
 - Added leading array dimensions, `jit`, `vmap`, and automatic
-  differentiation. The JAX API requires JAX x64 mode and `float64` spatial
-  inputs; spharmgrid does not change the process-wide JAX precision setting.
+  differentiation. The JAX API requires JAX x64 mode; `float32` spatial inputs
+  are promoted to `float64` for S2FFT execution and return `float64` results.
+  spharmgrid does not change the process-wide JAX precision setting.
 - JAX transforms cache S2FFT O(L²) Price–McEwen recursion precomputations.
   Scalar transforms use S2FFT's real-field path; spin-1 transforms use its
   complex path.

@@ -100,12 +100,8 @@ def _require_array(field: Array, grid: Grid, name: str = "field") -> None:
             f"{name} must end with ({grid.nlat}, {grid.nlon}) spatial dimensions; "
             f"got {tuple(field.shape[-2:])}"
         )
-    if field.dtype != jnp.float64:
-        raise TypeError(
-            f"{name} must use float64; float32 and complex64 inputs are not "
-            "supported because the measured S2FFT transform paths are not "
-            f"sufficiently accurate in single precision (got {field.dtype})"
-        )
+    if field.dtype not in (jnp.float32, jnp.float64):
+        raise TypeError(f"{name} must use float32 or float64; got {field.dtype}")
 
 
 def _require_vector_arrays(u: Array, v: Array, grid: Grid) -> None:
@@ -244,7 +240,7 @@ def _inverse(coefficients: Array, bandlimit: int, sampling: str, spin: int) -> A
 
 
 def _scalar_analysis(field: Array, transform: _JaxTransform) -> Array:
-    canonical = _canonicalize(field, transform.source_layout)
+    canonical = _canonicalize(field.astype(jnp.float64), transform.source_layout)
     coefficients = _forward(
         canonical,
         transform.source_bandlimit,
@@ -421,9 +417,11 @@ def _vector_analysis(
     # S2FFT's spin fields are q_+=v_theta+i*v_phi and q_-=v_theta-i*v_phi.
     # The DUCC-compatible vector coefficients are E=(a_- - a_+)/2 and
     # B=i*(a_+ + a_-)/2; this mapping fixes both the component order and signs.
-    unit = _imaginary_unit(u.dtype)
-    q_plus = -v + unit * u
-    q_minus = -v - unit * u
+    u64 = u.astype(jnp.float64)
+    v64 = v.astype(jnp.float64)
+    unit = _imaginary_unit(u64.dtype)
+    q_plus = -v64 + unit * u64
+    q_minus = -v64 - unit * u64
     plus = _spin_analysis(q_plus, transform, 1)
     minus = _spin_analysis(q_minus, transform, -1)
     electric = 0.5 * (minus - plus)

@@ -5,8 +5,8 @@ For the `.sg` interface, see {doc}`accessor_api`. The optional PyTorch tensor
 API uses `torch-harmonics`; see {doc}`torch` for usage and {doc}`torch_api`
 for its API reference. The optional JAX array API uses S2FFT; see {doc}`jax`
 for usage and {doc}`jax_api` for its API reference. The JAX API requires JAX
-x64 mode and `float64` input arrays; spharmgrid does not change the process-wide
-JAX precision setting.
+x64 mode; `float32` inputs are promoted to `float64` for S2FFT execution.
+spharmgrid does not change the process-wide JAX precision setting.
 
 ## Typing
 

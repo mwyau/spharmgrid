@@ -605,15 +605,17 @@ Do not infer spharmgrid differentiability solely from the transform library.
 
 ## 11. Precision
 
-The supported `spharmgrid.jax` execution mode is float64/complex128 with JAX
-x64 enabled by the application or test process. The adapter must not change
-the process-wide `jax_enable_x64` setting and must reject x64-disabled or
-single-precision input before entering the transform path.
+The supported S2FFT execution mode inside `spharmgrid.jax` is
+float64/complex128 with JAX x64 enabled by the application or test process. The
+adapter must not change the process-wide `jax_enable_x64` setting and must
+reject x64-disabled execution. Public `float32` inputs are accepted but
+promoted to `float64` before entering the transform path, and results remain
+`float64`.
 
 Float32 characterization of the ordinary S2FFT GL and MWSS paths found that
 ordinary MWSS scalar float32 has field-scale errors of order `10^-1`; GL and
-spin-1 cases are more accurate, but float32 is unsupported so the JAX API has
-one conservative precision contract. O(L²) precomputations do not repair the
+spin-1 cases are more accurate. Direct float32 S2FFT execution remains
+unsupported, so the JAX API promotes float32 public inputs to float64. O(L²) precomputations do not repair the
 float32 Price–McEwen recurrence, and O(L³) kernels are not a scalable remedy.
 Use analytic and cross-backend error measurements to set float64 tolerances;
 do not require bitwise equality.
@@ -833,8 +835,9 @@ Phase 3 is complete when:
 - geographic-vector/spin conventions are independently proven for each backend;
 - JAX paths are tested under `jit`, `vmap`, and automatic differentiation
   without NumPy breaks;
-- float32 accuracy is characterized and recorded but unsupported;
-- float64/complex128 with JAX x64 enabled is the supported JAX execution mode;
+- direct float32 S2FFT accuracy is characterized and recorded but unsupported;
+- public float32 JAX inputs are promoted to float64 for S2FFT execution;
+- float64/complex128 with JAX x64 enabled is the supported S2FFT execution mode;
 - x64-disabled execution is tested for clean deterministic rejection;
 - S2FFT O(L²) recursion precomputations are ordinary transform setup and are
   cached privately by static transform settings;
@@ -894,9 +897,10 @@ CC/MWSS  (L + 1, 2L)
 
 CC/MWSS is supported alongside GL. Scalar and spin-1 conventions are tested
 independently, and the complete JAX operation set is compared with DUCC on
-identical fields. Float32 accuracy is characterized and recorded but
-unsupported; the supported execution mode is float64/complex128 with JAX x64
-enabled, and x64-disabled execution is tested for clean rejection.
+identical fields. Direct float32 S2FFT accuracy is characterized and recorded
+but unsupported; public float32 inputs are promoted to float64, the supported
+transform mode is float64/complex128 with JAX x64 enabled, and x64-disabled
+execution is tested for clean rejection.
 
 The JAX namespace uses trailing latitude/longitude dimensions with arbitrary
 leading dimensions. Regridding resizes the spectral coefficient domain in JAX.

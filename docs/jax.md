@@ -43,8 +43,10 @@ CC latitudes are the pole-including equally spaced nodes from −90 to 90
 degrees. Both latitude orders and cyclic longitude coordinate conventions are
 accepted.
 
-`spharmgrid.jax` requires JAX x64 mode. Public spatial inputs must be
-`float64`; S2FFT coefficient and spin-transform arrays use `complex128`.
+`spharmgrid.jax` requires JAX x64 mode. Public spatial inputs may be
+`float32` or `float64`. `float32` inputs are promoted to `float64` before the
+S2FFT transform path, and results are returned in `float64`. S2FFT coefficient
+and spin-transform arrays use `complex128`.
 Configure JAX before creating arrays:
 
 ```python
@@ -54,10 +56,12 @@ jax.config.update("jax_enable_x64", True)
 ```
 
 The package does not modify this process-wide setting. The tested ordinary
-S2FFT MWSS scalar path produced about 9% interior relative error in `float32`
-from L=8 through L=128, so `float32` and `complex64` inputs are rejected.
-S2FFT also warns that disabling 64-bit precision can substantially affect
-numerical accuracy at moderate L.
+S2FFT MWSS scalar path produced about 9% interior relative error in direct
+`float32` execution from L=8 through L=128. spharmgrid therefore promotes
+`float32` inputs before entering S2FFT rather than executing transforms in
+single precision. Complex and other unsupported public input dtypes are
+rejected. S2FFT also warns that disabling 64-bit precision can substantially
+affect numerical accuracy at moderate L.
 
 The JAX transforms cache S2FFT's O(L²) Price–McEwen recursion precomputations
 for repeated static transform settings. Scalar transforms use S2FFT's

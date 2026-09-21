@@ -56,7 +56,7 @@ def filter(
     coefficients = _apply_selection(
         _scalar_analysis(field, transform), transform, taper
     )
-    return _scalar_synthesis(coefficients, transform).astype(field.dtype)
+    return _scalar_synthesis(coefficients, transform)
 
 
 def regrid(
@@ -79,7 +79,7 @@ def regrid(
     coefficients = _apply_selection(
         _scalar_analysis(field, transform), transform, taper
     )
-    return _scalar_synthesis(coefficients, transform).astype(field.dtype)
+    return _scalar_synthesis(coefficients, transform)
 
 
 def regrid_vector(
@@ -104,7 +104,7 @@ def regrid_vector(
     coefficients = _vector_analysis(u, v, transform)
     selected = _apply_selection(coefficients, transform, taper)
     output_u, output_v = _vector_synthesis(selected, transform)
-    return output_u.astype(u.dtype), output_v.astype(v.dtype)
+    return output_u, output_v
 
 
 def gradient(
@@ -124,7 +124,7 @@ def gradient(
         (scalar_coefficients * scale, jnp.zeros_like(scalar_coefficients)), axis=-3
     )
     eastward, northward = _vector_synthesis(vector_coefficients, transform)
-    return eastward.astype(field.dtype), northward.astype(field.dtype)
+    return eastward, northward
 
 
 def inverse_gradient(
@@ -143,7 +143,7 @@ def inverse_gradient(
     coefficients = _vector_analysis(eastward, northward, transform)
     scale = _degree_scale(transform.source_bandlimit, eastward.dtype) / radius
     potential = _safe_divide(coefficients[..., 0, :, :], scale)
-    return _scalar_synthesis(potential, transform).astype(eastward.dtype)
+    return _scalar_synthesis(potential, transform)
 
 
 def laplacian(
@@ -159,7 +159,7 @@ def laplacian(
     transform = _make_transform(grid, grid, None)
     coefficients = _scalar_analysis(field, transform)
     multiplier = _laplacian_multiplier(transform.source_bandlimit, radius, field.dtype)
-    return _scalar_synthesis(coefficients * multiplier, transform).astype(field.dtype)
+    return _scalar_synthesis(coefficients * multiplier, transform)
 
 
 def inverse_laplacian(
@@ -177,7 +177,7 @@ def inverse_laplacian(
     multiplier = _inverse_laplacian_multiplier(
         transform.source_bandlimit, radius, field.dtype
     )
-    return _scalar_synthesis(coefficients * multiplier, transform).astype(field.dtype)
+    return _scalar_synthesis(coefficients * multiplier, transform)
 
 
 def vector_laplacian(
