@@ -54,18 +54,22 @@ constraints, differentiability, and examples.
 .. autofunction:: spharmgrid.torch.wind
 ```
 
-## Reusable modules
+## PyTorch modules
 
 ```{eval-rst}
 .. autoclass:: spharmgrid.torch.nn.SHTOperators
    :members:
+   :member-order: bysource
 
 .. autoclass:: spharmgrid.torch.nn.SHTFilter
    :members:
+   :member-order: bysource
 
 .. autoclass:: spharmgrid.torch.nn.SHTRegrid
    :members:
+   :member-order: bysource
 
 .. autoclass:: spharmgrid.torch.nn.SHTVectorRegrid
    :members:
+   :member-order: bysource
 ```

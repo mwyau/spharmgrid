@@ -80,6 +80,7 @@ class SHTOperators(torch.nn.Module):
         lmax: int | None = None,
         taper: float | None = None,
     ) -> Tensor:
+        """Apply a hard or Sardeshmukh--Hoskins spectral selection."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
         _require_tensor(field, self.grid)
@@ -91,10 +92,12 @@ class SHTOperators(torch.nn.Module):
         )
 
     def gradient(self, field: Tensor) -> tuple[Tensor, Tensor]:
+        """Return the physical eastward and northward gradient."""
         _require_tensor(field, self.grid)
         return _gradient_with_state(field, self._state, self.radius)
 
     def inverse_gradient(self, eastward: Tensor, northward: Tensor) -> Tensor:
+        """Recover the irrotational scalar potential from a vector field."""
         _require_vector_tensors(eastward, northward, self.grid)
         return _inverse_gradient_with_state(
             eastward,
@@ -104,14 +107,17 @@ class SHTOperators(torch.nn.Module):
         )
 
     def laplacian(self, field: Tensor) -> Tensor:
+        """Apply the physical scalar spherical Laplacian."""
         _require_tensor(field, self.grid)
         return _laplacian_with_state(field, self._state, self.radius)
 
     def inverse_laplacian(self, field: Tensor) -> Tensor:
+        """Solve the scalar inverse Laplacian with a zero degree-zero mode."""
         _require_tensor(field, self.grid)
         return _inverse_laplacian_with_state(field, self._state, self.radius)
 
     def vector_laplacian(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
+        """Apply the vector spherical Laplacian to geographic wind."""
         _require_vector_tensors(u, v, self.grid)
         return _vector_laplacian_with_state(
             u,
@@ -126,6 +132,7 @@ class SHTOperators(torch.nn.Module):
         u: Tensor,
         v: Tensor,
     ) -> tuple[Tensor, Tensor]:
+        """Solve the vector inverse Laplacian with degree zero removed."""
         _require_vector_tensors(u, v, self.grid)
         return _vector_laplacian_with_state(
             u,
@@ -136,30 +143,37 @@ class SHTOperators(torch.nn.Module):
         )
 
     def vorticity(self, u: Tensor, v: Tensor) -> Tensor:
+        """Compute relative vorticity from eastward and northward wind."""
         _require_vector_tensors(u, v, self.grid)
         return _kinematics_with_state(u, v, self._state, self.radius)[0]
 
     def divergence(self, u: Tensor, v: Tensor) -> Tensor:
+        """Compute horizontal wind divergence."""
         _require_vector_tensors(u, v, self.grid)
         return _kinematics_with_state(u, v, self._state, self.radius)[1]
 
     def kinematics(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
+        """Return ``(vorticity, divergence)`` from one vector analysis."""
         _require_vector_tensors(u, v, self.grid)
         return _kinematics_with_state(u, v, self._state, self.radius)
 
     def streamfunction(self, u: Tensor, v: Tensor) -> Tensor:
+        """Compute streamfunction from a wind field."""
         _require_vector_tensors(u, v, self.grid)
         return _potentials_with_state(u, v, self._state, self.radius)[0]
 
     def velocity_potential(self, u: Tensor, v: Tensor) -> Tensor:
+        """Compute velocity potential from a wind field."""
         _require_vector_tensors(u, v, self.grid)
         return _potentials_with_state(u, v, self._state, self.radius)[1]
 
     def potentials(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
+        """Return ``(streamfunction, velocity_potential)`` from one analysis."""
         _require_vector_tensors(u, v, self.grid)
         return _potentials_with_state(u, v, self._state, self.radius)
 
     def helmholtz(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        """Return divergent and rotational eastward and northward wind."""
         _require_vector_tensors(u, v, self.grid)
         return _helmholtz_with_state(u, v, self._state)
 
@@ -169,6 +183,7 @@ class SHTOperators(torch.nn.Module):
         *,
         source: RotationalWindSource,
     ) -> tuple[Tensor, Tensor]:
+        """Recover rotational wind from vorticity or streamfunction."""
         _validate_scalar_source(source, ("vorticity", "streamfunction"))
         _require_tensor(field, self.grid)
         return _single_source_wind_with_state(
@@ -185,6 +200,7 @@ class SHTOperators(torch.nn.Module):
         *,
         source: DivergentWindSource,
     ) -> tuple[Tensor, Tensor]:
+        """Recover divergent wind from divergence or velocity potential."""
         _validate_scalar_source(
             source,
             ("divergence", "velocity_potential"),
@@ -205,6 +221,7 @@ class SHTOperators(torch.nn.Module):
         *,
         source: WindSource,
     ) -> tuple[Tensor, Tensor]:
+        """Reconstruct wind from vorticity/divergence or the two potentials."""
         _validate_source(source)
         _require_vector_tensors(first, second, self.grid)
         return _wind_with_state(first, second, self._state, source, self.radius)
@@ -238,6 +255,7 @@ class SHTFilter(torch.nn.Module):
         )
 
     def forward(self, field: Tensor) -> Tensor:
+        """Apply the configured spectral filter."""
         _require_tensor(field, self.grid)
         return _filter_impl(
             field,
@@ -278,6 +296,7 @@ class SHTRegrid(torch.nn.Module):
         )
 
     def forward(self, field: Tensor) -> Tensor:
+        """Regrid a scalar tensor to the configured target grid."""
         _require_tensor(field, self.source_grid)
         return _regrid_impl(
             field,
@@ -320,6 +339,7 @@ class SHTVectorRegrid(torch.nn.Module):
         _require_vector_bandwidth(self._state)
 
     def forward(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
+        """Regrid eastward and northward wind to the target grid."""
         _require_vector_tensors(u, v, self.source_grid)
         return _regrid_vector_impl(
             u,

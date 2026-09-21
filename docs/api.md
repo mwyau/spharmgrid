@@ -1,19 +1,12 @@
-# API reference
-
-## Xarray accessors
-
-For Xarray workflows, the `.sg` accessor is usually the simplest way to use spharmgrid. Importing `spharmgrid` registers `.sg` on both Xarray `DataArray` and `Dataset` objects, so spherical harmonic operations can be called directly on the data being transformed while preserving Xarray dimensions, coordinates, and metadata.
-
-`DataArray.sg` provides field operations such as filtering, regridding, gradients, Laplacians, and vector transforms. `Dataset.sg` also supports multi-variable atmospheric diagnostics such as vorticity, divergence, streamfunction, velocity potential, and wind decomposition, including variable discovery from canonical names and CF metadata.
-
-The module-level functions documented below expose the same core operations for direct function calls. Accessor-based examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
+# Xarray/NumPy API reference
 
 The Xarray/NumPy API uses DUCC through `ducc0` for spherical harmonic transforms.
-The optional PyTorch tensor API uses `torch-harmonics`; see {doc}`torch` for
-usage and {doc}`torch_api` for its API reference. The optional JAX array API
-uses S2FFT; see {doc}`jax` for usage and {doc}`jax_api` for its API reference.
-The JAX API requires JAX x64 mode and `float64` input arrays; spharmgrid does
-not change the process-wide JAX precision setting.
+For the `.sg` interface, see {doc}`accessor_api`. The optional PyTorch tensor
+API uses `torch-harmonics`; see {doc}`torch` for usage and {doc}`torch_api`
+for its API reference. The optional JAX array API uses S2FFT; see {doc}`jax`
+for usage and {doc}`jax_api` for its API reference. The JAX API requires JAX
+x64 mode and `float64` input arrays; spharmgrid does not change the process-wide
+JAX precision setting.
 
 ## Typing
 
