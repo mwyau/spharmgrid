@@ -1,8 +1,9 @@
 # JAX API reference
 
-The `spharmgrid.jax` namespace applies spharmgrid operations to `jax.Array`
-objects. See {doc}`jax` for installation, supported array shapes, precision
-requirements, JAX transformations, and examples.
+The `spharmgrid.jax` functions accept and return `jax.Array` objects. See
+{doc}`jax` for installation, supported shapes, precision requirements, JAX
+transformations, and examples. For JAX-backed Xarray objects, see
+{doc}`jax_accessor_api`.
 
 ## Scalar operations
 

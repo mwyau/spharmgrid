@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import pytest
+import xarray as xr
 from jax import config
 from jax.typing import DTypeLike
 
@@ -23,6 +24,25 @@ def test_x64_disabled_rejects_single_precision_execution(gl_grid: sg.Grid) -> No
     field = jnp.asarray(scalar_values(gl_grid), dtype=jnp.float32)
     with pytest.raises(RuntimeError, match="requires JAX x64 mode"):
         sgj.filter(field, grid=gl_grid)
+
+
+def test_x64_disabled_device_put_preserves_precision_error(
+    gl_grid: sg.Grid,
+) -> None:
+    if config.read("jax_enable_x64"):
+        pytest.skip("this check targets a process with JAX x64 disabled")
+
+    field = xr.DataArray(
+        scalar_values(gl_grid),
+        dims=("lat", "lon"),
+        coords={"lat": gl_grid.latitude, "lon": gl_grid.longitude},
+    )
+    placed = sgj.device_put(field)
+
+    assert placed.data.dtype == jnp.float32
+    assert not config.read("jax_enable_x64")
+    with pytest.raises(RuntimeError, match="requires JAX x64 mode"):
+        placed.sgj.filter()
 
 
 @pytest.mark.parametrize("dtype", [jnp.float32, jnp.complex64])

@@ -1,10 +1,10 @@
 # spharmgrid
 
-Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, JAX, and PyTorch.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields, PyTorch tensors, and JAX arrays. It computes relative vorticity (`vo`), divergence (`d`), streamfunction (`strf`), velocity potential (`vp`), Helmholtz decomposition, and inverse wind transforms. The Xarray/NumPy API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics), and the optional JAX API uses [S2FFT](https://github.com/astro-informatics/s2fft).
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields, JAX arrays, and PyTorch tensors. It computes relative vorticity (`vo`), divergence (`d`), streamfunction (`strf`), velocity potential (`vp`), Helmholtz decomposition, and inverse wind transforms. The Xarray API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional JAX API uses [S2FFT](https://github.com/astro-informatics/s2fft), and the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
 
-Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids. Xarray operations preserve leading dimensions and coordinates; PyTorch and JAX operations preserve leading array dimensions.
+Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids. Xarray operations preserve leading dimensions and coordinates; JAX and PyTorch operations preserve leading array dimensions.
 
 [GitHub](https://github.com/mwyau/spharmgrid) · [PyPI](https://pypi.org/project/spharmgrid/) · [conda-forge](https://anaconda.org/conda-forge/spharmgrid)
 
@@ -22,9 +22,6 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
-The PyTorch API is installed with `spharmgrid[torch]`; see {doc}`torch`. For
-accelerator-specific PyTorch builds, install the appropriate PyTorch build first,
-then install `spharmgrid[torch]`.
 The JAX API requires JAX and S2FFT, installed with `spharmgrid[jax]`; see
 {doc}`jax`. For CPU use, `spharmgrid[jax]` installs JAX and S2FFT. For GPU
 or TPU use, install the appropriate JAX accelerator build first by following the
@@ -32,6 +29,10 @@ or TPU use, install the appropriate JAX accelerator build first by following the
 then install `spharmgrid[jax]`; spharmgrid does not bundle or select CUDA or
 TPU builds. The JAX API currently requires JAX x64 mode and `float64` spatial
 inputs; it does not enable x64 globally.
+
+The PyTorch API is installed with `spharmgrid[torch]`; see {doc}`torch`. For
+accelerator-specific PyTorch builds, install the appropriate PyTorch build first,
+then install `spharmgrid[torch]`.
 
 ## Quick start
 
@@ -43,18 +44,6 @@ import spharmgrid
 
 field = xr.open_dataarray("msl.nc")
 filtered = field.sg.filter("T6-42")
-```
-
-For PyTorch tensors, use `spharmgrid.torch`:
-
-```python
-import torch
-import spharmgrid as sg
-import spharmgrid.torch as sgt
-
-grid = sg.gaussian_grid(64, 128)
-field = torch.randn(grid.nlat, grid.nlon)
-filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
 For JAX arrays, enable x64 mode before creating arrays:
@@ -71,6 +60,18 @@ import spharmgrid.jax as sgj
 grid = sg.gaussian_grid(64, 127)
 field = jnp.ones((grid.nlat, grid.nlon))
 filtered = sgj.filter(field, grid=grid, truncation="T42")
+```
+
+For PyTorch tensors, use `spharmgrid.torch`:
+
+```python
+import torch
+import spharmgrid as sg
+import spharmgrid.torch as sgt
+
+grid = sg.gaussian_grid(64, 128)
+field = torch.randn(grid.nlat, grid.nlon)
+filtered = sgt.filter(field, grid=grid, truncation="T42")
 ```
 
 ```{toctree}

@@ -1,8 +1,10 @@
 # PyTorch
 
-spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
-DUCC through `ducc0` for spherical harmonic transforms; the optional
-`spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors.
+The `spharmgrid.torch` namespace applies spherical harmonic operations to
+PyTorch tensors using `torch-harmonics`.
+
+The functional tensor API is documented in {doc}`torch_api`; reusable module
+classes are documented in {doc}`torch_nn_api`.
 
 Install the PyTorch API with:
 
@@ -29,7 +31,7 @@ spharmgrid maps its `Grid` descriptors to those transforms and applies the
 spectral selections, radius factors, and atmospheric vector conventions.
 Import `spharmgrid.torch` to load the PyTorch API.
 
-The Xarray/NumPy API uses DUCC and handles file and metadata workflows:
+The Xarray API uses DUCC and handles file and metadata workflows:
 
 ```python
 vo = sg.vorticity(u, v)
@@ -148,8 +150,3 @@ CUDA execution requires compatible PyTorch and torch-harmonics builds. Use the
 Xarray API for file I/O, CF metadata, and accessors. Learned spherical spectral
 convolution is available from torch-harmonics and neural-operator packages.
 
-On the tested Torch 2.11.0 and torch-harmonics 0.9.2 CUDA stack, default Inductor
-compilation of `SHTFilter(...)` fails during Triton code generation with
-`KeyError: 'complex64'`. A minimal compiled `torch_harmonics.RealSHT` reproduces
-the same failure, while `InverseRealSHT` compiles. The CUDA compile test records
-this torch-harmonics/Torch limitation as an expected failure.

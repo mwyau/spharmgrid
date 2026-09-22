@@ -4,6 +4,8 @@ The `spharmgrid.torch` namespace applies spharmgrid operations to
 `torch.Tensor` objects. See {doc}`torch` for installation, grid and bandwidth
 constraints, differentiability, and examples.
 
+For reusable PyTorch modules, see {doc}`torch_nn_api`.
+
 ## Scalar operations
 
 ```{eval-rst}
@@ -52,24 +54,4 @@ constraints, differentiability, and examples.
 .. autofunction:: spharmgrid.torch.divergent_wind
 
 .. autofunction:: spharmgrid.torch.wind
-```
-
-## PyTorch modules
-
-```{eval-rst}
-.. autoclass:: spharmgrid.torch.nn.SHTOperators
-   :members:
-   :member-order: bysource
-
-.. autoclass:: spharmgrid.torch.nn.SHTFilter
-   :members:
-   :member-order: bysource
-
-.. autoclass:: spharmgrid.torch.nn.SHTRegrid
-   :members:
-   :member-order: bysource
-
-.. autoclass:: spharmgrid.torch.nn.SHTVectorRegrid
-   :members:
-   :member-order: bysource
 ```

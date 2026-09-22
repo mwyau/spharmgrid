@@ -5,6 +5,10 @@ operations to JAX arrays. S2FFT computes the scalar and spin-1 transforms;
 the package applies the spectral selections, radius factors, and atmospheric
 vector conventions.
 
+The JAX array API reference is in {doc}`jax_api`. The labeled Xarray API
+reference, including `device_put()`, `device_get()`, and `.sgj` methods, is in
+{doc}`jax_accessor_api`.
+
 ## Installation
 
 Install the JAX extra with pip:
@@ -19,7 +23,7 @@ JAX installation instructions](https://docs.jax.dev/en/latest/installation.html)
 then install `spharmgrid[jax]`. spharmgrid does not bundle or select CUDA or
 TPU builds.
 
-Import the array API separately from the Xarray API:
+Import the grid API and JAX API:
 
 ```python
 import spharmgrid as sg
@@ -90,7 +94,7 @@ The same array operations support `vmap` and automatic differentiation.
 `regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis
 when the source and target grids have different resolutions. The spectral
 selection arguments accept the same triangular, trapezoidal, rhomboidal, and
-taper options as the other functional APIs.
+taper options as the Xarray API.
 
 ## Wind and kinematics
 
@@ -112,3 +116,27 @@ CF metadata. The accepted sources are `"vorticity"`, `"streamfunction"`,
 `"divergence"`, `"velocity_potential"`, `"vorticity_divergence"`, and
 `"potentials"`, as appropriate for each function. The functions use the same
 Earth-radius default and degree-zero conventions as the root API.
+
+## Xarray convenience layer
+
+The optional Xarray layer keeps labels, coordinates, and metadata around the
+raw JAX arrays. Importing `spharmgrid.jax` registers the `.sgj` accessor on
+Xarray `DataArray` and `Dataset` objects. Data transfer is explicit:
+
+```python
+import xarray as xr
+import spharmgrid.jax as sgj
+
+ds = xr.open_dataset("input.nc")
+ds_jax = sgj.device_put(ds)
+
+diagnostics = ds_jax.sgj.kinematics()
+filtered = ds_jax["z"].sgj.filter("T42")
+diagnostics_host = sgj.device_get(diagnostics)
+```
+
+`.sgj` operates on Xarray objects whose numerical payloads are `jax.Array`
+values and preserves their dimensions, coordinates, names, and metadata. Use
+`device_put()` before `.sgj` methods and `device_get()` to copy results back to
+host arrays. Use the `spharmgrid.jax` array functions with `jax.jit`, `jax.grad`,
+and `jax.vmap`.

@@ -1,23 +1,35 @@
 # Xarray accessor API reference
 
-Importing `spharmgrid` registers the `.sg` accessor on both Xarray `DataArray` and `Dataset` objects.
+Importing `spharmgrid` registers the `.sg` accessor on Xarray `DataArray` and
+`Dataset` objects. Its methods preserve the coordinate and metadata behavior of
+the corresponding `spharmgrid` functions.
 
-`DataArray.sg` provides field operations such as filtering, regridding, gradients, Laplacians, and vector transforms. `Dataset.sg` also supports multi-variable atmospheric diagnostics such as vorticity, divergence, streamfunction, velocity potential, and wind decomposition, including variable discovery from canonical names and CF metadata.
+Examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`,
+{doc}`operators`, and {doc}`kinematics`.
 
-Accessor-based examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`, {doc}`operators`, and {doc}`kinematics`.
+The entries below document `DataArray.sg` and `Dataset.sg`.
 
 ## DataArray.sg
 
 ```{eval-rst}
-.. autoclass:: spharmgrid.accessors.DataArrayAccessor
-   :members:
-   :member-order: bysource
+.. container:: accessor-api
+
+   .. autoclass:: spharmgrid._accessors.DataArrayAccessor
+      :members:
+      :member-order: bysource
+      :no-index-entry:
 ```
 
 ## Dataset.sg
 
 ```{eval-rst}
-.. autoclass:: spharmgrid.accessors.DatasetAccessor
-   :members:
-   :member-order: bysource
+.. container:: accessor-api
+
+   .. autoclass:: spharmgrid._accessors.DatasetAccessor
+      :members:
+      :member-order: bysource
+      :no-index-entry:
 ```
+
+JAX-backed Xarray objects use the optional `.sgj` accessor; see
+{doc}`jax_accessor_api`.

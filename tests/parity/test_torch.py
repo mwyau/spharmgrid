@@ -206,7 +206,7 @@ def cc_target_grid() -> sg.Grid:
 
 
 def test_torch_exports_have_complete_parity_inventory() -> None:
-    assert set(sgt.__all__) == _TORCH_NUMERICAL_EXPORTS
+    assert set(sgt.__all__) == _TORCH_NUMERICAL_EXPORTS | {"nn"}
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
