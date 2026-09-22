@@ -2980,12 +2980,12 @@ requires-dist = [
     { name = "dask", extras = ["array"], marker = "extra == 'dask'", specifier = ">=2024.1.0" },
     { name = "ducc0", specifier = ">=0.39.0" },
     { name = "eccodeslib", marker = "sys_platform != 'win32' and extra == 'cli'", specifier = ">=2.48.0" },
-    { name = "h5netcdf", extras = ["h5py"], marker = "extra == 'cli'", specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], marker = "extra == 'cli'", specifier = ">=1.8.1" },
     { name = "jax", marker = "extra == 'jax'", specifier = ">=0.5.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "s2fft", marker = "python_full_version >= '3.13' and extra == 'jax'", git = "https://github.com/astro-informatics/s2fft.git?tag=v1.4.0" },
     { name = "s2fft", marker = "python_full_version < '3.13' and extra == 'jax'", specifier = ">=1.4.0" },
-    { name = "torch", marker = "extra == 'torch'", specifier = ">=2.13" },
+    { name = "torch", marker = "extra == 'torch'", specifier = ">=2.13.0" },
     { name = "torch-harmonics", marker = "extra == 'torch'", specifier = "==0.6.5" },
     { name = "xarray", specifier = ">=2025.1.1" },
     { name = "zarr", marker = "extra == 'cli'", specifier = ">=3.0.0" },
@@ -2996,19 +2996,19 @@ provides-extras = ["cf", "dask", "cli", "jax", "torch"]
 cuda-dev = [
     { name = "cftime", specifier = ">=1.6.5" },
     { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'", git = "https://github.com/google-deepmind/xarray_jax.git?rev=v0.1.1" },
-    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.1" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "jax", extras = ["cuda13"], marker = "sys_platform == 'linux'" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "s2fft", marker = "python_full_version < '3.13'", specifier = ">=1.4.0" },
     { name = "s2fft", marker = "python_full_version >= '3.13'", git = "https://github.com/astro-informatics/s2fft.git?tag=v1.4.0" },
-    { name = "torch", specifier = ">=2.13" },
+    { name = "torch", specifier = ">=2.13.0" },
     { name = "torch-harmonics", git = "https://github.com/NVIDIA/torch-harmonics.git?rev=v0.9.2" },
 ]
 dev = [
     { name = "cftime", specifier = ">=1.6.5" },
-    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.1" },
     { name = "myst-parser", specifier = ">=5.1.0" },
     { name = "pydata-sphinx-theme", specifier = ">=0.21.0" },
     { name = "pytest", specifier = ">=9.1.1" },
@@ -3025,7 +3025,7 @@ docs = [
 jax-dev = [
     { name = "cftime", specifier = ">=1.6.5" },
     { name = "gdm-xarray-jax", marker = "python_full_version >= '3.12'", git = "https://github.com/google-deepmind/xarray_jax.git?rev=v0.1.1" },
-    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.1" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
@@ -3035,16 +3035,16 @@ jax-dev = [
 parity = [{ name = "pyspharm-syl", marker = "python_full_version < '3.14'", specifier = ">=1.2.1" }]
 test = [
     { name = "cftime", specifier = ">=1.6.5" },
-    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
 ]
 torch-dev = [
     { name = "cftime", specifier = ">=1.6.5" },
-    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.0" },
+    { name = "h5netcdf", extras = ["h5py"], specifier = ">=1.8.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "torch", specifier = ">=2.13" },
+    { name = "torch", specifier = ">=2.13.0" },
     { name = "torch-harmonics", git = "https://github.com/NVIDIA/torch-harmonics.git?rev=v0.9.2" },
 ]
 
