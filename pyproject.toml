@@ -98,7 +98,7 @@ jax-dev = [
     { include-group = "test" },
     "jax>=0.5.0",
     "s2fft>=1.4.0",
-    "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@v0.1.1; python_version >= '3.12'",
+    "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@v0.1.1 ; python_version >= '3.12'",
 ]
 cuda-dev = [
     { include-group = "jax-dev" },
