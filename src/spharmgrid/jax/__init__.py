@@ -53,9 +53,14 @@ from ._ops import (
     vorticity,
     wind,
 )
+from ._spectral_field import SpectralField, SpectralVectorField, analyze, analyze_vector
 from ._xarray import device_get, device_put
 
 __all__ = [
+    "SpectralField",
+    "SpectralVectorField",
+    "analyze",
+    "analyze_vector",
     "device_get",
     "device_put",
     "filter",

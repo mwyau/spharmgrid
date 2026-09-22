@@ -87,6 +87,40 @@ def _as_jax(values: np.ndarray) -> jax.Array:
     return jnp.asarray(values, dtype=jnp.float64)
 
 
+def test_jax_reusable_spectral_fields_match_ducc() -> None:
+    _require_x64()
+    grid = _source_grid("gl")
+    scalar = scalar_values(grid).astype(np.float64)
+    field = _as_jax(scalar)
+    reference = as_xarray(scalar, grid)
+    spectral = sgj.analyze(field, grid=grid)
+    _assert_close(spectral.synthesize(), reference, "scalar_map")
+    _assert_close(
+        spectral.laplacian().synthesize(),
+        sg.laplacian(reference),
+        "laplacian",
+    )
+
+    eastward, northward = vector_values(grid)
+    eastward = eastward.astype(np.float64)
+    northward = northward.astype(np.float64)
+    u = _as_jax(eastward)
+    v = _as_jax(northward)
+    reference_u = as_xarray(eastward, grid, "u")
+    reference_v = as_xarray(northward, grid, "v")
+    vector = sgj.analyze_vector(u, v, grid=grid)
+    _assert_close(
+        vector.vorticity().synthesize(),
+        sg.vorticity(reference_u, reference_v),
+        "kinematics",
+    )
+    _assert_close(
+        vector.divergence().synthesize(),
+        sg.divergence(reference_u, reference_v),
+        "kinematics",
+    )
+
+
 @pytest.mark.parametrize("kind", ["gl", "cc"])
 def test_scalar_jax_ducc_parity_and_scalar_regridding(
     kind: GridKind,

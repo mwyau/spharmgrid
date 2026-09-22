@@ -27,6 +27,8 @@ from ._kinematics_types import (
     RotationalWindSource,
     WindSource,
 )
+from ._spectral_field import SpectralField
+from ._spectral_field import analyze as analyze_field
 from ._transform import TransformSpec
 from .grids import Grid, detect_grid
 from .kinematics import (
@@ -97,6 +99,23 @@ class DataArrayAccessor:
     def grid_type(self) -> Literal["gl", "cc"]:
         """The lowercase detected grid family."""
         return self.grid.kind
+
+    def analyze(
+        self,
+        truncation: str | TransformSpec | None = None,
+        *,
+        lmin: int | None = None,
+        lmax: int | None = None,
+        sht_threads: int | None = None,
+    ) -> SpectralField:
+        """Analyze this field into a reusable spectral representation."""
+        return analyze_field(
+            self._obj,
+            truncation,
+            lmin=lmin,
+            lmax=lmax,
+            sht_threads=sht_threads,
+        )
 
     def filter(
         self,

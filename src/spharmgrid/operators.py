@@ -31,7 +31,12 @@ from ._xarray import (
     restore_output,
 )
 from .metadata import gradient_metadata, inverse_gradient_metadata, operator_metadata
-from .spectral import resolve_transform_spec, scalar_transform
+from .spectral import (
+    _inverse_laplacian_multiplier,
+    _laplacian_multiplier,
+    resolve_transform_spec,
+    scalar_transform,
+)
 
 EARTH_RADIUS_M = 6_371_220.0  # NCL default Earth radius in metres
 
@@ -165,8 +170,7 @@ def laplacian(
     _validate_radius(radius)
     source = field_layout(field)
     spec = resolve_transform_spec(source.grid, source.grid, None)
-    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
-    multiplier = -(degrees * (degrees + 1.0)) / radius**2
+    multiplier = _laplacian_multiplier(spec, radius)
     nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
@@ -177,9 +181,8 @@ def laplacian(
             phi0=source.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
-            result,
+            alm * multiplier[np.newaxis, :],
             spec=spec,
             geometry=geometry_for(source.grid),
             ntheta=source.grid.nlat,
@@ -209,10 +212,7 @@ def inverse_laplacian(
     _validate_radius(radius)
     source = field_layout(field)
     spec = resolve_transform_spec(source.grid, source.grid, None)
-    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
-    multiplier = np.zeros_like(degrees)
-    nonzero = degrees > 0.0
-    multiplier[nonzero] = -(radius**2) / (degrees[nonzero] * (degrees[nonzero] + 1.0))
+    multiplier = _inverse_laplacian_multiplier(spec, radius)
     nthreads = resolve_sht_threads(sht_threads, dask=field.chunks is not None)
 
     def transform(frame: NDArray[np.generic]) -> NDArray[np.float64]:
@@ -223,9 +223,8 @@ def inverse_laplacian(
             phi0=source.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        result = alm * multiplier[np.newaxis, :]
         return scalar_synthesis(
-            result,
+            alm * multiplier[np.newaxis, :],
             spec=spec,
             geometry=geometry_for(source.grid),
             ntheta=source.grid.nlat,

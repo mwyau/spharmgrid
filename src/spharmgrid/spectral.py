@@ -169,28 +169,72 @@ def apply_spectral_selection(
     taper: float | None,
 ) -> NDArray[np.complex128]:
     """Return coefficients masked to a retained spectral domain."""
-    degrees = alm_degrees(spec.lmax, spec.mmax)
-    weights = np.zeros(degrees.size, dtype=np.float64)
-    inside = (degrees >= spec.lmin) & (degrees <= spec.lmax)
-    if spec.truncation == "rhomboidal":
-        orders = alm_orders(spec.lmax, spec.mmax)
-        inside &= degrees - orders <= spec.lmax - spec.mmax
-    if taper is None:
-        weights[inside] = 1.0
-    elif spec.lmax == 0:
-        # The published l(l+1) expression is singular at lmax=0.  Its only
-        # retained endpoint is defined directly by the requested response.
-        weights[inside] = taper
-    else:
-        coefficient = -np.log(taper) / (spec.lmax * (spec.lmax + 1)) ** 2
-        degree_values = degrees[inside].astype(np.float64)
-        weights[inside] = np.exp(
-            -coefficient * (degree_values * (degree_values + 1.0)) ** 2
-        )
+    weights = _spectral_selection_weights(spec, spec, taper)
     result = np.array(alm, dtype=np.complex128, copy=True)
     weight_shape = (1,) * (result.ndim - 1) + (weights.size,)
     result *= weights.reshape(weight_shape)
     return result
+
+
+def _spectral_selection_weights(
+    coefficient_spec: TransformSpec,
+    selection: TransformSpec | None,
+    taper: float | None,
+) -> NDArray[np.float64]:
+    """Return a response over a stored coefficient domain.
+
+    ``selection`` may be narrower than ``coefficient_spec``.  This is the
+    coefficient-domain counterpart of the one-shot filtering path and lets an
+    analyzed field apply several selections without another analysis.
+    """
+    selected = coefficient_spec if selection is None else selection
+    if selected.lmax > coefficient_spec.lmax or selected.mmax > coefficient_spec.mmax:
+        raise ValueError("requested spectral selection exceeds the analyzed domain")
+    degrees = alm_degrees(coefficient_spec.lmax, coefficient_spec.mmax)
+    orders = alm_orders(coefficient_spec.lmax, coefficient_spec.mmax)
+    weights = np.zeros(degrees.size, dtype=np.float64)
+    inside = (degrees >= selected.lmin) & (degrees <= selected.lmax)
+    inside &= orders <= selected.mmax
+    if selected.truncation == "rhomboidal":
+        inside &= degrees - orders <= selected.lmax - selected.mmax
+    if taper is None:
+        weights[inside] = 1.0
+    elif selected.lmax == 0:
+        # The published l(l+1) expression is singular at lmax=0.  Its only
+        # retained endpoint is defined directly by the requested response.
+        weights[inside] = taper
+    else:
+        coefficient = -np.log(taper) / (selected.lmax * (selected.lmax + 1)) ** 2
+        degree_values = degrees[inside].astype(np.float64)
+        weights[inside] = np.exp(
+            -coefficient * (degree_values * (degree_values + 1.0)) ** 2
+        )
+    return weights
+
+
+def _degree_scale(spec: TransformSpec, radius: float) -> NDArray[np.float64]:
+    """Return the positive-degree vector-transform scale by packed mode."""
+    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
+    return np.sqrt(degrees * (degrees + 1.0)) / radius
+
+
+def _laplacian_multiplier(spec: TransformSpec, radius: float) -> NDArray[np.float64]:
+    """Return the scalar/vector Laplacian multiplier by packed mode."""
+    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
+    return -(degrees * (degrees + 1.0)) / radius**2
+
+
+def _inverse_laplacian_multiplier(
+    spec: TransformSpec, radius: float
+) -> NDArray[np.float64]:
+    """Return the zero-mode-defined inverse Laplacian multiplier."""
+    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
+    multiplier = np.zeros_like(degrees)
+    positive = degrees > 0.0
+    multiplier[positive] = -(radius**2) / (
+        degrees[positive] * (degrees[positive] + 1.0)
+    )
+    return multiplier
 
 
 def scalar_transform(

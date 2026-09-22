@@ -64,6 +64,34 @@ def alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
     return orders
 
 
+@cache
+def alm_subselection(
+    source_lmax: int,
+    source_mmax: int,
+    target_lmax: int,
+    target_mmax: int,
+) -> NDArray[np.intp]:
+    """Return packed source positions for a target DUCC coefficient domain.
+
+    DUCC stores coefficients in contiguous order blocks for each non-negative
+    zonal order.  A target domain used for synthesis is therefore a subset of
+    a source domain whenever its degree and order limits are no larger.
+    """
+    if target_lmax > source_lmax or target_mmax > source_mmax:
+        raise ValueError("target coefficient domain exceeds the source domain")
+    indices: list[NDArray[np.intp]] = []
+    for order in range(target_mmax + 1):
+        source_offset = sum(
+            source_lmax - previous_order + 1 for previous_order in range(order)
+        )
+        indices.append(
+            source_offset + np.arange(target_lmax - order + 1, dtype=np.intp)
+        )
+    result = np.concatenate(indices)
+    result.setflags(write=False)
+    return result
+
+
 def scalar_analysis(
     frame: NDArray[np.generic],
     *,

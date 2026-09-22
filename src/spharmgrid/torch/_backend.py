@@ -184,9 +184,9 @@ class _TorchTransform(torch.nn.Module):
         if spec.lmax != spec.mmax:
             raise ValueError("torch-harmonics transform state must be triangular")
 
-        self.source_grid = source
-        self.target_grid = target
-        self.spec = spec
+        self.source_grid: Grid = source
+        self.target_grid: Grid = target
+        self.spec: TransformSpec = spec
 
         source_layout = grid_layout(source)
         target_layout = grid_layout(target)

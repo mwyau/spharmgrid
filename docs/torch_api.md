@@ -6,6 +6,30 @@ differentiability, and examples.
 
 For reusable PyTorch modules, see {doc}`torch_nn_api`.
 
+## Reusable analyzed representations
+
+`analyze()` and `analyze_vector()` retain native torch-harmonics coefficients
+for workflows that need several spectral operations. The coefficient layout
+is private and tensors remain on their input device.
+
+```python
+spectral = sgt.analyze(field, grid=grid)
+large_scale = spectral.filter("T5-42").synthesize()
+laplacian = spectral.laplacian().synthesize()
+```
+
+```{eval-rst}
+.. autoclass:: spharmgrid.torch.SpectralField
+   :members:
+
+.. autoclass:: spharmgrid.torch.SpectralVectorField
+   :members:
+
+.. autofunction:: spharmgrid.torch.analyze
+
+.. autofunction:: spharmgrid.torch.analyze_vector
+```
+
 ## Scalar operations
 
 ```{eval-rst}

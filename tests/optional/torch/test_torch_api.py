@@ -17,6 +17,8 @@ import spharmgrid.torch as sgt
 # output containers but absent from tensor calls. They are the only
 # namespace-specific signature differences removed before comparison.
 _XARRAY_ONLY = {
+    "analyze": {"sht_threads"},
+    "analyze_vector": {"sht_threads"},
     "filter": {"sht_threads"},
     "regrid": {"sht_threads"},
     "regrid_vector": {"eastward", "northward", "sht_threads"},

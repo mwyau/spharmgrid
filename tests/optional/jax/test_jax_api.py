@@ -21,6 +21,8 @@ import spharmgrid as sg
 import spharmgrid.jax as sgj
 
 _FUNCTIONS = {
+    "analyze",
+    "analyze_vector",
     "filter",
     "regrid",
     "regrid_vector",
@@ -44,6 +46,8 @@ _FUNCTIONS = {
 _HELPERS = {"device_put", "device_get"}
 
 _XARRAY_ONLY = {
+    "analyze": {"sht_threads"},
+    "analyze_vector": {"sht_threads"},
     "filter": {"sht_threads"},
     "regrid": {"sht_threads"},
     "regrid_vector": {"eastward", "northward", "sht_threads"},
@@ -104,8 +108,13 @@ def _signature_parts(
 
 
 def test_jax_exports_exactly_the_scientific_operation_set() -> None:
-    assert set(sgj.__all__) == _FUNCTIONS | _HELPERS
+    assert set(sgj.__all__) == _FUNCTIONS | {
+        "SpectralField",
+        "SpectralVectorField",
+    } | _HELPERS
     assert {name for name in sgj.__dict__ if not name.startswith("_")} >= _FUNCTIONS
+    assert sgj.SpectralField is not None
+    assert sgj.SpectralVectorField is not None
     assert "DataArrayAccessor" not in sgj.__all__
     assert "DatasetAccessor" not in sgj.__all__
 

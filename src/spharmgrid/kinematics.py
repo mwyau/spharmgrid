@@ -46,7 +46,12 @@ from .metadata import (
     with_output_metadata,
 )
 from .operators import EARTH_RADIUS_M
-from .spectral import resolve_transform_spec
+from .spectral import (
+    _degree_scale,
+    _inverse_laplacian_multiplier,
+    _laplacian_multiplier,
+    resolve_transform_spec,
+)
 
 
 def vorticity(
@@ -403,8 +408,7 @@ def _kinematic_fields(
     _validate_radius(radius)
     layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
-    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
-    scale = np.sqrt(degrees * (degrees + 1.0)) / radius
+    scale = _degree_scale(spec, radius)
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
@@ -462,9 +466,8 @@ def _potential_fields(
     _validate_radius(radius)
     layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
-    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
-    scale = np.sqrt(degrees * (degrees + 1.0)) / radius
-    inverse_laplacian = _inverse_laplacian_multiplier(degrees, radius)
+    scale = _degree_scale(spec, radius)
+    inverse_laplacian = _inverse_laplacian_multiplier(spec, radius)
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
@@ -577,11 +580,11 @@ def _vector_laplacian_fields(
     _validate_radius(radius)
     layout, canonical_u, canonical_v = vector_inputs(u, v)
     spec = _vector_spec(layout)
-    degrees = alm_degrees(spec.lmax, spec.mmax).astype(np.float64)
-    if inverse:
-        multiplier = _inverse_laplacian_multiplier(degrees, radius)
-    else:
-        multiplier = -(degrees * (degrees + 1.0)) / radius**2
+    multiplier = (
+        _inverse_laplacian_multiplier(spec, radius)
+        if inverse
+        else _laplacian_multiplier(spec, radius)
+    )
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)
 
@@ -838,15 +841,6 @@ def _identify_any_scalar_source(field: xr.DataArray) -> ScalarSource:
             "velocity_potential",
         ),
     )
-
-
-def _inverse_laplacian_multiplier(
-    degrees: NDArray[np.float64], radius: float
-) -> NDArray[np.float64]:
-    multiplier = np.zeros_like(degrees)
-    nonzero = degrees > 0.0
-    multiplier[nonzero] = -(radius**2) / (degrees[nonzero] * (degrees[nonzero] + 1.0))
-    return multiplier
 
 
 def _wind_dataset(

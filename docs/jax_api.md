@@ -4,6 +4,31 @@ The `spharmgrid.jax` functions accept and return `jax.Array` objects. See {doc}`
 installation, supported shapes, precision requirements, JAX transformations, and
 examples. For JAX-backed Xarray objects, see {doc}`jax_accessor_api`.
 
+## Reusable analyzed representations
+
+`analyze()` and `analyze_vector()` retain native S2FFT coefficients for
+workflows that need several spectral operations. The representations are JAX
+PyTrees with coefficients as dynamic leaves and immutable transform metadata as
+static data.
+
+```python
+spectral = sgj.analyze(field, grid=grid)
+large_scale = spectral.filter("T5-42").synthesize()
+laplacian = spectral.laplacian().synthesize()
+```
+
+```{eval-rst}
+.. autoclass:: spharmgrid.jax.SpectralField
+   :members:
+
+.. autoclass:: spharmgrid.jax.SpectralVectorField
+   :members:
+
+.. autofunction:: spharmgrid.jax.analyze
+
+.. autofunction:: spharmgrid.jax.analyze_vector
+```
+
 ## Scalar operations
 
 ```{eval-rst}
