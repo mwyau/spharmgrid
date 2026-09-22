@@ -115,6 +115,8 @@ class SpectralField:
         _validate_taper(taper)
         effective = self._state.spec if selection is None else selection
         _check_selection(effective, self._state)
+        if taper is None and (selection is None or selection == self.spec):
+            return self
         return SpectralField(
             _apply_selection(self._coefficients, self._state, effective, taper),
             self._state,
@@ -176,7 +178,7 @@ class SpectralField:
                 coefficients, self._state, self._state.spec, taper
             )
         coefficients = _resize_coefficients(coefficients, state.spec)
-        if selection is not None:
+        if selection is not None and (taper is not None or effective != self.spec):
             coefficients = _apply_selection(coefficients, state, effective, taper)
         return state.scalar_synthesis(coefficients)
 
@@ -215,6 +217,8 @@ class SpectralVectorField:
         _validate_taper(taper)
         effective = self._state.spec if selection is None else selection
         _check_selection(effective, self._state)
+        if taper is None and (selection is None or selection == self.spec):
+            return self
         return SpectralVectorField(
             _apply_selection(self._coefficients, self._state, effective, taper),
             self._state,
@@ -305,7 +309,7 @@ class SpectralVectorField:
                 coefficients, self._state, self._state.spec, taper
             )
         coefficients = _resize_coefficients(coefficients, state.spec)
-        if selection is not None:
+        if selection is not None and (taper is not None or effective != self.spec):
             coefficients = _apply_selection(coefficients, state, effective, taper)
         return state.vector_synthesis(coefficients)
 
@@ -330,6 +334,8 @@ def _resize_coefficients(coefficients: Tensor, spec: TransformSpec) -> Tensor:
     """Resize torch-harmonics' rectangular triangular coefficient array."""
     target_l = spec.lmax + 1
     target_m = spec.mmax + 1
+    if coefficients.shape[-2:] == (target_l, target_m):
+        return coefficients
     source_l, source_m = coefficients.shape[-2:]
     result = coefficients[..., : min(source_l, target_l), : min(source_m, target_m)]
     if result.shape[-1] < target_m:

@@ -21,8 +21,47 @@ from spharmgrid._ducc import (
 )
 from spharmgrid._transform import TransformSpec
 from spharmgrid.grids import grid_layout
-from spharmgrid.spectral import apply_spectral_selection, resolve_transform_spec
+from spharmgrid.spectral import (
+    _spectral_selection_is_within,
+    apply_spectral_selection,
+    resolve_transform_spec,
+)
 from tests.conftest import scalar_field, supported_grid
+
+
+def _retained_modes(spec: TransformSpec) -> set[tuple[int, int]]:
+    """Enumerate a small domain for the containment oracle only."""
+    modes: set[tuple[int, int]] = set()
+    for degree in range(spec.lmin, spec.lmax + 1):
+        for order in range(min(degree, spec.mmax) + 1):
+            if spec.truncation == "rhomboidal" and (
+                degree - order > spec.lmax - spec.mmax
+            ):
+                continue
+            modes.add((degree, order))
+    return modes
+
+
+def _brute_spectral_selection_is_within(
+    analyzed: TransformSpec, selection: TransformSpec | None
+) -> bool:
+    """Reference containment predicate used only by the tests."""
+    if selection is None:
+        return True
+    analyzed_modes = _retained_modes(analyzed)
+    return _retained_modes(selection).issubset(analyzed_modes)
+
+
+def _small_transform_specs() -> tuple[TransformSpec, ...]:
+    specs: list[TransformSpec] = []
+    for lmax in range(5):
+        for lmin in range(lmax + 1):
+            for mmax in range(lmax + 1):
+                for truncation in ("triangular", "trapezoidal", "rhomboidal"):
+                    if truncation == "triangular" and mmax != lmax:
+                        continue
+                    specs.append(TransformSpec(lmin, lmax, mmax, truncation))
+    return tuple(specs)
 
 
 def _scalar_mode(
@@ -68,6 +107,40 @@ def test_parse_spectral(notation: str, expected: TransformSpec) -> None:
     result = sg.parse_spectral(notation)
 
     assert result == expected
+
+
+def test_analytical_selection_containment_matches_brute_force_oracle() -> None:
+    specs = _small_transform_specs()
+
+    for analyzed in specs:
+        for selection in specs:
+            expected = _brute_spectral_selection_is_within(analyzed, selection)
+            actual = _spectral_selection_is_within(analyzed, selection)
+            assert actual == expected, (analyzed, selection)
+
+
+@pytest.mark.parametrize(
+    ("analyzed", "selection", "expected"),
+    [
+        ("T6", "T2-6", True),
+        ("T6", "R3", True),
+        ("T6x3", "R3", True),
+        ("R3", "R3", True),
+        ("R3", "R2", True),
+        ("R3", "T6", False),
+        ("R3", "T2-6", False),
+        ("R3", "T6x3", False),
+    ],
+)
+def test_selection_containment_regression_domains(
+    analyzed: str, selection: str, expected: bool
+) -> None:
+    assert (
+        _spectral_selection_is_within(
+            sg.parse_spectral(analyzed), sg.parse_spectral(selection)
+        )
+        is expected
+    )
 
 
 @pytest.mark.parametrize(

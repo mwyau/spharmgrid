@@ -128,6 +128,19 @@ def test_scalar_spectral_methods_match_one_shot_operations(
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_reusable_filter_skips_true_no_op(kind: Literal["cc", "gl"]) -> None:
+    grid = supported_grid(kind)
+    scalar = sg.analyze(scalar_field(grid))
+    u, v = solid_body_wind(grid)
+    vector = sg.analyze_vector(u, v)
+
+    assert scalar.filter() is scalar
+    assert scalar.filter(scalar.spec) is scalar
+    assert vector.filter() is vector
+    assert vector.filter(vector.spec) is vector
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
 def test_vector_spectral_methods_match_one_shot_operations(
     kind: Literal["cc", "gl"],
 ) -> None:

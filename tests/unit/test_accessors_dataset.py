@@ -67,6 +67,39 @@ def test_dataset_regrid_vector_accessor() -> None:
     _assert_dataset_identical(actual, expected)
 
 
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_dataset_analyze_vector_accessor_discovers_and_overrides_components(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    u, v = solid_body_wind(grid)
+    expected = sg.analyze_vector(u, v, "T2")
+
+    canonical = xr.Dataset({"u": u, "v": v})
+    actual = canonical.sg.analyze_vector("T2")
+    assert isinstance(actual, sg.SpectralVectorField)
+    actual_u, actual_v = actual.synthesize()
+    expected_u, expected_v = expected.synthesize()
+    np.testing.assert_allclose(actual_u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(actual_v, expected_v, rtol=0.0, atol=3.0e-14)
+
+    cf_u = u.rename("eastward_input")
+    cf_v = v.rename("northward_input")
+    cf_u.attrs["standard_name"] = "eastward_wind"
+    cf_v.attrs["standard_name"] = "northward_wind"
+    cf_dataset = xr.Dataset({"eastward_input": cf_u, "northward_input": cf_v})
+    discovered = cf_dataset.sg.analyze_vector("T2")
+    discovered_u, discovered_v = discovered.synthesize()
+    np.testing.assert_allclose(discovered_u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(discovered_v, expected_v, rtol=0.0, atol=3.0e-14)
+
+    explicit_dataset = xr.Dataset({"east": u, "north": v})
+    explicit = explicit_dataset.sg.analyze_vector("T2", u="east", v="north")
+    explicit_u, explicit_v = explicit.synthesize()
+    np.testing.assert_allclose(explicit_u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(explicit_v, expected_v, rtol=0.0, atol=3.0e-14)
+
+
 def test_dataset_vector_accessors() -> None:
     grid = supported_grid("cc")
     u, v = solid_body_wind(grid)

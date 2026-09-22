@@ -9,11 +9,18 @@ Examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`,
 
 `DataArray.sg` provides field operations such as analysis, filtering, regridding,
 gradients, Laplacians, and vector transforms. `DataArray.sg.analyze()` returns
-a reusable `SpectralField`; the direct function and accessor use the same
-analysis and synthesis implementation. `Dataset.sg` also supports multi-variable
-atmospheric diagnostics such as vorticity, divergence, streamfunction, velocity
-potential, and wind decomposition, including variable discovery from canonical
-names and CF metadata.
+a reusable `SpectralField`; `DataArray.sg.analyze_vector(v)` returns a reusable
+`SpectralVectorField`. The direct functions and accessors use the same analysis
+and synthesis implementation. `Dataset.sg.analyze_vector()` discovers `u` and
+`v` using exact CF metadata or canonical names, with explicit `u=` and `v=`
+overrides. `Dataset.sg` also supports multi-variable atmospheric diagnostics
+such as vorticity, divergence, streamfunction, velocity potential, and wind
+decomposition.
+
+```python
+vector = eastward.sg.analyze_vector(northward, truncation="T6")
+vector = dataset.sg.analyze_vector(u="eastward", v="northward")
+```
 
 The entries below document `DataArray.sg` and `Dataset.sg`.
 

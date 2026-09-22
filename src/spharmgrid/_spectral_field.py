@@ -138,7 +138,11 @@ class SpectralField:
         """Apply a spectral selection without synthesizing the field."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
+        if selection is None and taper is None:
+            return self
         _validate_selection(self._spec, selection)
+        if selection == self._spec and taper is None:
+            return self
         coefficients = _apply_weights(
             self._coefficients,
             self._mode_dim,
@@ -224,7 +228,9 @@ class SpectralField:
             self._spec,
             target_spec,
         )
-        if selection is not None:
+        if selection is not None and (
+            taper is not None or effective != self._spec or target_spec != self._spec
+        ):
             coefficients = _apply_weights(
                 coefficients,
                 self._mode_dim,
@@ -284,7 +290,11 @@ class SpectralVectorField:
         """Apply a spectral selection without synthesizing the vector."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
+        if selection is None and taper is None:
+            return self
         _validate_selection(self._spec, selection)
+        if selection == self._spec and taper is None:
+            return self
         coefficients = _apply_weights(
             self._coefficients,
             self._mode_dim,
@@ -420,7 +430,9 @@ class SpectralVectorField:
             self._spec,
             target_spec,
         )
-        if selection is not None:
+        if selection is not None and (
+            taper is not None or effective != self._spec or target_spec != self._spec
+        ):
             coefficients = _apply_weights(
                 coefficients,
                 self._mode_dim,
@@ -705,7 +717,9 @@ def _repack_coefficients(
     source: TransformSpec,
     target: TransformSpec,
 ) -> xr.DataArray:
-    if target == source:
+    if target == source or (target.lmax == source.lmax and target.mmax == source.mmax):
+        # The packed DUCC layout is unchanged.  A later explicit selection
+        # still applies its logical lmin/rhomboidal mask when needed.
         return coefficients
     if target.lmax <= source.lmax and target.mmax <= source.mmax:
         from ._ducc import alm_subselection

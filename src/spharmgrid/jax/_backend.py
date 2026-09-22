@@ -282,6 +282,8 @@ def _resize(
     source_bandlimit: int,
     target_bandlimit: int,
 ) -> Array:
+    if source_bandlimit == target_bandlimit:
+        return coefficients
     common = min(source_bandlimit, target_bandlimit)
     source_start = source_bandlimit - common
     target_start = target_bandlimit - common

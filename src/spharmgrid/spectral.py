@@ -239,20 +239,27 @@ def _spectral_selection_is_within(
     """Whether every mode in ``selection`` is present in ``analyzed``."""
     if selection is None:
         return True
-    for order in range(selection.mmax + 1):
-        for degree in range(max(order, selection.lmin), selection.lmax + 1):
-            if selection.truncation == "rhomboidal" and (
-                degree - order > selection.lmax - selection.mmax
-            ):
-                continue
-            if degree < analyzed.lmin or degree > analyzed.lmax:
-                return False
-            if order > analyzed.mmax:
-                return False
-            if analyzed.truncation == "rhomboidal" and (
-                degree - order > analyzed.lmax - analyzed.mmax
-            ):
-                return False
+    if selection == analyzed:
+        return True
+
+    if selection.lmin < analyzed.lmin:
+        return False
+    if selection.lmax > analyzed.lmax:
+        return False
+    if selection.mmax > analyzed.mmax:
+        return False
+
+    if analyzed.truncation == "rhomboidal":
+        # A non-rhomboidal selection contains (lmax, 0), whereas the
+        # rhomboidal boundary contains (lmax, mmax).  These are the maximum
+        # l-m envelopes of the two possible selection shapes.
+        selection_l_minus_m_max = (
+            selection.lmax - selection.mmax
+            if selection.truncation == "rhomboidal"
+            else selection.lmax
+        )
+        if selection_l_minus_m_max > analyzed.lmax - analyzed.mmax:
+            return False
     return True
 
 

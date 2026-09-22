@@ -37,6 +37,17 @@ def test_scalar_spectral_field_reuses_native_coefficients_and_autograd(
     assert bool(torch_isfinite(field.grad))
 
 
+def test_torch_reusable_filters_skip_true_no_ops(gl_grid: sg.Grid) -> None:
+    field, eastward, northward = make_fields(gl_grid)
+    scalar = sgt.analyze(field, grid=gl_grid)
+    vector = sgt.analyze_vector(eastward, northward, grid=gl_grid)
+
+    assert scalar.filter() is scalar
+    assert scalar.filter(scalar.spec) is scalar
+    assert vector.filter() is vector
+    assert vector.filter(vector.spec) is vector
+
+
 def test_vector_spectral_field_reuses_native_coefficients_and_autograd(
     gl_grid: sg.Grid,
 ) -> None:

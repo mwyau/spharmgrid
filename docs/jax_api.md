@@ -9,7 +9,12 @@ examples. For JAX-backed Xarray objects, see {doc}`jax_accessor_api`.
 `analyze()` and `analyze_vector()` retain native S2FFT coefficients for
 workflows that need several spectral operations. The representations are JAX
 PyTrees with coefficients as dynamic leaves and immutable transform metadata as
-static data.
+static data. Common grid metadata stores only the grid kind and shape,
+latitude order, canonical longitude origin, and a compact identity/roll
+descriptor. A PyTree reconstruction may expose longitude labels in an
+equivalent canonical modulo-360 convention (for example, `0 ... 360` instead
+of `-180 ... 180`), while preserving grid geometry and tensor-axis ordering.
+An arbitrary accepted longitude permutation remains an explicit index tuple.
 
 ```python
 spectral = sgj.analyze(field, grid=grid)

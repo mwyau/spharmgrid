@@ -98,12 +98,12 @@ def _grid_key(grid: Grid) -> tuple[Any, ...]:
 def _longitude_order_key(indices: np.ndarray) -> tuple[Any, ...]:
     """Encode common cyclic orders compactly while preserving arbitrary ones."""
     indices = np.asarray(indices, dtype=np.intp)
-    identity = np.arange(indices.size, dtype=np.intp)
-    if np.array_equal(indices, identity):
+    if indices.size == 0:
         return ("identity",)
-    for shift in range(indices.size):
-        if np.array_equal(indices, np.roll(identity, shift)):
-            return ("roll", shift)
+    shift = (-int(indices[0])) % indices.size
+    expected = (np.arange(indices.size, dtype=np.intp) - shift) % indices.size
+    if np.array_equal(indices, expected):
+        return ("identity",) if shift == 0 else ("roll", shift)
     return ("indices", tuple(int(index) for index in indices))
 
 
@@ -196,6 +196,8 @@ class SpectralField:
         _validate_taper(taper)
         effective = self.spec if selection is None else selection
         _validate_selection(self.spec, effective)
+        if taper is None and (selection is None or selection == self.spec):
+            return self
         transform = _make_transform(self.grid, self.grid, effective)
         return SpectralField(
             _apply_selection(self._coefficients, transform, taper), self._transform
@@ -250,7 +252,7 @@ class SpectralField:
         coefficients = self._coefficients
         if selection is None and taper is not None:
             coefficients = _apply_selection(coefficients, self._transform, taper)
-        elif selection is not None:
+        elif selection is not None and (taper is not None or effective != self.spec):
             coefficients = _apply_selection(coefficients, transform, taper)
         return _scalar_synthesis(coefficients, transform).astype(
             jnp.real(self._coefficients).dtype
@@ -298,6 +300,8 @@ class SpectralVectorField:
         _validate_taper(taper)
         effective = self.spec if selection is None else selection
         _validate_selection(self.spec, effective)
+        if taper is None and (selection is None or selection == self.spec):
+            return self
         transform = _make_transform(self.grid, self.grid, effective)
         return SpectralVectorField(
             _apply_selection(self._coefficients, transform, taper), self._transform
@@ -393,7 +397,7 @@ class SpectralVectorField:
         coefficients = self._coefficients
         if selection is None and taper is not None:
             coefficients = _apply_selection(coefficients, self._transform, taper)
-        elif selection is not None:
+        elif selection is not None and (taper is not None or effective != self.spec):
             coefficients = _apply_selection(coefficients, transform, taper)
         return _vector_synthesis(coefficients, transform)
 
