@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "spharmgrid"
-version = "0.3.0.dev0"
+version = "0.3.0"
 description = "Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX"
 readme = "README.md"
 license = "BSD-3-Clause"
