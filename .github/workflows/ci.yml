@@ -128,7 +128,7 @@ jobs:
           save-cache: false
           python-version: "3.12"
       - run: uv sync --no-default-groups --group dev --extra cf --extra dask --frozen
-      - name: Install Torch binary test dependencies
+      - name: Install Torch test dependencies
         run: |
           uv pip install \
             --python .venv/bin/python \
@@ -360,6 +360,17 @@ jobs:
           --extra cli
           --extra jax
           --resolution lowest-direct
+      - name: Install minimum Torch dependencies
+        run: |
+          uv pip install \
+            --python .venv/bin/python \
+            --index https://download.pytorch.org/whl/cpu \
+            "torch==2.13.0"
+          uv --no-config pip install \
+            --python .venv/bin/python \
+            --only-binary=:all: \
+            --no-deps \
+            "torch-harmonics==0.6.5"
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"
@@ -407,14 +418,14 @@ jobs:
           --group test
           --group parity
           --frozen
-      - name: Install jointly compatible JAX parity dependencies
+      - name: Install JAX parity dependencies
         run: >-
           uv pip install
           --python .venv/bin/python
           --upgrade
           ".[jax]"
           "numpy<2"
-      - name: Install Torch binary test dependencies
+      - name: Install Torch parity dependencies
         run: |
           uv pip install \
             --python .venv/bin/python \
