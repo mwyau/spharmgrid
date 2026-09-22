@@ -4,49 +4,42 @@
 
 ### JAX
 
-- Added the optional `spharmgrid.jax` array API backed by S2FFT, with the same
-  19 scientific operations as `spharmgrid.torch` on exact GL and CC/MWSS
-  grids.
-- Added scalar and spin-1 spherical harmonic filtering, spectral regridding,
-  differential operators, atmospheric kinematics, Helmholtz decomposition, and
-  inverse wind transforms for JAX arrays.
-- Added leading array dimensions, `jit`, `vmap`, and automatic
-  differentiation. The JAX API requires JAX x64 mode and `float64` spatial
-  inputs; spharmgrid does not change the process-wide JAX precision setting.
-- JAX transforms cache S2FFT O(L²) Price–McEwen recursion precomputations.
-  Scalar transforms use S2FFT's real-field path; spin-1 transforms use its
-  complex path.
+- Added the optional `spharmgrid.jax` array API backed by S2FFT, covering the
+  same 19 scientific operations as `spharmgrid.torch`: spherical harmonic
+  filtering, scalar and vector regridding, differential operators, atmospheric
+  kinematics, Helmholtz decomposition, and inverse wind transforms.
+- Added GL and CC/MWSS support for JAX arrays, including leading dimensions,
+  `jit`, `vmap`, and automatic differentiation. The JAX API uses x64 mode
+  with `float64` spatial inputs.
+- S2FFT Price–McEwen precomputations are cached across transforms. Scalar
+  transforms use the real-field path and spin-1 transforms use the complex
+  path.
+
+### Installation and compatibility
+
+- Added `spharmgrid[jax]` and `spharmgrid[torch]` optional extras for the two
+  differentiable array APIs.
+- Raised the minimum Xarray version to 2025.1.1, including the Zarr v3 support
+  used by the CLI.
 
 ### Validation and interoperability
 
-- Added numerical comparisons between the JAX and DUCC APIs across GL and
-  CC/MWSS grids, scalar and vector operations, regridding, differential
-  operators, and atmospheric wind diagnostics.
-- Added JAX tests for `jit`, `vmap`, automatic differentiation, cold-cache
-  precomputation, inverse-gradient projection, near-bandlimit regridding, and
-  the supported dependency floor.
-- Added development-only `gdm-xarray-jax` v0.1.1 tests for Xarray `DataArray`
-  and `Dataset` PyTrees, including JIT, automatic differentiation, regridding,
-  vector kinematics, leading dimensions, and static coordinates. Names,
-  dimensions, and static coordinates survive the tested JAX transformations;
-  ordinary Xarray attrs do not.
-- Added dedicated JAX CI coverage and ran JAX, PyTorch, and pyspharm parity
-  tests in a jointly compatible environment.
+- Added numerical JAX-to-DUCC comparisons across GL and CC/MWSS grids, scalar
+  and vector operations, regridding, differential operators, and atmospheric
+  wind diagnostics.
+- Expanded optional-backend tests for `jit`, `vmap`, automatic
+  differentiation, spectral-edge cases, transform precomputation, and Xarray
+  `DataArray` and `Dataset` PyTrees through `gdm-xarray-jax`.
+- Updated CI to test JAX, PyTorch, and pyspharm parity in compatible dependency
+  environments and to exercise the supported optional-backend dependency
+  floors.
 
 ### Documentation
 
-- Added separate PyTorch and JAX API reference pages for all public tensor and
-  array operations and the four public `spharmgrid.torch.nn` modules.
-- Added a separate Xarray accessor API reference for `DataArray.sg` and
-  `Dataset.sg`.
-- Documentation builds mock the optional PyTorch and JAX dependencies. PyTorch
-  module constructor signatures are derived from their Python `__init__`
-  methods, and all public module methods now have docstrings.
-
-### Compatibility
-
-- Raised the minimum Xarray version to 2025.1.1, including the Zarr v3 support
-  used by the CLI.
+- Added separate JAX, PyTorch, and Xarray accessor API reference pages, including
+  the four public `spharmgrid.torch.nn` modules and their public methods.
+- Added JAX installation and usage documentation and updated the PyTorch
+  installation guidance for the package extras.
 
 ## v0.2.0 - 2026-09-19
 
