@@ -40,6 +40,7 @@ _FUNCTIONS = {
     "divergent_wind",
     "wind",
 }
+_HELPERS = {"device_put", "device_get"}
 
 _XARRAY_ONLY = {
     "filter": {"sht_threads"},
@@ -102,7 +103,7 @@ def _signature_parts(
 
 
 def test_jax_exports_exactly_the_scientific_operation_set() -> None:
-    assert set(sgj.__all__) == _FUNCTIONS
+    assert set(sgj.__all__) == _FUNCTIONS | _HELPERS
     assert {name for name in sgj.__dict__ if not name.startswith("_")} >= _FUNCTIONS
 
 

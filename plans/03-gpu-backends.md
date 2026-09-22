@@ -541,42 +541,46 @@ scientific result or file output is required.
 Do not add file-reading/writing methods to `spharmgrid.torch` or
 `spharmgrid.jax`.
 
-Small helpers such as `from_xarray()`/`to_xarray()` may be considered later if
-real usage shows that they remove repeated boilerplate without hiding expensive
-device transfers. They are not required for the initial accelerator API.
+The post-v0.3.0 JAX convenience layer provides explicit `device_put()` and
+`device_get()` helpers for Xarray `DataArray` and `Dataset` payloads. They
+transfer numerical data only; ordinary coordinates and metadata remain on the
+host. They do not expose lower-level placement controls or hide transfer costs
+inside SHT operations.
 
-### 9.5 JAX/xarray interoperability is an optional higher-level path
+### 9.5 JAX/xarray interoperability remains an optional higher-level path
 
 Google DeepMind's `xarray_jax` demonstrates that xarray objects containing JAX
 arrays can be registered as JAX PyTrees and used with `jit`, `grad`, `vmap`, and
 sharding while retaining labels/coordinates.
 
-This is useful precedent, but spharmgrid should not require `xarray_jax` merely
-to expose S2FFT. The initial JAX kernel API should remain `jax.Array` native.
+This is useful precedent, but spharmgrid does not require `xarray_jax` merely
+to expose S2FFT or use `.sgj`. The raw JAX kernel API remains `jax.Array`
+native and primary. `.sgj` controls the ordinary Python/Xarray wrapper
+outside the numerical kernel and does not promise whole-container PyTree
+transformations.
 
-After the raw JAX API is correct and differentiable, evaluate optional
-`xarray_jax` interoperability as a convenience layer. If adopted, keep it an
-optional dependency and verify that spharmgrid operations remain JIT/grad-safe.
-Do not assume ordinary xarray operations or the existing DUCC `apply_ufunc`
-path are automatically safe for JAX transformations.
+Keep `xarray_jax` as optional development/interoperability infrastructure
+for complete-container `jit`, `grad`, `vmap`, and sharding
+characterization. Do not assume ordinary Xarray operations or the existing
+DUCC `apply_ufunc` path are automatically safe for those transformations.
 
 There is no need to force the PyTorch and JAX convenience layers to be
 identical if their host framework ecosystems differ.
 
-### 9.6 Optional xarray accelerator convenience may come later
+### 9.6 Implemented Xarray accelerator convenience boundary
 
-A future explicit call such as:
+The implemented labeled JAX path is explicit:
 
 ```python
-field.sg.filter("T42", backend="torch")
+ds_jax = spharmgrid.jax.device_put(dataset)
+result = ds_jax.sgj.kinematics()
+host_result = spharmgrid.jax.device_get(result)
 ```
 
-could be useful for a user who wants an xarray result and accepts host/device
-transfer. It is not the primary accelerator API and should not be added until
-benchmarks demonstrate a useful workload.
-
-If added, document it as an xarray convenience path rather than a differentiable
-model API. Never auto-select an accelerator because hardware is present.
+This is an Xarray convenience path rather than a differentiable model API.
+Never auto-select an accelerator because hardware is present, and do not add a
+`backend=` selector to the root `.sg` accessor. There is no `.sgt`
+accessor in this work.
 
 ---
 
@@ -902,9 +906,28 @@ The JAX namespace uses trailing latitude/longitude dimensions with arbitrary
 leading dimensions. Regridding resizes the spectral coefficient domain in JAX.
 The base package does not import JAX or S2FFT.
 
-v0.3.0 does not add HEALPix, `xarray_jax`, Flax/Equinox wrappers, or an xarray
-`backend=` selector. Those additions require their own demonstrated use case or
-grid-validation work.
+The v0.3.0 release itself does not add HEALPix, Flax/Equinox wrappers, or an
+xarray `backend=` selector. Those additions require their own demonstrated
+use case or grid-validation work.
+
+### Post-v0.3.0 Xarray convenience layer
+
+v0.3.0 established the raw `jax.Array`/S2FFT API. The optional `.sgj` accessors
+are a thin Xarray wrapper over that existing implementation: they resolve
+grids and CF-aware variables in Python, pass JAX payloads to the 19 raw JAX
+functions, and restore Xarray dimensions, coordinates, names, and metadata.
+They do not add another SHT implementation or numerical backend.
+
+The public `device_put()` and `device_get()` helpers make host/device
+conversion explicit. `.sgj` does not depend on `xarray_jax`; that package
+remains optional development and interoperability infrastructure for treating
+complete Xarray containers as JAX PyTrees across transformations. It is not
+part of the published `spharmgrid[jax]` extra.
+
+Raw `spharmgrid.jax` functions remain the primary transformation-safe API for
+`jit`, `grad`, and `vmap`. The labeled convenience layer does not
+promise whole-container JAX PyTree transformations and does not move numerical
+payloads between host and device implicitly.
 
 ---
 

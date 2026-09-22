@@ -5,6 +5,10 @@ operations to JAX arrays. S2FFT computes the scalar and spin-1 transforms;
 the package applies the spectral selections, radius factors, and atmospheric
 vector conventions.
 
+The tensor-native API reference is in {doc}`jax_api`. The labeled Xarray API
+reference, including `device_put()`, `device_get()`, and `.sgj` methods, is in
+{doc}`jax_accessor_api`.
+
 ## Installation
 
 Install the JAX extra with pip:
@@ -112,3 +116,38 @@ CF metadata. The accepted sources are `"vorticity"`, `"streamfunction"`,
 `"divergence"`, `"velocity_potential"`, `"vorticity_divergence"`, and
 `"potentials"`, as appropriate for each function. The functions use the same
 Earth-radius default and degree-zero conventions as the root API.
+
+## Xarray convenience layer
+
+The optional Xarray layer keeps labels, coordinates, and metadata around the
+raw JAX arrays. Importing `spharmgrid.jax` registers the `.sgj` accessor on
+Xarray `DataArray` and `Dataset` objects. Data transfer is explicit:
+
+```python
+import xarray as xr
+import spharmgrid.jax as sgj
+
+ds = xr.open_dataset("input.nc")
+ds_jax = sgj.device_put(ds)
+
+diagnostics = ds_jax.sgj.kinematics()
+filtered = ds_jax["z"].sgj.filter("T42")
+diagnostics_host = sgj.device_get(diagnostics)
+```
+
+`.sgj` delegates to the tensor-native `spharmgrid.jax` functions and returns
+Xarray objects with the corresponding dimensions, coordinates, names, and
+metadata. It requires the scientific input payloads to already contain
+`jax.Array` values; an operation does not move data between host and device
+implicitly. `device_put()` transfers data variables while leaving ordinary
+coordinates on the host, and `device_get()` transfers numerical payloads back
+to host arrays.
+
+The `.sgj` layer does not require `xarray_jax`. Coordinates remain ordinary
+Xarray/static metadata. The raw `spharmgrid.jax` array functions remain the
+recommended interface for code compiled with `jax.jit`, differentiated with
+`jax.grad`, or vectorized with `jax.vmap`.
+
+The separately tested whole-container PyTree path uses optional `xarray_jax`.
+It is not needed for `.sgj` operations and is not part of the published
+`spharmgrid[jax]` extra.

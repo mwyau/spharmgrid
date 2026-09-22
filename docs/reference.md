@@ -10,7 +10,9 @@ maxdepth: 1
 api
 accessor_api
 torch_api
+torch_nn_api
 jax_api
+jax_accessor_api
 cli
 comparison
 references

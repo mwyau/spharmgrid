@@ -4,6 +4,9 @@ spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
 DUCC through `ducc0` for spherical harmonic transforms; the optional
 `spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors.
 
+The functional tensor API is documented in {doc}`torch_api`; reusable module
+classes are documented in {doc}`torch_nn_api`.
+
 Install the PyTorch API with:
 
 ```bash

@@ -53,8 +53,11 @@ from ._ops import (
     vorticity,
     wind,
 )
+from ._xarray import device_get, device_put
 
 __all__ = [
+    "device_get",
+    "device_put",
     "filter",
     "regrid",
     "regrid_vector",
@@ -75,3 +78,7 @@ __all__ = [
     "divergent_wind",
     "wind",
 ]
+
+# Import after the optional dependency checks and public functions so that the
+# labeled accessor is registered only by ``import spharmgrid.jax``.
+importlib.import_module(f"{__name__}._accessors")

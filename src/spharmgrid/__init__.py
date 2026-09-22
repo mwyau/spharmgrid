@@ -12,7 +12,7 @@ spherical harmonic transforms for the Xarray/NumPy API. The optional
 """
 
 # Import for Xarray accessor registration after direct functions exist.
-from . import accessors as _accessors  # noqa: F401
+from . import _accessors  # noqa: F401
 from ._transform import TransformSpec
 from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
 from .kinematics import (
