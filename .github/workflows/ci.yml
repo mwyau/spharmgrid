@@ -92,7 +92,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload unit test results to Codecov
         if: ${{ !cancelled() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('junit-unit.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./junit-unit.xml
           report_type: test_results
@@ -103,7 +103,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload unit coverage to Codecov
         if: ${{ success() && matrix.os == 'ubuntu-26.04' && matrix.python == '3.14' && hashFiles('coverage-unit.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./coverage-unit.xml
           flags: unit
@@ -153,7 +153,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload Torch test results
         if: ${{ !cancelled() && hashFiles('junit-torch.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./junit-torch.xml
           report_type: test_results
@@ -164,7 +164,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload Torch coverage
         if: ${{ !cancelled() && hashFiles('coverage-torch.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./coverage-torch.xml
           flags: torch
@@ -207,7 +207,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload JAX test results
         if: ${{ !cancelled() && hashFiles('junit-jax.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./junit-jax.xml
           report_type: test_results
@@ -218,7 +218,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload JAX coverage
         if: ${{ !cancelled() && hashFiles('coverage-jax.xml') != '' }}
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./coverage-jax.xml
           flags: jax
@@ -264,7 +264,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload optional test results to Codecov
         if: ${{ !cancelled() && hashFiles('junit-optional.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./junit-optional.xml
           report_type: test_results
@@ -275,7 +275,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload optional coverage to Codecov
         if: ${{ !cancelled() && hashFiles('coverage-optional.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./coverage-optional.xml
           flags: optional
@@ -429,7 +429,7 @@ jobs:
           -o junit_family=legacy
       - name: Upload parity test results to Codecov
         if: ${{ !cancelled() && hashFiles('junit-parity.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./junit-parity.xml
           report_type: test_results
@@ -440,7 +440,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload parity coverage to Codecov
         if: ${{ !cancelled() && hashFiles('coverage-parity.xml') != '' }}
-        uses: codecov/codecov-action@v7.1.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: ./coverage-parity.xml
           flags: parity
