@@ -9,9 +9,9 @@
 [![GitHub License](https://img.shields.io/github/license/mwyau/spharmgrid)](https://github.com/mwyau/spharmgrid/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22559210-blue.svg)](https://doi.org/10.5281/zenodo.22559210)
 
-Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, PyTorch, and JAX.
+Spherical harmonic tools for filtering, regridding, and kinematics in atmospheric science with Xarray, JAX, and PyTorch.
 
-**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields, PyTorch tensors, and JAX arrays. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. The Xarray API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics), and the optional JAX API uses [S2FFT](https://github.com/astro-informatics/s2fft).
+**spharmgrid** (**sp**herical **harm**onic **grid**ding) implements spherical harmonic filtering, regridding, differential operators, and atmospheric kinematics for global Xarray fields, JAX arrays, and PyTorch tensors. It computes relative vorticity, divergence, streamfunction, velocity potential, Helmholtz decomposition, and inverse wind transforms. The Xarray API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc) (`ducc0`) for spherical harmonic transforms; the optional JAX API uses [S2FFT](https://github.com/astro-informatics/s2fft), and the optional PyTorch API uses [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
 
 Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids.
 
@@ -39,10 +39,6 @@ Optional extras are:
 - `spharmgrid[jax]` — JAX arrays and S2FFT transforms;
 - `spharmgrid[torch]` — PyTorch tensors and torch-harmonics transforms.
 
-The `spharmgrid.torch` API can be installed with `spharmgrid[torch]`. See the
-[PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
-for installation instructions.
-
 The `spharmgrid.jax` API requires JAX and S2FFT. See the
 [JAX API documentation](https://spharmgrid.readthedocs.io/en/latest/jax.html)
 for supported GL and CC/MWSS dimensions, x64 and dtype requirements, and
@@ -52,6 +48,10 @@ TPU use, install the appropriate JAX accelerator build first by following the
 then install `spharmgrid[jax]`; spharmgrid does not bundle or select CUDA or
 TPU builds. The JAX API currently requires JAX x64 mode and `float64` spatial
 inputs; it does not enable x64 globally.
+
+The `spharmgrid.torch` API can be installed with `spharmgrid[torch]`. See the
+[PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
+for installation instructions.
 
 Install `spharmgrid[cli,dask]` to use the transforming CLI commands.
 
@@ -85,21 +85,6 @@ filtered = field.sg.filter("T6-42")
 
 See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
 
-For differentiable PyTorch workflows, install `spharmgrid[torch]` and use
-`spharmgrid.torch`:
-
-```python
-import torch
-import spharmgrid as sg
-import spharmgrid.torch as sgt
-
-grid = sg.gaussian_grid(64, 128)
-field = torch.randn(grid.nlat, grid.nlon)
-filtered = sgt.filter(field, grid=grid, truncation="T42")
-```
-
-See the [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and PyTorch bandwidth limits.
-
 For differentiable JAX workflows, configure JAX x64 mode before creating
 arrays and use `spharmgrid.jax`:
 
@@ -118,6 +103,21 @@ filtered = sgj.filter(field, grid=grid, truncation="T42")
 ```
 
 The last two array dimensions are latitude and longitude.
+
+For differentiable PyTorch workflows, install `spharmgrid[torch]` and use
+`spharmgrid.torch`:
+
+```python
+import torch
+import spharmgrid as sg
+import spharmgrid.torch as sgt
+
+grid = sg.gaussian_grid(64, 128)
+field = torch.randn(grid.nlat, grid.nlon)
+filtered = sgt.filter(field, grid=grid, truncation="T42")
+```
+
+See the [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html) for tensor dimensions, reusable `torch.nn` modules, device/autograd behavior, and PyTorch bandwidth limits.
 
 ## Documentation
 

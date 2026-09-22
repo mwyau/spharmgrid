@@ -5,7 +5,10 @@ from __future__ import annotations
 import inspect
 from datetime import UTC, datetime
 
+from docutils import nodes
+from sphinx import addnodes
 from sphinx.application import Sphinx
+from sphinx.util.inspect import stringify_signature
 
 project = "spharmgrid"
 author = "Albert Yau"
@@ -50,6 +53,43 @@ myst_enable_extensions = ["dollarmath"]
 myst_fence_as_directive = ["math"]
 
 
+_ACCESSOR_NAMES = {
+    "spharmgrid._accessors.DataArrayAccessor": "DataArray.sg",
+    "spharmgrid._accessors.DatasetAccessor": "Dataset.sg",
+    "spharmgrid.jax._accessors.DataArrayAccessor": "DataArray.sgj",
+    "spharmgrid.jax._accessors.DatasetAccessor": "Dataset.sgj",
+}
+
+
+def _accessor_names(app: Sphinx, doctree: nodes.document) -> None:
+    """Show accessor methods under their public Xarray names."""
+    del app
+    for signature in doctree.findall(addnodes.desc_signature):
+        fullname = signature.get("fullname", "")
+        module = signature.get("module")
+        if f"{module}.{fullname}" in _ACCESSOR_NAMES:
+            signature["_toc_name"] = ""
+            continue
+
+        owner, _, member = fullname.rpartition(".")
+        public = _ACCESSOR_NAMES.get(f"{module}.{owner}")
+        if public:
+            prefix = next(iter(signature.findall(addnodes.desc_addname)), None)
+            if prefix is not None:
+                prefix.children[:] = [nodes.Text(f"{public}.")]
+            else:
+                name = next(iter(signature.findall(addnodes.desc_name)), None)
+                if name is not None:
+                    signature.insert(
+                        signature.index(name),
+                        addnodes.desc_addname("", f"{public}."),
+                    )
+
+            toc_name = signature.get("_toc_name", "")
+            suffix = "()" if toc_name.endswith("()") else ""
+            signature["_toc_name"] = f"{public}.{member}{suffix}"
+
+
 def _torch_module_signature(
     app: Sphinx,
     obj_type: str,
@@ -78,9 +118,10 @@ def _torch_module_signature(
         parameters=parameters,
         return_annotation=inspect.Signature.empty,
     )
-    return str(class_signature), None
+    return stringify_signature(class_signature, unqualified_typehints=True), None
 
 
 def setup(app: Sphinx) -> None:
     """Register local Sphinx hooks."""
     app.connect("autodoc-process-signature", _torch_module_signature)
+    app.connect("doctree-read", _accessor_names, priority=400)

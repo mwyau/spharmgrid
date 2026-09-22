@@ -23,3 +23,7 @@
         border-right: 0;
     }
 }
+
+.accessor-api > dl.py.class > dt.sig {
+    display: none;
+}

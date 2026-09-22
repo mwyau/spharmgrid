@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### JAX and Xarray
+### Xarray and JAX
 
 - Added optional `.sgj` Xarray accessors and explicit `device_put()` /
   `device_get()` helpers. `.sgj` calls the `spharmgrid.jax` functions with
@@ -10,8 +10,8 @@
   `xarray_jax`.
 - Moved accessor implementation classes to private modules and shared Xarray
   preparation, alignment, and output wrapping across the JAX accessor methods.
-- Split the optional-backend API reference into tensor-native JAX, JAX Xarray,
-  functional PyTorch, and PyTorch neural-network pages.
+- Split the optional-backend API reference into Xarray accessor and JAX array
+  pages, followed by PyTorch functional and neural-network pages.
 
 ## v0.3.0 - 2026-09-21
 
@@ -49,8 +49,8 @@
 
 ### Documentation
 
-- Added separate JAX, PyTorch, and Xarray accessor API reference pages, including
-  the four public `spharmgrid.torch.nn` modules and their public methods.
+- Added separate Xarray accessor, JAX, and PyTorch API reference pages, including
+  the four public `spharmgrid.torch.nn` classes and their methods.
 - Added JAX installation and usage documentation and updated the PyTorch
   installation guidance for the package extras.
 

@@ -23,7 +23,7 @@ JAX installation instructions](https://docs.jax.dev/en/latest/installation.html)
 then install `spharmgrid[jax]`. spharmgrid does not bundle or select CUDA or
 TPU builds.
 
-Import the array API separately from the Xarray API:
+Import the grid API and JAX API:
 
 ```python
 import spharmgrid as sg
@@ -135,19 +135,8 @@ filtered = ds_jax["z"].sgj.filter("T42")
 diagnostics_host = sgj.device_get(diagnostics)
 ```
 
-`.sgj` delegates to the tensor-native `spharmgrid.jax` functions and returns
-Xarray objects with the corresponding dimensions, coordinates, names, and
-metadata. It requires the scientific input payloads to already contain
-`jax.Array` values; an operation does not move data between host and device
-implicitly. `device_put()` transfers data variables while leaving ordinary
-coordinates on the host, and `device_get()` transfers numerical payloads back
-to host arrays.
-
-The `.sgj` layer does not require `xarray_jax`. Coordinates remain ordinary
-Xarray/static metadata. The raw `spharmgrid.jax` array functions remain the
-recommended interface for code compiled with `jax.jit`, differentiated with
-`jax.grad`, or vectorized with `jax.vmap`.
-
-The separately tested whole-container PyTree path uses optional `xarray_jax`.
-It is not needed for `.sgj` operations and is not part of the published
-`spharmgrid[jax]` extra.
+`.sgj` operates on Xarray objects whose numerical payloads are `jax.Array`
+values and preserves their dimensions, coordinates, names, and metadata. Use
+`device_put()` before `.sgj` methods and `device_get()` to copy results back to
+host arrays. Use the `spharmgrid.jax` array functions with `jax.jit`, `jax.grad`,
+and `jax.vmap`.

@@ -1,21 +1,19 @@
 # JAX Xarray accessor API reference
 
 Importing `spharmgrid.jax` registers `.sgj` on Xarray `DataArray` and
-`Dataset` objects. The accessor calls the `spharmgrid.jax` numerical functions
-with JAX-backed data and returns labeled Xarray objects.
+`Dataset` objects. Its methods apply `spharmgrid.jax` operations to JAX-backed
+data and return labeled Xarray objects.
 
-`device_put()` converts data-variable payloads to JAX arrays. Coordinates
+`device_put()` moves data-variable payloads to JAX arrays while coordinates
 remain Xarray coordinates. `device_get()` copies JAX-backed payloads to host
-arrays. Scientific `.sgj` methods do not transfer data implicitly, and
-`xarray_jax` is not required.
+arrays. `.sgj` methods operate on the current JAX-backed payloads.
 
 For tensor-native functions that accept and return `jax.Array` objects, see
 {doc}`jax_api`. The user guide is in {doc}`jax`.
 
-The reference below documents the `DataArray.sgj` and `Dataset.sgj` surfaces.
-Accessor implementation classes are internal and are not import targets.
+The entries below document `DataArray.sgj` and `Dataset.sgj`.
 
-## Explicit data placement
+## Host/device transfer
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.jax.device_put
@@ -26,20 +24,22 @@ Accessor implementation classes are internal and are not import targets.
 ## DataArray.sgj
 
 ```{eval-rst}
-.. autoclass:: spharmgrid.jax._accessors.DataArrayAccessor
-   :members:
-   :member-order: bysource
-   :noindex:
+.. container:: accessor-api
+
+   .. autoclass:: spharmgrid.jax._accessors.DataArrayAccessor
+      :members:
+      :member-order: bysource
+      :no-index-entry:
 ```
 
 ## Dataset.sgj
 
 ```{eval-rst}
-.. autoclass:: spharmgrid.jax._accessors.DatasetAccessor
-   :members:
-   :member-order: bysource
-   :noindex:
+.. container:: accessor-api
+
+   .. autoclass:: spharmgrid.jax._accessors.DatasetAccessor
+      :members:
+      :member-order: bysource
+      :no-index-entry:
 ```
 
-The separately tested `xarray_jax` path supports whole-Xarray PyTree
-transformations. That interoperability path is distinct from `.sgj`.
