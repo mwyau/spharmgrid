@@ -163,6 +163,27 @@ def resolve_transform_spec(
     return TransformSpec(0, lmax, mmax, truncation)
 
 
+def _intersect_transform_spec(
+    source: Grid,
+    target: Grid,
+    analyzed: TransformSpec,
+) -> TransformSpec:
+    """Resolve an analyzed domain without exceeding target capabilities."""
+    try:
+        return resolve_transform_spec(source, target, analyzed)
+    except ValueError:
+        available = resolve_transform_spec(source, target, None)
+        lmax = min(analyzed.lmax, available.lmax)
+        mmax = min(analyzed.mmax, available.mmax)
+        lmin = min(analyzed.lmin, lmax)
+        truncation = (
+            "triangular"
+            if analyzed.truncation == "triangular" and lmax == mmax
+            else "trapezoidal"
+        )
+        return TransformSpec(lmin, lmax, mmax, truncation)
+
+
 def apply_spectral_selection(
     alm: NDArray[np.complexfloating],
     spec: TransformSpec,
@@ -188,7 +209,7 @@ def _spectral_selection_weights(
     analyzed field apply several selections without another analysis.
     """
     selected = coefficient_spec if selection is None else selection
-    if selected.lmax > coefficient_spec.lmax or selected.mmax > coefficient_spec.mmax:
+    if not _spectral_selection_is_within(coefficient_spec, selected):
         raise ValueError("requested spectral selection exceeds the analyzed domain")
     degrees = alm_degrees(coefficient_spec.lmax, coefficient_spec.mmax)
     orders = alm_orders(coefficient_spec.lmax, coefficient_spec.mmax)
@@ -210,6 +231,29 @@ def _spectral_selection_weights(
             -coefficient * (degree_values * (degree_values + 1.0)) ** 2
         )
     return weights
+
+
+def _spectral_selection_is_within(
+    analyzed: TransformSpec, selection: TransformSpec | None
+) -> bool:
+    """Whether every mode in ``selection`` is present in ``analyzed``."""
+    if selection is None:
+        return True
+    for order in range(selection.mmax + 1):
+        for degree in range(max(order, selection.lmin), selection.lmax + 1):
+            if selection.truncation == "rhomboidal" and (
+                degree - order > selection.lmax - selection.mmax
+            ):
+                continue
+            if degree < analyzed.lmin or degree > analyzed.lmax:
+                return False
+            if order > analyzed.mmax:
+                return False
+            if analyzed.truncation == "rhomboidal" and (
+                degree - order > analyzed.lmax - analyzed.mmax
+            ):
+                return False
+    return True
 
 
 def _degree_scale(spec: TransformSpec, radius: float) -> NDArray[np.float64]:

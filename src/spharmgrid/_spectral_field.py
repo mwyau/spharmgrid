@@ -38,12 +38,16 @@ from .grids import Grid
 from .metadata import (
     operator_metadata,
     output_metadata,
+    vector_operator_metadata,
+    wind_component_metadata,
 )
 from .spectral import (
     _degree_scale,
+    _intersect_transform_spec,
     _inverse_laplacian_multiplier,
     _laplacian_multiplier,
     _resolve_spectral_spec,
+    _spectral_selection_is_within,
     _spectral_selection_weights,
     _validate_taper,
     resolve_transform_spec,
@@ -194,24 +198,40 @@ class SpectralField:
         """Synthesize the representation on another supported grid."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        _validate_selection(self._spec, selection)
+        effective = self._spec if selection is None else selection
+        _validate_selection(self._spec, effective)
         target_description = target_layout(target, self._layout)
-        target_spec = resolve_transform_spec(
-            self._layout.grid, target_description.grid, selection
-        )
+        if selection is None:
+            target_spec = _intersect_transform_spec(
+                self._layout.grid, target_description.grid, self._spec
+            )
+        else:
+            target_spec = resolve_transform_spec(
+                self._layout.grid, target_description.grid, selection
+            )
+        coefficients = self._coefficients
+        if selection is None and taper is not None:
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                self._spec,
+                self._spec,
+                taper,
+            )
         coefficients = _repack_coefficients(
-            self._coefficients,
+            coefficients,
             self._mode_dim,
             self._spec,
             target_spec,
         )
-        coefficients = _apply_weights(
-            coefficients,
-            self._mode_dim,
-            target_spec,
-            selection,
-            taper,
-        )
+        if selection is not None:
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                target_spec,
+                effective,
+                taper,
+            )
         result = _synthesize_scalar(
             coefficients,
             self._mode_dim,
@@ -315,7 +335,15 @@ class SpectralVectorField:
             (self._coefficients.sel({self._component_dim: 0}), zeros),
             dim=self._component_dim,
         ).assign_coords({self._component_dim: [0, 1]})
-        return _replace_vector(self, coefficients)
+        return _replace_vector(
+            self,
+            coefficients,
+            names=("u_divergent", "v_divergent"),
+            attrs=(
+                wind_component_metadata("eastward", "divergent"),
+                wind_component_metadata("northward", "divergent"),
+            ),
+        )
 
     def rotational(self) -> SpectralVectorField:
         """Keep only the rotational B component."""
@@ -324,7 +352,15 @@ class SpectralVectorField:
             (zeros, self._coefficients.sel({self._component_dim: 1})),
             dim=self._component_dim,
         ).assign_coords({self._component_dim: [0, 1]})
-        return _replace_vector(self, coefficients)
+        return _replace_vector(
+            self,
+            coefficients,
+            names=("u_rotational", "v_rotational"),
+            attrs=(
+                wind_component_metadata("eastward", "rotational"),
+                wind_component_metadata("northward", "rotational"),
+            ),
+        )
 
     def synthesize(self) -> tuple[xr.DataArray, xr.DataArray]:
         """Synthesize eastward and northward components on the source grid."""
@@ -354,24 +390,44 @@ class SpectralVectorField:
         """Synthesize the vector representation on another supported grid."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        _validate_selection(self._spec, selection)
+        effective = self._spec if selection is None else selection
+        _validate_selection(self._spec, effective)
         target_description = target_layout(target, self._layout)
-        target_spec = resolve_transform_spec(
-            self._layout.grid, target_description.grid, selection
-        )
+        if selection is None:
+            target_spec = _intersect_transform_spec(
+                self._layout.grid, target_description.grid, self._spec
+            )
+        else:
+            target_spec = resolve_transform_spec(
+                self._layout.grid, target_description.grid, selection
+            )
+        if target_spec.lmax < 1:
+            raise ValueError(
+                "vector regridding requires a grid supporting total degree l=1"
+            )
+        coefficients = self._coefficients
+        if selection is None and taper is not None:
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                self._spec,
+                self._spec,
+                taper,
+            )
         coefficients = _repack_coefficients(
-            self._coefficients,
+            coefficients,
             self._mode_dim,
             self._spec,
             target_spec,
         )
-        coefficients = _apply_weights(
-            coefficients,
-            self._mode_dim,
-            target_spec,
-            selection,
-            taper,
-        )
+        if selection is not None:
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                target_spec,
+                effective,
+                taper,
+            )
         return _synthesize_vector(
             coefficients,
             self._component_dim,
@@ -394,7 +450,20 @@ class SpectralVectorField:
             else _laplacian_multiplier(self._spec, radius)
         )
         coefficients = _multiply_mode(self._coefficients, self._mode_dim, multiplier)
-        return _replace_vector(self, coefficients)
+        operation = "inverse_laplacian" if inverse else "laplacian"
+        attrs = (
+            vector_operator_metadata(
+                _metadata_source(self._u_name, self._u_attrs),
+                "eastward",
+                operation,
+            ),
+            vector_operator_metadata(
+                _metadata_source(self._v_name, self._v_attrs),
+                "northward",
+                operation,
+            ),
+        )
+        return _replace_vector(self, coefficients, attrs=attrs)
 
     def _potential(self, quantity: str, radius: float) -> SpectralField:
         _validate_radius(radius)
@@ -636,6 +705,8 @@ def _repack_coefficients(
     source: TransformSpec,
     target: TransformSpec,
 ) -> xr.DataArray:
+    if target == source:
+        return coefficients
     if target.lmax <= source.lmax and target.mmax <= source.mmax:
         from ._ducc import alm_subselection
 
@@ -726,7 +797,12 @@ def _replace_scalar(
 def _replace_vector(
     field: SpectralVectorField,
     coefficients: xr.DataArray,
+    *,
+    names: tuple[Hashable | None, Hashable | None] | None = None,
+    attrs: tuple[dict[str, Any], dict[str, Any]] | None = None,
 ) -> SpectralVectorField:
+    component_names = (field._u_name, field._v_name) if names is None else names
+    component_attrs = (field._u_attrs, field._v_attrs) if attrs is None else attrs
     return SpectralVectorField(
         coefficients,
         field._spec,
@@ -735,10 +811,10 @@ def _replace_vector(
         field._component_dim,
         field._mode_dim,
         field._nthreads,
-        field._u_name,
-        field._v_name,
-        field._u_attrs,
-        field._v_attrs,
+        component_names[0],
+        component_names[1],
+        dict(component_attrs[0]),
+        dict(component_attrs[1]),
         field._scalar_synthesis,
         field._vector_synthesis,
     )
@@ -747,9 +823,7 @@ def _replace_vector(
 def _validate_selection(
     coefficient_spec: TransformSpec, selection: TransformSpec | None
 ) -> None:
-    if selection is None:
-        return
-    if selection.lmax > coefficient_spec.lmax or selection.mmax > coefficient_spec.mmax:
+    if not _spectral_selection_is_within(coefficient_spec, selection):
         raise ValueError("requested spectral selection exceeds the analyzed domain")
 
 

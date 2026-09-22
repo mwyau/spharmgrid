@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 import spharmgrid as sg
 import spharmgrid.torch as sgt
@@ -55,6 +56,85 @@ def test_vector_spectral_field_reuses_native_coefficients_and_autograd(
     assert northward.grad is not None
     assert bool(torch_isfinite(eastward.grad))
     assert bool(torch_isfinite(northward.grad))
+
+
+def test_restricted_scalar_domain_is_preserved_on_torch_regrid(
+    gl_grid: sg.Grid,
+    cc_grid: sg.Grid,
+) -> None:
+    field, _, _ = make_fields(gl_grid)
+    spectral = sgt.analyze(field, "T2", grid=gl_grid)
+
+    torch.testing.assert_close(
+        spectral.synthesize(),
+        sgt.filter(field, "T2", grid=gl_grid),
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+    torch.testing.assert_close(
+        spectral.regrid(cc_grid),
+        sgt.regrid(field, cc_grid, "T2", source_grid=gl_grid),
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+    torch.testing.assert_close(
+        spectral.regrid(cc_grid, taper=0.1),
+        sgt.regrid(field, cc_grid, "T2", source_grid=gl_grid, taper=0.1),
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+
+    with pytest.raises(ValueError, match="exceeds"):
+        spectral.regrid(cc_grid, "T3")
+
+
+def test_unrestricted_domain_intersects_a_smaller_torch_target(
+    gl_grid: sg.Grid,
+) -> None:
+    target = sg.gaussian_grid(4, 7)
+    field, _, _ = make_fields(gl_grid)
+    spectral = sgt.analyze(field, grid=gl_grid)
+
+    torch.testing.assert_close(
+        spectral.regrid(target),
+        sgt.regrid(field, target, source_grid=gl_grid),
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+
+
+def test_restricted_vector_domain_is_preserved_on_torch_regrid(
+    gl_grid: sg.Grid,
+    cc_grid: sg.Grid,
+) -> None:
+    _, eastward, northward = make_fields(gl_grid)
+    spectral = sgt.analyze_vector(eastward, northward, "T2", grid=gl_grid)
+
+    result_u, result_v = spectral.regrid(cc_grid)
+    expected_u, expected_v = sgt.regrid_vector(
+        eastward,
+        northward,
+        cc_grid,
+        "T2",
+        source_grid=gl_grid,
+    )
+    torch.testing.assert_close(result_u, expected_u, rtol=0.0, atol=2.0e-12)
+    torch.testing.assert_close(result_v, expected_v, rtol=0.0, atol=2.0e-12)
+
+    result_u, result_v = spectral.regrid(cc_grid, taper=0.1)
+    expected_u, expected_v = sgt.regrid_vector(
+        eastward,
+        northward,
+        cc_grid,
+        "T2",
+        source_grid=gl_grid,
+        taper=0.1,
+    )
+    torch.testing.assert_close(result_u, expected_u, rtol=0.0, atol=2.0e-12)
+    torch.testing.assert_close(result_v, expected_v, rtol=0.0, atol=2.0e-12)
+
+    with pytest.raises(ValueError, match="exceeds"):
+        spectral.regrid(cc_grid, "T3")
 
 
 def torch_isfinite(value: torch.Tensor) -> torch.Tensor:

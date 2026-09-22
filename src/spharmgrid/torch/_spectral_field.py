@@ -17,6 +17,7 @@ from ..spectral import _resolve_spectral_spec, _validate_taper
 from ._backend import (
     _apply_selection,
     _check_selection,
+    _intersect_transform_spec,
     _make_state,
     _require_tensor,
     _require_vector_bandwidth,
@@ -154,10 +155,14 @@ class SpectralField:
         _validate_grid(target_grid, "target_grid")
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        _check_selection(
-            self._state.spec if selection is None else selection, self._state
-        )
-        target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
+        effective = self._state.spec if selection is None else selection
+        _check_selection(effective, self._state)
+        if selection is None:
+            target_spec = _intersect_transform_spec(
+                self.grid, target_grid, self._state.spec
+            )
+        else:
+            target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
         state = _make_state(
             self.grid,
             target_grid,
@@ -165,9 +170,14 @@ class SpectralField:
             vector=False,
             device=self._coefficients.device,
         )
-        coefficients = _resize_coefficients(self._coefficients, state.spec)
-        if selection is not None or taper is not None:
-            coefficients = _apply_selection(coefficients, state, state.spec, taper)
+        coefficients = self._coefficients
+        if selection is None and taper is not None:
+            coefficients = _apply_selection(
+                coefficients, self._state, self._state.spec, taper
+            )
+        coefficients = _resize_coefficients(coefficients, state.spec)
+        if selection is not None:
+            coefficients = _apply_selection(coefficients, state, effective, taper)
         return state.scalar_synthesis(coefficients)
 
 
@@ -273,10 +283,14 @@ class SpectralVectorField:
         _validate_grid(target_grid, "target_grid")
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        _check_selection(
-            self._state.spec if selection is None else selection, self._state
-        )
-        target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
+        effective = self._state.spec if selection is None else selection
+        _check_selection(effective, self._state)
+        if selection is None:
+            target_spec = _intersect_transform_spec(
+                self.grid, target_grid, self._state.spec
+            )
+        else:
+            target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
         state = _make_state(
             self.grid,
             target_grid,
@@ -285,9 +299,14 @@ class SpectralVectorField:
             device=self._coefficients.device,
         )
         _require_vector_bandwidth(state)
-        coefficients = _resize_coefficients(self._coefficients, state.spec)
-        if selection is not None or taper is not None:
-            coefficients = _apply_selection(coefficients, state, state.spec, taper)
+        coefficients = self._coefficients
+        if selection is None and taper is not None:
+            coefficients = _apply_selection(
+                coefficients, self._state, self._state.spec, taper
+            )
+        coefficients = _resize_coefficients(coefficients, state.spec)
+        if selection is not None:
+            coefficients = _apply_selection(coefficients, state, effective, taper)
         return state.vector_synthesis(coefficients)
 
     def _laplacian(self, *, radius: float, inverse: bool) -> SpectralVectorField:

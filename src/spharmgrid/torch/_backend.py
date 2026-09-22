@@ -20,7 +20,11 @@ import torch_harmonics as _torch_harmonics
 
 from .._transform import TransformSpec
 from ..grids import Grid, grid_layout
-from ..spectral import _validate_taper, resolve_transform_spec
+from ..spectral import (
+    _spectral_selection_is_within,
+    _validate_taper,
+    resolve_transform_spec,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +91,23 @@ def _resolve_transform_spec(
             f"torch-harmonics triangular bandwidth T{limit} for these grids"
         )
     return requested
+
+
+def _intersect_transform_spec(
+    source: Grid,
+    target: Grid,
+    analyzed: TransformSpec,
+) -> TransformSpec:
+    """Resolve a reusable triangular domain within target capabilities."""
+    try:
+        return _resolve_transform_spec(source, target, analyzed)
+    except ValueError:
+        limit = min(
+            _torch_capabilities(source).triangular_lmax,
+            _torch_capabilities(target).triangular_lmax,
+        )
+        lmax = min(analyzed.lmax, limit)
+        return TransformSpec(min(analyzed.lmin, lmax), lmax, lmax)
 
 
 def _cc_bandwidth_error(
@@ -469,14 +490,8 @@ def _check_selection(
     _validate_torch_selection(selection)
     if selection is None:
         return
-    if selection.lmax > state.spec.lmax:
-        raise ValueError(
-            f"requested lmax={selection.lmax} exceeds transform lmax={state.spec.lmax}"
-        )
-    if selection.mmax > state.spec.mmax:
-        raise ValueError(
-            f"requested mmax={selection.mmax} exceeds transform mmax={state.spec.mmax}"
-        )
+    if not _spectral_selection_is_within(state.spec, selection):
+        raise ValueError("requested spectral selection exceeds the analyzed domain")
 
 
 def _validate_torch_selection(selection: TransformSpec | None) -> None:
