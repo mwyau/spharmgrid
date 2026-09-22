@@ -8,7 +8,7 @@ data and return labeled Xarray objects.
 remain Xarray coordinates. `device_get()` copies JAX-backed payloads to host
 arrays. `.sgj` methods operate on the current JAX-backed payloads.
 
-For tensor-native functions that accept and return `jax.Array` objects, see
+For functions that accept and return `jax.Array` objects, see
 {doc}`jax_api`. The user guide is in {doc}`jax`.
 
 The entries below document `DataArray.sgj` and `Dataset.sgj`.

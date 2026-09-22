@@ -5,7 +5,7 @@ operations to JAX arrays. S2FFT computes the scalar and spin-1 transforms;
 the package applies the spectral selections, radius factors, and atmospheric
 vector conventions.
 
-The tensor-native API reference is in {doc}`jax_api`. The labeled Xarray API
+The JAX array API reference is in {doc}`jax_api`. The labeled Xarray API
 reference, including `device_put()`, `device_get()`, and `.sgj` methods, is in
 {doc}`jax_accessor_api`.
 
@@ -94,7 +94,7 @@ The same array operations support `vmap` and automatic differentiation.
 `regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis
 when the source and target grids have different resolutions. The spectral
 selection arguments accept the same triangular, trapezoidal, rhomboidal, and
-taper options as the other functional APIs.
+taper options as the Xarray API.
 
 ## Wind and kinematics
 

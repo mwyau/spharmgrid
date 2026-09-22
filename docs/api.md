@@ -2,8 +2,8 @@
 
 The direct `spharmgrid` functions accept Xarray `DataArray` objects and use
 DUCC through `ducc0` for spherical harmonic transforms. For labeled `.sg`
-methods, see {doc}`accessor_api`. The optional tensor APIs are documented in
-{doc}`jax_api` and {doc}`torch_api`.
+methods, see {doc}`accessor_api`. The optional JAX and PyTorch APIs are
+documented in {doc}`jax_api` and {doc}`torch_api`.
 
 ## Typing
 
