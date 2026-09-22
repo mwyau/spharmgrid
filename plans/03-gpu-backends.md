@@ -544,8 +544,9 @@ Do not add file-reading/writing methods to `spharmgrid.torch` or
 The post-v0.3.0 JAX convenience layer provides explicit `device_put()` and
 `device_get()` helpers for Xarray `DataArray` and `Dataset` payloads. They
 transfer numerical data only; ordinary coordinates and metadata remain on the
-host. They do not expose lower-level placement controls or hide transfer costs
-inside SHT operations.
+host. They accept an optional `device=` destination but do not expose JAX's
+lower-level source, donation, or aliasing controls. SHT operations do not move
+data between host and device implicitly.
 
 ### 9.5 JAX/xarray interoperability remains an optional higher-level path
 

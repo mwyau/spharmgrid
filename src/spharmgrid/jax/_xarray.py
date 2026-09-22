@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass
-from typing import TypeVar, cast
+from typing import TypeVar, cast, overload
 
 import jax
 import jax.numpy as jnp
@@ -342,6 +342,20 @@ def _dataset_outputs(
     return xr.Dataset(fields)
 
 
+@overload
+def device_put(
+    obj: xr.DataArray,
+    device: jax.Device | jax.sharding.Sharding | None = None,
+) -> xr.DataArray: ...
+
+
+@overload
+def device_put(
+    obj: xr.Dataset,
+    device: jax.Device | jax.sharding.Sharding | None = None,
+) -> xr.Dataset: ...
+
+
 def device_put(
     obj: xr.DataArray | xr.Dataset,
     device: jax.Device | jax.sharding.Sharding | None = None,
@@ -364,6 +378,14 @@ def device_put(
             )
         return result
     raise TypeError("device_put expects an xarray.DataArray or xarray.Dataset")
+
+
+@overload
+def device_get(obj: xr.DataArray) -> xr.DataArray: ...
+
+
+@overload
+def device_get(obj: xr.Dataset) -> xr.Dataset: ...
 
 
 def device_get(obj: xr.DataArray | xr.Dataset) -> xr.DataArray | xr.Dataset:
