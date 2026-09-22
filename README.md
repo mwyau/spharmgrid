@@ -36,9 +36,10 @@ Optional extras are:
 - `spharmgrid[dask]` — Dask-backed lazy execution;
 - `spharmgrid[cf]` — optional `cf-xarray` coordinate discovery;
 - `spharmgrid[cli]` — command-line NetCDF, Zarr, and GRIB I/O;
-- `spharmgrid[jax]` — JAX arrays and S2FFT transforms.
+- `spharmgrid[jax]` — JAX arrays and S2FFT transforms;
+- `spharmgrid[torch]` — PyTorch tensors and torch-harmonics transforms.
 
-The `spharmgrid.torch` API requires PyTorch and `torch-harmonics`. See the
+The `spharmgrid.torch` API can be installed with `spharmgrid[torch]`. See the
 [PyTorch API documentation](https://spharmgrid.readthedocs.io/en/latest/torch.html)
 for installation instructions.
 
@@ -84,8 +85,8 @@ filtered = field.sg.filter("T6-42")
 
 See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
 
-For differentiable PyTorch workflows, install PyTorch and `torch-harmonics`,
-then use `spharmgrid.torch`:
+For differentiable PyTorch workflows, install `spharmgrid[torch]` and use
+`spharmgrid.torch`:
 
 ```python
 import torch
