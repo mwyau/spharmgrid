@@ -75,4 +75,8 @@ __all__ = [
     "rotational_wind",
     "divergent_wind",
     "wind",
+    "nn",
 ]
+
+# Import the neural-network namespace as a submodule, without flattening it.
+from . import nn as nn  # noqa: E402, F401

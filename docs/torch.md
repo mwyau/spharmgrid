@@ -1,6 +1,6 @@
 # PyTorch
 
-spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
+spharmgrid has Xarray and PyTorch interfaces. The Xarray API uses
 DUCC through `ducc0` for spherical harmonic transforms; the optional
 `spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors.
 
@@ -32,7 +32,7 @@ spharmgrid maps its `Grid` descriptors to those transforms and applies the
 spectral selections, radius factors, and atmospheric vector conventions.
 Import `spharmgrid.torch` to load the PyTorch API.
 
-The Xarray/NumPy API uses DUCC and handles file and metadata workflows:
+The Xarray API uses DUCC and handles file and metadata workflows:
 
 ```python
 vo = sg.vorticity(u, v)

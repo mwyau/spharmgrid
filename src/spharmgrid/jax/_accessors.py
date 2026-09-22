@@ -1085,6 +1085,3 @@ class DatasetAccessor:
             northward=northward,
             radius=radius,
         )
-
-
-__all__ = ["DataArrayAccessor", "DatasetAccessor"]

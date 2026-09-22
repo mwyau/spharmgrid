@@ -27,6 +27,11 @@ def _assert_dataset_identical(actual: xr.Dataset, expected: xr.Dataset) -> None:
     xr.testing.assert_identical(actual, expected)
 
 
+def test_root_import_registers_sg() -> None:
+    assert hasattr(xr.DataArray([1], dims=("x",)), "sg")
+    assert hasattr(xr.Dataset(), "sg")
+
+
 @pytest.mark.parametrize("kind", ["cc", "gl"])
 def test_dataarray_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
     grid = supported_grid(kind)

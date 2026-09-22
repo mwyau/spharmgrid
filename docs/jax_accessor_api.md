@@ -12,6 +12,9 @@ arrays. Scientific `.sgj` methods do not transfer data implicitly, and
 For tensor-native functions that accept and return `jax.Array` objects, see
 {doc}`jax_api`. The user guide is in {doc}`jax`.
 
+The reference below documents the `DataArray.sgj` and `Dataset.sgj` surfaces.
+Accessor implementation classes are internal and are not import targets.
+
 ## Explicit data placement
 
 ```{eval-rst}
@@ -26,6 +29,7 @@ For tensor-native functions that accept and return `jax.Array` objects, see
 .. autoclass:: spharmgrid.jax._accessors.DataArrayAccessor
    :members:
    :member-order: bysource
+   :noindex:
 ```
 
 ## Dataset.sgj
@@ -34,6 +38,7 @@ For tensor-native functions that accept and return `jax.Array` objects, see
 .. autoclass:: spharmgrid.jax._accessors.DatasetAccessor
    :members:
    :member-order: bysource
+   :noindex:
 ```
 
 The separately tested `xarray_jax` path supports whole-Xarray PyTree

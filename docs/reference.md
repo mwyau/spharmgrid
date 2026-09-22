@@ -1,6 +1,6 @@
 # Reference
 
-API documentation for Xarray/NumPy, Xarray accessors, PyTorch, and JAX, plus
+API documentation for Xarray, Xarray accessors, PyTorch, and JAX, plus
 command-line usage, comparisons, and scientific references.
 
 ```{toctree}

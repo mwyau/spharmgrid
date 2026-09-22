@@ -79,6 +79,5 @@ __all__ = [
     "wind",
 ]
 
-# Import after the optional dependency checks and public functions so that the
-# labeled accessor is registered only by ``import spharmgrid.jax``.
-importlib.import_module(f"{__name__}._accessors")
+# Import only for Xarray accessor registration, after the public functions.
+from . import _accessors as _accessors  # noqa: F401, E402

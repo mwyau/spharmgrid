@@ -223,13 +223,13 @@ def _output_dims(
     template: xr.DataArray,
     source: FieldLayout,
     target: FieldLayout,
-) -> tuple[str, ...]:
+) -> tuple[Hashable, ...]:
     dimensions = tuple(
         target.latitude_dim
         if dimension == source.latitude_dim
         else target.longitude_dim
         if dimension == source.longitude_dim
-        else str(dimension)
+        else dimension
         for dimension in template.dims
     )
     if len(set(dimensions)) != len(dimensions):
@@ -243,25 +243,25 @@ def _output_coordinates(
     template: xr.DataArray,
     source: FieldLayout,
     target: FieldLayout,
-    dimensions: tuple[str, ...],
-    sizes: Mapping[str, int],
-) -> dict[str, xr.DataArray]:
+    dimensions: tuple[Hashable, ...],
+    sizes: Mapping[Hashable, int],
+) -> dict[Hashable, xr.DataArray]:
     horizontal_names = {
         source.coordinates.latitude_name,
         source.coordinates.longitude_name,
         target.coordinates.latitude_name,
         target.coordinates.longitude_name,
     }
-    coordinates: dict[str, xr.DataArray] = {}
+    coordinates: dict[Hashable, xr.DataArray] = {}
     for name, coordinate in template.coords.items():
-        if str(name) in horizontal_names:
+        if name in horizontal_names:
             continue
         mapped_dimensions = tuple(
             target.latitude_dim
-            if str(dimension) == source.latitude_dim
+            if dimension == source.latitude_dim
             else target.longitude_dim
-            if str(dimension) == source.longitude_dim
-            else str(dimension)
+            if dimension == source.longitude_dim
+            else dimension
             for dimension in coordinate.dims
         )
         if not all(dimension in dimensions for dimension in mapped_dimensions):
@@ -280,7 +280,7 @@ def _output_coordinates(
             )
             if dimension != mapped_dimension
         }
-        coordinates[str(name)] = coordinate.copy(deep=False).rename(rename)
+        coordinates[name] = coordinate.copy(deep=False).rename(rename)
     coordinates[target.coordinates.latitude_name] = target.latitude_coordinate.copy(
         deep=False
     )
@@ -301,7 +301,7 @@ def _wrap(
 ) -> xr.DataArray:
     dimensions = _output_dims(template, source, target)
     canonical_dimensions = tuple(
-        str(dimension)
+        dimension
         for dimension in template.dims
         if dimension not in (source.latitude_dim, source.longitude_dim)
     ) + (target.latitude_dim, target.longitude_dim)
@@ -373,7 +373,7 @@ def device_put(
             result[name].data = _put_data(
                 variable.data,
                 "Dataset data variable",
-                str(name),
+                name,
                 device,
             )
         return result
@@ -408,11 +408,29 @@ def _put_data(
 ) -> object:
     try:
         return jax.device_put(data, device=device)
-    except (TypeError, ValueError) as error:
+    except TypeError as error:
+        if not _is_payload_conversion_error(data, error):
+            raise
         label = f" {name!r}" if name is not None else ""
         raise TypeError(
             f"{container}{label} data cannot be represented by JAX"
         ) from error
+
+
+def _is_payload_conversion_error(data: object, error: TypeError) -> bool:
+    """Identify JAX errors caused by an unsupported data payload."""
+    dtype = getattr(data, "dtype", None)
+    if dtype is not None:
+        try:
+            if str(dtype).lower() in {"object", "str", "string", "bytes"}:
+                return True
+        except (TypeError, ValueError):
+            pass
+    message = str(error).lower()
+    return (
+        "not a valid jax array type" in message
+        or "only arrays of numeric types are supported by jax" in message
+    )
 
 
 def _with_data(obj: xr.DataArray, data: object) -> xr.DataArray:

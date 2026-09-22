@@ -134,5 +134,13 @@ def _assert_api_parity(
             )
 
 
+def test_torch_nn_is_exposed_as_a_submodule() -> None:
+    assert sgt.nn.SHTFilter is not None
+    assert sgt.nn.SHTOperators is not None
+    assert "nn" in sgt.__all__
+    assert "SHTFilter" not in sgt.__all__
+    assert not hasattr(sgt, "SHTFilter")
+
+
 def test_torch_functional_api_matches_root_api() -> None:
     _assert_api_parity(sg, sgt)

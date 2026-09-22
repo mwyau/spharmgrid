@@ -6,13 +6,11 @@
 
 Importing :mod:`spharmgrid` registers the ``.sg`` accessors on Xarray
 ``DataArray`` and ``Dataset`` objects. DUCC through ``ducc0`` performs the
-spherical harmonic transforms for the Xarray/NumPy API. The optional
+spherical harmonic transforms for the Xarray API. The optional
 :mod:`spharmgrid.torch` API uses ``torch-harmonics`` for PyTorch tensors, and
 :mod:`spharmgrid.jax` uses S2FFT for JAX arrays.
 """
 
-# Import for Xarray accessor registration after direct functions exist.
-from . import _accessors  # noqa: F401
 from ._transform import TransformSpec
 from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
 from .kinematics import (
@@ -67,3 +65,6 @@ __all__ = [
     "vorticity",
     "wind",
 ]
+
+# Import only for Xarray accessor registration, after the public functions.
+from . import _accessors as _accessors  # noqa: F401, E402

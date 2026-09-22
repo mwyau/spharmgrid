@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import importlib
 import inspect
 import subprocess
 import sys
@@ -105,6 +106,17 @@ def _signature_parts(
 def test_jax_exports_exactly_the_scientific_operation_set() -> None:
     assert set(sgj.__all__) == _FUNCTIONS | _HELPERS
     assert {name for name in sgj.__dict__ if not name.startswith("_")} >= _FUNCTIONS
+    assert "DataArrayAccessor" not in sgj.__all__
+    assert "DatasetAccessor" not in sgj.__all__
+
+
+def test_accessor_implementation_is_private() -> None:
+    assert "DataArrayAccessor" not in sg.__all__
+    assert "DatasetAccessor" not in sg.__all__
+    assert not hasattr(sg, "DataArrayAccessor")
+    assert not hasattr(sg, "DatasetAccessor")
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("spharmgrid.accessors")
 
 
 def test_jax_signatures_match_the_root_scientific_semantics() -> None:
@@ -129,7 +141,9 @@ def test_root_import_does_not_load_optional_jax_dependencies() -> None:
             sys.executable,
             "-c",
             "import sys; import spharmgrid; assert 'jax' not in sys.modules; "
-            "assert 's2fft' not in sys.modules",
+            "assert 's2fft' not in sys.modules; "
+            "assert 'torch' not in sys.modules; "
+            "assert 'torch_harmonics' not in sys.modules",
         ],
         check=True,
         capture_output=True,

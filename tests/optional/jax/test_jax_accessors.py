@@ -170,17 +170,72 @@ def test_device_helpers_preserve_containers_metadata_and_coordinates(
 
 
 def test_device_put_rejects_unsupported_payload() -> None:
-    field = xr.DataArray(
+    for values in (
         np.array([{"not": "numeric"}], dtype=object),
-        dims=("x",),
-        name="unsupported",
-    )
-    with pytest.raises(TypeError, match="cannot be represented by JAX"):
-        sgj.device_put(field)
+        np.array(["not numeric"]),
+    ):
+        field = xr.DataArray(values, dims=("x",), name="unsupported")
+        with pytest.raises(TypeError, match="cannot be represented by JAX"):
+            sgj.device_put(field)
 
     dataset = xr.Dataset({"unsupported": field})
     with pytest.raises(TypeError, match="Dataset data variable"):
         sgj.device_put(dataset)
+
+
+def test_device_put_preserves_invalid_placement_error(cc_grid: sg.Grid) -> None:
+    field = xr.DataArray(
+        np.ones((cc_grid.nlat, cc_grid.nlon), dtype=np.float64),
+        dims=("lat", "lon"),
+        coords={"lat": cc_grid.latitude, "lon": cc_grid.longitude},
+    )
+    with pytest.raises(ValueError, match="device_put") as error:
+        sgj.device_put(field, device="not-a-device")
+    assert "cannot be represented by JAX" not in str(error.value)
+
+
+def test_sgj_preserves_non_string_dimension_names(cc_grid: sg.Grid) -> None:
+    field = xr.DataArray(
+        jnp.asarray(scalar_values(cc_grid)[None, :, :], dtype=jnp.float64),
+        dims=(0, "lat", "lon"),
+        coords={
+            "time": xr.Variable((0,), np.array(["first"], dtype=object)),
+            "lat": cc_grid.latitude,
+            "lon": cc_grid.longitude,
+        },
+        name="field",
+    )
+
+    result = field.sgj.filter("T2")
+
+    assert result.dims == (0, "lat", "lon")
+    assert result.coords["time"].dims == (0,)
+    np.testing.assert_array_equal(result.coords["time"], field.coords["time"])
+
+
+def test_sgj_preserves_non_string_coordinate_names_without_collisions(
+    cc_grid: sg.Grid,
+) -> None:
+    field = xr.DataArray(
+        jnp.asarray(scalar_values(cc_grid)[None, :, :], dtype=jnp.float64),
+        dims=("time", "lat", "lon"),
+        coords={
+            0: xr.Variable(("time",), np.array([1])),
+            "0": xr.Variable(("time",), np.array([2])),
+            "lat": cc_grid.latitude,
+            "lon": cc_grid.longitude,
+        },
+        name="field",
+    )
+
+    result = field.sgj.filter("T2")
+
+    assert 0 in result.coords
+    assert "0" in result.coords
+    assert result.coords[0].dims == ("time",)
+    assert result.coords["0"].dims == ("time",)
+    np.testing.assert_array_equal(result.coords[0], field.coords[0])
+    np.testing.assert_array_equal(result.coords["0"], field.coords["0"])
 
 
 def test_sgj_requires_explicit_jax_payload_placement(cc_grid: sg.Grid) -> None:

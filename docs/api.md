@@ -1,4 +1,4 @@
-# Xarray/NumPy API reference
+# Xarray API reference
 
 The direct `spharmgrid` functions accept Xarray `DataArray` objects and use
 DUCC through `ducc0` for spherical harmonic transforms. For labeled `.sg`

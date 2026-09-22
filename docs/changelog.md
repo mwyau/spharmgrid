@@ -59,7 +59,7 @@
 ### Spectral truncation
 
 - Added `Tnxm` trapezoidal and `Rn` symmetric rhomboidal truncation to the
-  Xarray/NumPy filtering, regridding, and CLI APIs.
+  Xarray filtering, regridding, and CLI APIs.
 - Added public `TransformSpec` objects for parsed spectral degree/order limits
   and truncation type.
 - The Torch API supports triangular `Tn` and total-degree band-pass `Ta-b`
