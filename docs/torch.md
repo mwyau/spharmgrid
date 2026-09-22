@@ -2,24 +2,18 @@
 
 spharmgrid has Xarray/NumPy and PyTorch interfaces. The Xarray/NumPy API uses
 DUCC through `ducc0` for spherical harmonic transforms; the optional
-`spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors. PyTorch
-and `torch-harmonics` are installed separately.
+`spharmgrid.torch` namespace uses `torch-harmonics` for PyTorch tensors.
 
-Install spharmgrid normally:
-
-```bash
-pip install spharmgrid
-```
-
-Install PyTorch using the
-[PyTorch installation instructions](https://pytorch.org/get-started/locally/),
-then install `torch-harmonics` using its upstream
-[installation instructions](https://github.com/NVIDIA/torch-harmonics#installation).
-Where a compatible PyPI wheel is available:
+Install the PyTorch API with:
 
 ```bash
-pip install torch-harmonics
+pip install "spharmgrid[torch]"
 ```
+
+This installs spharmgrid, PyTorch, and a compatible `torch-harmonics` wheel.
+For CUDA or other accelerator-specific PyTorch builds, install PyTorch using the
+[PyTorch installation instructions](https://pytorch.org/get-started/locally/)
+first, then install `spharmgrid[torch]`.
 
 ## Development
 

@@ -22,7 +22,9 @@ pip install spharmgrid
 uv add spharmgrid
 ```
 
-The PyTorch API requires PyTorch and `torch-harmonics`, installed separately; see {doc}`torch`.
+The PyTorch API is installed with `spharmgrid[torch]`; see {doc}`torch`. For
+accelerator-specific PyTorch builds, install the appropriate PyTorch build first,
+then install `spharmgrid[torch]`.
 The JAX API requires JAX and S2FFT, installed with `spharmgrid[jax]`; see
 {doc}`jax`. For CPU use, `spharmgrid[jax]` installs JAX and S2FFT. For GPU
 or TPU use, install the appropriate JAX accelerator build first by following the

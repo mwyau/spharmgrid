@@ -9,6 +9,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 import pytest
 from jax import config
+from jax.typing import DTypeLike
 
 import spharmgrid as sg
 import spharmgrid.jax as sgj
@@ -26,7 +27,7 @@ def test_x64_disabled_rejects_single_precision_execution(gl_grid: sg.Grid) -> No
 
 @pytest.mark.parametrize("dtype", [jnp.float32, jnp.complex64])
 def test_single_precision_inputs_are_rejected_with_x64_enabled(
-    gl_grid: sg.Grid, dtype: object
+    gl_grid: sg.Grid, dtype: DTypeLike
 ) -> None:
     if not config.read("jax_enable_x64"):
         pytest.skip("single-precision dtype checks require JAX x64")

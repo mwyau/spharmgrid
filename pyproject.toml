@@ -53,6 +53,10 @@ jax = [
     "jax>=0.5.0",
     "s2fft>=1.4.0",
 ]
+torch = [
+    "torch>=2.13",
+    "torch-harmonics==0.6.5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spharmgrid"]
@@ -86,14 +90,15 @@ test = [
     "pytest-cov>=7.1.0",
 ]
 torch-dev = [
+    { include-group = "test" },
     "torch>=2.13",
-    "torch-harmonics>=0.9.2",
+    "torch-harmonics @ git+https://github.com/NVIDIA/torch-harmonics.git@v0.9.2",
 ]
 jax-dev = [
     { include-group = "test" },
     "jax>=0.5.0",
     "s2fft>=1.4.0",
-    "gdm-xarray-jax>=0.1.1; python_version >= '3.12'",
+    "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@v0.1.1; python_version >= '3.12'",
 ]
 cuda-dev = [
     { include-group = "jax-dev" },
@@ -104,9 +109,18 @@ parity = [
     "pyspharm-syl>=1.2.1; python_version < '3.14'",
 ]
 
+[tool.uv]
+conflicts = [
+    [
+        { extra = "torch" },
+        { group = "torch-dev" },
+    ],
+]
+
 [tool.uv.sources]
-torch-harmonics = { git = "https://github.com/NVIDIA/torch-harmonics.git", tag = "v0.9.2" }
-gdm-xarray-jax = { git = "https://github.com/google-deepmind/xarray_jax.git", tag = "v0.1.1" }
+# Temporary workaround: the S2FFT 1.4.0 abi3 wheel has a CPython-3.12-specific
+# extension filename, so build that release from source on Python >=3.13.
+s2fft = { git = "https://github.com/astro-informatics/s2fft.git", tag = "v1.4.0", marker = "python_version >= '3.13'" }
 
 [[tool.uv.dependency-metadata]]
 name = "torch-harmonics"
@@ -128,6 +142,7 @@ strict_markers = true
 markers = [
     "parity: compares against an independently implemented transform package",
     "ncl: tests requiring NCL 6.6.2/SPHEREPACK",
+    "jax_x64: tests requiring JAX x64 mode",
 ]
 
 [tool.ruff]

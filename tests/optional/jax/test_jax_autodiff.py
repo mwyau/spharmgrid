@@ -9,17 +9,14 @@ from __future__ import annotations
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax import checking_leaks, config, grad, jit, vmap
+from jax import checking_leaks, grad, jit, vmap
 
 import spharmgrid as sg
 import spharmgrid.jax as sgj
 from spharmgrid.jax._backend import _precomputes
 from tests.optional.jax._fields import scalar_values, vector_values
 
-
-def _require_x64() -> None:
-    if not config.read("jax_enable_x64"):
-        pytest.skip("finite-difference reference requires JAX x64")
+pytestmark = pytest.mark.jax_x64
 
 
 def test_cold_precompute_cache_does_not_leak_under_jit(
@@ -118,7 +115,6 @@ def test_vector_kinematics_and_wind_support_jit_vmap_and_grad(
 def test_scalar_filter_directional_derivative_matches_finite_difference(
     gl_grid: sg.Grid,
 ) -> None:
-    _require_x64()
     field = jnp.asarray(scalar_values(gl_grid), dtype=jnp.float64)
     direction = jnp.asarray(
         np.sin(np.linspace(0.2, 2.8, gl_grid.nlat * gl_grid.nlon)).reshape(
@@ -154,7 +150,6 @@ def test_scalar_filter_directional_derivative_matches_finite_difference(
 def test_vector_kinematics_directional_derivative_matches_finite_difference(
     cc_grid: sg.Grid,
 ) -> None:
-    _require_x64()
     eastward_values, northward_values = vector_values(cc_grid)
     eastward = jnp.asarray(eastward_values, dtype=jnp.float64)
     northward = jnp.asarray(northward_values, dtype=jnp.float64)

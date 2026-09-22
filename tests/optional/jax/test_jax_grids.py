@@ -16,6 +16,8 @@ import spharmgrid as sg
 import spharmgrid.jax as sgj
 from tests.optional.jax._fields import as_xarray, scalar_values, vector_values
 
+pytestmark = pytest.mark.jax_x64
+
 
 @pytest.mark.parametrize("kind", ["gl", "cc"])
 @pytest.mark.parametrize("latitude_order", ["ascending", "descending"])
