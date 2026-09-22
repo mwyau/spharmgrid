@@ -188,7 +188,17 @@ jobs:
           enable-cache: true
           save-cache: false
           python-version: "3.12"
-      - run: uv sync --no-default-groups --group jax-dev --extra jax --frozen
+      - run: >-
+          uv sync
+          --no-default-groups
+          --group dev
+          --group jax-dev
+          --extra cf
+          --extra dask
+          --extra jax
+          --frozen
+      - name: Type-check with JAX installed
+        run: uv run --no-sync ty check
       - name: Verify unsupported JAX single precision is rejected
         env:
           JAX_ENABLE_X64: "0"

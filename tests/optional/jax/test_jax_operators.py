@@ -9,7 +9,8 @@ from __future__ import annotations
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax import Array, config
+from jax import Array
+from jax.typing import DTypeLike
 
 import spharmgrid.jax as sgj
 from tests.optional.jax._fields import (
@@ -19,10 +20,10 @@ from tests.optional.jax._fields import (
     vector_values,
 )
 
+pytestmark = pytest.mark.jax_x64
 
-def _as_dtype(values: np.ndarray, dtype: object) -> Array:
-    if dtype == jnp.float64 and not config.read("jax_enable_x64"):
-        pytest.skip("float64 validation requires JAX x64 enabled")
+
+def _as_dtype(values: np.ndarray, dtype: DTypeLike) -> Array:
     return jnp.asarray(values, dtype=dtype)
 
 
@@ -42,7 +43,7 @@ def _assert_close(actual: object, expected: object, *, atol: float) -> None:
 def test_scalar_harmonic_identities(
     request: pytest.FixtureRequest,
     grid_name: str,
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     # CI measured a 3.63e-13 maximum absolute Laplacian error on GL.
     atol = 5.0e-13
@@ -104,7 +105,7 @@ def test_scalar_harmonic_identities(
 def test_gradient_and_inverse_gradient_use_geographic_components(
     request: pytest.FixtureRequest,
     grid_name: str,
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 2.0e-13
     grid = request.getfixturevalue(grid_name)
@@ -130,7 +131,7 @@ def test_gradient_and_inverse_gradient_use_geographic_components(
 def test_spin_one_signs_and_atmospheric_operations(
     request: pytest.FixtureRequest,
     grid_name: str,
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 3.0e-13
     grid = request.getfixturevalue(grid_name)

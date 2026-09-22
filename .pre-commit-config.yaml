@@ -26,7 +26,7 @@ repos:
     rev: v0.0.82
     hooks:
       - id: ty
-        args: [--isolated, --python=3.11, --extra=cf, --extra=dask]
+        args: [--isolated, --python=3.12, --extra=cf, --extra=dask]
 
   - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0

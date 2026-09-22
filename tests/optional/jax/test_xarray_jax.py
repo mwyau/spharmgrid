@@ -23,6 +23,8 @@ from tests.optional.jax._fields import scalar_values, vector_values
 
 pytest.importorskip("xarray_jax")
 
+pytestmark = pytest.mark.jax_x64
+
 
 def _coords(field: xr.DataArray, grid: sg.Grid) -> dict[str, object]:
     """Build static output coordinates for a field on ``grid``."""

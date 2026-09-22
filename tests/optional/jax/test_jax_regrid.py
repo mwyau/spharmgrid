@@ -11,16 +11,16 @@ from typing import Literal
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax import config
+from jax.typing import DTypeLike
 
 import spharmgrid.jax as sgj
 from spharmgrid import Grid
 from tests.optional.jax._fields import make_grid, scalar_values, vector_values
 
+pytestmark = pytest.mark.jax_x64
+
 
 def _assert_close(actual: object, expected: np.ndarray, *, atol: float) -> None:
-    if not config.read("jax_enable_x64"):
-        pytest.skip("float64 validation requires JAX x64 enabled")
     np.testing.assert_allclose(np.asarray(actual), expected, rtol=0.0, atol=atol)
 
 
@@ -38,7 +38,7 @@ def test_scalar_regrid_resizes_s2fft_coefficients(
     request: pytest.FixtureRequest,
     source_name: str,
     target_name: str,
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 2.0e-13
     source_grid = request.getfixturevalue(source_name)
@@ -67,7 +67,7 @@ def test_vector_regrid_resizes_centered_m_modes(
     request: pytest.FixtureRequest,
     source_name: str,
     target_name: str,
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 3.0e-13
     source_grid = request.getfixturevalue(source_name)
@@ -118,7 +118,7 @@ def _sectoral_gradient(
 @pytest.mark.parametrize("dtype", [jnp.float64])
 def test_regrid_preserves_near_edge_sectoral_mode(
     kind: Literal["gl", "cc"],
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 2.0e-11
     source_grid = _grid_for_bandlimit(kind, 12)
@@ -139,7 +139,7 @@ def test_regrid_preserves_near_edge_sectoral_mode(
 @pytest.mark.parametrize("dtype", [jnp.float64])
 def test_regrid_removes_above_target_sectoral_mode(
     kind: Literal["gl", "cc"],
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 2.0e-11
     source_grid = _grid_for_bandlimit(kind, 16)
@@ -162,7 +162,7 @@ def test_regrid_removes_above_target_sectoral_mode(
 @pytest.mark.parametrize("dtype", [jnp.float64])
 def test_vector_regrid_preserves_near_edge_sectoral_mode(
     kind: Literal["gl", "cc"],
-    dtype: object,
+    dtype: DTypeLike,
 ) -> None:
     atol = 2.0e-10
     source_grid = _grid_for_bandlimit(kind, 12)

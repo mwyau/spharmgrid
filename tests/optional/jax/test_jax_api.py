@@ -166,6 +166,7 @@ else:
     ("kind", "shape"),
     [("gl", (8, 14)), ("cc", (9, 15))],
 )
+@pytest.mark.jax_x64
 def test_non_native_s2fft_shapes_raise_a_capability_error(
     kind: Literal["gl", "cc"],
     shape: tuple[int, int],
