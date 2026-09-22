@@ -144,5 +144,13 @@ def test_torch_nn_is_exposed_as_a_submodule() -> None:
     assert not hasattr(sgt, "SHTFilter")
 
 
+def test_torch_reusable_spectral_api_is_exposed() -> None:
+    assert sgt.SpectralField is not None
+    assert sgt.SpectralVectorField is not None
+    assert callable(sgt.analyze)
+    assert callable(sgt.analyze_vector)
+    assert sgt.nn is not None
+
+
 def test_torch_functional_api_matches_root_api() -> None:
     _assert_api_parity(sg, sgt)

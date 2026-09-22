@@ -249,6 +249,8 @@ def test_torch_reusable_spectral_fields_match_ducc(
         torch.float64,
         "kinematics",
     )
+
+
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
 def test_gl_scalar_spectral_parity(
     dtype: torch.dtype,

@@ -108,13 +108,22 @@ def _signature_parts(
 
 
 def test_jax_exports_exactly_the_scientific_operation_set() -> None:
-    assert set(sgj.__all__) == _FUNCTIONS | {
-        "SpectralField",
-        "SpectralVectorField",
-    } | _HELPERS
+    assert (
+        set(sgj.__all__)
+        == _FUNCTIONS
+        | {
+            "SpectralField",
+            "SpectralVectorField",
+        }
+        | _HELPERS
+    )
     assert {name for name in sgj.__dict__ if not name.startswith("_")} >= _FUNCTIONS
     assert sgj.SpectralField is not None
     assert sgj.SpectralVectorField is not None
+    assert callable(sgj.analyze)
+    assert callable(sgj.analyze_vector)
+    assert callable(sgj.device_put)
+    assert callable(sgj.device_get)
     assert "DataArrayAccessor" not in sgj.__all__
     assert "DatasetAccessor" not in sgj.__all__
 

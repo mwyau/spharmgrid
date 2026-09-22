@@ -79,15 +79,19 @@ def alm_subselection(
     """
     if target_lmax > source_lmax or target_mmax > source_mmax:
         raise ValueError("target coefficient domain exceeds the source domain")
-    indices: list[NDArray[np.intp]] = []
+
+    target_size = (target_mmax + 1) * (target_lmax + 1) - (
+        target_mmax * (target_mmax + 1) // 2
+    )
+    result = np.empty(target_size, dtype=np.intp)
+    destination = 0
     for order in range(target_mmax + 1):
-        source_offset = sum(
-            source_lmax - previous_order + 1 for previous_order in range(order)
+        block_size = target_lmax - order + 1
+        source_offset = order * (source_lmax + 1) - order * (order - 1) // 2
+        result[destination : destination + block_size] = source_offset + np.arange(
+            block_size, dtype=np.intp
         )
-        indices.append(
-            source_offset + np.arange(target_lmax - order + 1, dtype=np.intp)
-        )
-    result = np.concatenate(indices)
+        destination += block_size
     result.setflags(write=False)
     return result
 

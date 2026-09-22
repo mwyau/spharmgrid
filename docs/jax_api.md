@@ -16,6 +16,11 @@ equivalent canonical modulo-360 convention (for example, `0 ... 360` instead
 of `-180 ... 180`), while preserving grid geometry and tensor-axis ordering.
 An arbitrary accepted longitude permutation remains an explicit index tuple.
 
+This backend-native API is separate from the labeled Xarray API: `.sg` returns
+Xarray-aware reusable representations, `spharmgrid.jax.analyze()` returns a
+JAX-native representation, and `.sgj` remains the labeled Xarray wrapper for
+one-shot JAX operations.
+
 ```python
 spectral = sgj.analyze(field, grid=grid)
 large_scale = spectral.filter("T5-42").synthesize()

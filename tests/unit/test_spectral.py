@@ -16,6 +16,7 @@ import spharmgrid as sg
 from spharmgrid._ducc import (
     alm_degrees,
     alm_orders,
+    alm_subselection,
     geometry_for,
     scalar_synthesis,
 )
@@ -233,6 +234,54 @@ def test_alm_indices_follow_ducc_packed_order_and_rhomboidal_mask() -> None:
     boundary = (degrees == 4) & (orders == 2)
     np.testing.assert_allclose(tapered[:, boundary], 0.1)
     np.testing.assert_allclose(tapered[:, (degrees == 3) & (orders == 0)], 0.0)
+
+
+@pytest.mark.parametrize(
+    ("source_lmax", "source_mmax", "target_lmax", "target_mmax"),
+    [
+        (0, 0, 0, 0),
+        (3, 3, 3, 3),
+        (8, 6, 5, 6),
+        (8, 8, 8, 3),
+        (12, 9, 6, 4),
+        (80, 60, 70, 20),
+    ],
+)
+def test_alm_subselection_matches_packed_degree_order_mapping(
+    source_lmax: int,
+    source_mmax: int,
+    target_lmax: int,
+    target_mmax: int,
+) -> None:
+    """Check every returned position against DUCC's packed ``(l, m)`` order."""
+    source_degrees = alm_degrees(source_lmax, source_mmax)
+    source_orders = alm_orders(source_lmax, source_mmax)
+    source_positions = {
+        (int(degree), int(order)): position
+        for position, (degree, order) in enumerate(
+            zip(source_degrees, source_orders, strict=True)
+        )
+    }
+    target_degrees = alm_degrees(target_lmax, target_mmax)
+    target_orders = alm_orders(target_lmax, target_mmax)
+    expected = np.asarray(
+        [
+            source_positions[(int(degree), int(order))]
+            for degree, order in zip(target_degrees, target_orders, strict=True)
+        ],
+        dtype=np.intp,
+    )
+
+    actual = alm_subselection(
+        source_lmax,
+        source_mmax,
+        target_lmax,
+        target_mmax,
+    )
+
+    np.testing.assert_array_equal(actual, expected)
+    assert actual.dtype == np.intp
+    assert not actual.flags.writeable
 
 
 def test_trapezoidal_filter_retains_the_lmax_corner() -> None:

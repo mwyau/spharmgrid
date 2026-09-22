@@ -45,6 +45,7 @@ def _scalar_mode(
     index = np.flatnonzero(
         (degrees == degree) & (alm_orders(spec.lmax, spec.mmax) == order)
     )
+
     assert index.size == 1
     coefficients = np.zeros((1, degrees.size), dtype=np.complex128)
     coefficients[0, index[0]] = 1.0
@@ -63,6 +64,13 @@ def _scalar_mode(
         dims=("lat", "lon"),
         coords={"lat": grid.latitude, "lon": grid.longitude},
     )
+
+
+def test_core_reusable_spectral_api_is_public() -> None:
+    assert sg.SpectralField is not None
+    assert sg.SpectralVectorField is not None
+    assert callable(sg.analyze)
+    assert callable(sg.analyze_vector)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])

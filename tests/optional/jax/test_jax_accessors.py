@@ -480,18 +480,23 @@ def _public_methods(accessor: type[object]) -> set[str]:
 
 def test_sg_and_sgj_accessor_signatures_match() -> None:
     exceptions = {"sht_threads"}
+    jax_only_root_methods = {"analyze", "analyze_vector"}
     dataarray_methods = _public_methods(RootDataArrayAccessor)
     dataset_methods = _public_methods(RootDatasetAccessor)
 
-    assert dataarray_methods == _public_methods(JaxDataArrayAccessor)
-    assert dataset_methods == _public_methods(JaxDatasetAccessor)
-    for name in dataarray_methods:
+    assert dataarray_methods - jax_only_root_methods == _public_methods(
+        JaxDataArrayAccessor
+    )
+    assert dataset_methods - jax_only_root_methods == _public_methods(
+        JaxDatasetAccessor
+    )
+    for name in dataarray_methods - jax_only_root_methods:
         assert _method_signature(
             RootDataArrayAccessor,
             name,
             excluded=exceptions,
         ) == _method_signature(JaxDataArrayAccessor, name, excluded=set())
-    for name in dataset_methods:
+    for name in dataset_methods - jax_only_root_methods:
         assert _method_signature(
             RootDatasetAccessor,
             name,
@@ -616,3 +621,7 @@ def test_sgj_accessor_surface_is_explicit() -> None:
     dataset_accessor = xr.Dataset().sgj
     assert dataarray_methods <= set(dir(field_accessor))
     assert dataset_methods <= set(dir(dataset_accessor))
+    assert not hasattr(field_accessor, "analyze")
+    assert not hasattr(field_accessor, "analyze_vector")
+    assert not hasattr(dataset_accessor, "analyze")
+    assert not hasattr(dataset_accessor, "analyze_vector")
