@@ -184,6 +184,12 @@ def _intersect_transform_spec(
         return TransformSpec(lmin, lmax, mmax, truncation)
 
 
+def _validate_vector_spec(spec: TransformSpec) -> None:
+    """Require a spectral domain that contains vector spherical harmonics."""
+    if spec.lmax < 1:
+        raise ValueError("vector spectral domains require lmax >= 1")
+
+
 def apply_spectral_selection(
     alm: NDArray[np.complexfloating],
     spec: TransformSpec,
@@ -212,12 +218,14 @@ def _spectral_selection_weights(
     if not _spectral_selection_is_within(coefficient_spec, selected):
         raise ValueError("requested spectral selection exceeds the analyzed domain")
     degrees = alm_degrees(coefficient_spec.lmax, coefficient_spec.mmax)
-    orders = alm_orders(coefficient_spec.lmax, coefficient_spec.mmax)
     weights = np.zeros(degrees.size, dtype=np.float64)
     inside = (degrees >= selected.lmin) & (degrees <= selected.lmax)
-    inside &= orders <= selected.mmax
-    if selected.truncation == "rhomboidal":
-        inside &= degrees - orders <= selected.lmax - selected.mmax
+    needs_orders = selected.mmax < selected.lmax or selected.truncation == "rhomboidal"
+    if needs_orders:
+        orders = alm_orders(coefficient_spec.lmax, coefficient_spec.mmax)
+        inside &= orders <= selected.mmax
+        if selected.truncation == "rhomboidal":
+            inside &= degrees - orders <= selected.lmax - selected.mmax
     if taper is None:
         weights[inside] = 1.0
     elif selected.lmax == 0:

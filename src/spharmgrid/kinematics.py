@@ -50,6 +50,7 @@ from .spectral import (
     _degree_scale,
     _inverse_laplacian_multiplier,
     _laplacian_multiplier,
+    _validate_vector_spec,
     resolve_transform_spec,
 )
 
@@ -722,8 +723,7 @@ def _require_matching_layouts(
 
 def _vector_spec(layout: FieldLayout) -> TransformSpec:
     spec = resolve_transform_spec(layout.grid, layout.grid, None)
-    if spec.lmax < 1:
-        raise ValueError("wind transforms require a grid supporting total degree l=1")
+    _validate_vector_spec(spec)
     return spec
 
 

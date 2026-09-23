@@ -23,6 +23,7 @@ from ..grids import Grid, grid_layout
 from ..spectral import (
     _spectral_selection_is_within,
     _validate_taper,
+    _validate_vector_spec,
     resolve_transform_spec,
 )
 
@@ -512,5 +513,4 @@ def _validate_torch_selection(selection: TransformSpec | None) -> None:
 
 
 def _require_vector_bandwidth(state: _TorchTransform) -> None:
-    if state.spec.lmax < 1:
-        raise ValueError("vector operation requires a grid supporting total degree l=1")
+    _validate_vector_spec(state.spec)

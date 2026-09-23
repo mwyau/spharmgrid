@@ -20,6 +20,7 @@ from ..spectral import (
     _resolve_spectral_spec,
     _spectral_selection_is_within,
     _validate_taper,
+    _validate_vector_spec,
 )
 from ._backend import (
     _apply_selection,
@@ -166,7 +167,7 @@ class SpectralField:
 
     @property
     def grid(self) -> Grid:
-        """The source grid used for analysis."""
+        """Source-grid geometry; PyTree reconstruction may alter longitude values."""
         return self._transform.source
 
     @property
@@ -273,7 +274,7 @@ class SpectralVectorField:
 
     @property
     def grid(self) -> Grid:
-        """The source grid used for analysis."""
+        """Source-grid geometry; PyTree reconstruction may alter longitude values."""
         return self._transform.source
 
     @property
@@ -303,6 +304,7 @@ class SpectralVectorField:
         _validate_taper(taper)
         effective = self.spec if selection is None else selection
         _validate_selection(self.spec, effective)
+        _validate_vector_spec(effective)
         if taper is None and (selection is None or selection == self.spec):
             return self
         transform = _make_transform(self.grid, self.grid, effective)

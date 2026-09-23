@@ -19,7 +19,7 @@ from jax.typing import DTypeLike
 
 from .._transform import TransformSpec
 from ..grids import Grid, GridLayout, grid_layout
-from ..spectral import _validate_taper, resolve_transform_spec
+from ..spectral import _validate_taper, _validate_vector_spec, resolve_transform_spec
 
 _PRECOMPUTE_CACHE_SIZE = 32
 
@@ -454,8 +454,7 @@ def _vector_synthesis(
 
 
 def _require_vector_bandwidth(transform: _JaxTransform) -> None:
-    if transform.spec.lmax < 1:
-        raise ValueError("vector operation requires a grid supporting total degree l=1")
+    _validate_vector_spec(transform.spec)
 
 
 def _validate_source(source: str | None) -> None:

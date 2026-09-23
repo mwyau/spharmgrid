@@ -55,6 +55,18 @@ def test_jax_reusable_filters_skip_true_no_ops(gl_grid: sg.Grid) -> None:
     assert vector.filter(vector.spec) is vector
 
 
+def test_jax_vector_filter_rejects_t0(gl_grid: sg.Grid) -> None:
+    eastward_values, northward_values = vector_values(gl_grid)
+    vector = sgj.analyze_vector(
+        jnp.asarray(eastward_values, dtype=jnp.float64),
+        jnp.asarray(northward_values, dtype=jnp.float64),
+        grid=gl_grid,
+    )
+
+    with pytest.raises(ValueError, match="lmax >= 1"):
+        vector.filter("T0")
+
+
 def test_jax_filter_updates_domain_and_pytree_state(
     gl_grid: sg.Grid,
     cc_target_grid: sg.Grid,

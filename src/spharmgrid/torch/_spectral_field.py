@@ -13,7 +13,7 @@ from torch import Tensor
 
 from .._transform import TransformSpec
 from ..grids import Grid
-from ..spectral import _resolve_spectral_spec, _validate_taper
+from ..spectral import _resolve_spectral_spec, _validate_taper, _validate_vector_spec
 from ._backend import (
     _apply_selection,
     _check_selection,
@@ -227,6 +227,7 @@ class SpectralVectorField:
         _validate_taper(taper)
         effective = self._state.spec if selection is None else selection
         _check_selection(effective, self._state)
+        _validate_vector_spec(effective)
         if taper is None and (selection is None or selection == self.spec):
             return self
         state = self._state

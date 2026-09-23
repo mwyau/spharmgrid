@@ -149,6 +149,19 @@ def test_reusable_filter_skips_true_no_op(kind: Literal["cc", "gl"]) -> None:
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_vector_domains_reject_t0(kind: Literal["cc", "gl"]) -> None:
+    grid = supported_grid(kind)
+    u, v = solid_body_wind(grid)
+
+    with pytest.raises(ValueError, match="lmax >= 1"):
+        sg.analyze_vector(u, v, "T0")
+
+    vector = sg.analyze_vector(u, v)
+    with pytest.raises(ValueError, match="lmax >= 1"):
+        vector.filter("T0")
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
 def test_filter_updates_available_scalar_domain_and_rejects_expansion(
     kind: Literal["cc", "gl"],
 ) -> None:

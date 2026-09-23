@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from functools import cache, lru_cache
+from functools import lru_cache
 from numbers import Integral
 from typing import Literal, cast
 
@@ -19,7 +19,8 @@ from .grids import Grid
 Geometry = Literal["CC", "GL"]
 
 DEFAULT_DASK_SHT_THREADS = 1
-_ALM_SUBSELECTION_CACHE_SIZE = 32
+_ALM_INDEX_CACHE_SIZE = 8
+_ALM_INDEX_CACHE_MAX_BYTES = 2 * 1024 * 1024
 
 
 def resolve_sht_threads(sht_threads: int | None, *, dask: bool) -> int:
@@ -45,27 +46,64 @@ def geometry_for(grid: Grid) -> Geometry:
     return "GL" if grid.kind == "gl" else "CC"
 
 
-@cache
-def alm_degrees(lmax: int, mmax: int) -> NDArray[np.int64]:
-    """Return total degree for each contiguous healpy-ordered coefficient."""
-    degrees = np.concatenate(
-        [np.arange(m, lmax + 1, dtype=np.int64) for m in range(mmax + 1)]
-    )
+def _alm_size(lmax: int, mmax: int) -> int:
+    """Return the number of packed coefficients for inclusive degree/order limits."""
+    return (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+
+
+def _build_alm_degrees(lmax: int, mmax: int) -> NDArray[np.int64]:
+    degrees = np.empty(_alm_size(lmax, mmax), dtype=np.int64)
+    destination = 0
+    for order in range(mmax + 1):
+        block_size = lmax - order + 1
+        degrees[destination : destination + block_size] = np.arange(
+            order, lmax + 1, dtype=np.int64
+        )
+        destination += block_size
     degrees.setflags(write=False)
     return degrees
 
 
-@cache
-def alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
-    """Return zonal order for each contiguous healpy-ordered coefficient."""
-    orders = np.concatenate(
-        [np.full(lmax - m + 1, m, dtype=np.int64) for m in range(mmax + 1)]
-    )
+def _build_alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
+    orders = np.empty(_alm_size(lmax, mmax), dtype=np.int64)
+    destination = 0
+    for order in range(mmax + 1):
+        block_size = lmax - order + 1
+        orders[destination : destination + block_size] = order
+        destination += block_size
     orders.setflags(write=False)
     return orders
 
 
-@lru_cache(maxsize=_ALM_SUBSELECTION_CACHE_SIZE)
+@lru_cache(maxsize=_ALM_INDEX_CACHE_SIZE)
+def _cached_alm_degrees(lmax: int, mmax: int) -> NDArray[np.int64]:
+    return _build_alm_degrees(lmax, mmax)
+
+
+@lru_cache(maxsize=_ALM_INDEX_CACHE_SIZE)
+def _cached_alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
+    return _build_alm_orders(lmax, mmax)
+
+
+def _cache_alm_indices(lmax: int, mmax: int) -> bool:
+    size_bytes = _alm_size(lmax, mmax) * np.dtype(np.int64).itemsize
+    return size_bytes <= _ALM_INDEX_CACHE_MAX_BYTES
+
+
+def alm_degrees(lmax: int, mmax: int) -> NDArray[np.int64]:
+    """Return total degree for each contiguous healpy-ordered coefficient."""
+    if _cache_alm_indices(lmax, mmax):
+        return _cached_alm_degrees(lmax, mmax)
+    return _build_alm_degrees(lmax, mmax)
+
+
+def alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
+    """Return zonal order for each contiguous healpy-ordered coefficient."""
+    if _cache_alm_indices(lmax, mmax):
+        return _cached_alm_orders(lmax, mmax)
+    return _build_alm_orders(lmax, mmax)
+
+
 def alm_subselection(
     source_lmax: int,
     source_mmax: int,
@@ -81,9 +119,7 @@ def alm_subselection(
     if target_lmax > source_lmax or target_mmax > source_mmax:
         raise ValueError("target coefficient domain exceeds the source domain")
 
-    target_size = (target_mmax + 1) * (target_lmax + 1) - (
-        target_mmax * (target_mmax + 1) // 2
-    )
+    target_size = _alm_size(target_lmax, target_mmax)
     result = np.empty(target_size, dtype=np.intp)
     destination = 0
     for order in range(target_mmax + 1):

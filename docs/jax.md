@@ -95,7 +95,11 @@ laplacian = spectral.laplacian().synthesize()
 
 `SpectralVectorField` provides the corresponding reusable geographic vector
 representation. Its coefficient-domain diagnostics return `SpectralField` objects, while
-coefficient storage remains native to S2FFT and private.
+coefficient storage is native to S2FFT and private.
+
+PyTree reconstruction may express equivalent longitudes differently, such as values that
+differ by 360 degrees. The result is `grids_equivalent()` to the input grid, although
+the coordinate values may differ.
 
 `regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis when the
 source and target grids have different resolutions. The spectral selection arguments

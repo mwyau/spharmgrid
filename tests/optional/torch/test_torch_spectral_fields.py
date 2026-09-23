@@ -48,6 +48,14 @@ def test_torch_reusable_filters_skip_true_no_ops(gl_grid: sg.Grid) -> None:
     assert vector.filter(vector.spec) is vector
 
 
+def test_torch_vector_filter_rejects_t0(gl_grid: sg.Grid) -> None:
+    _, eastward, northward = make_fields(gl_grid)
+    vector = sgt.analyze_vector(eastward, northward, grid=gl_grid)
+
+    with pytest.raises(ValueError, match="lmax >= 1"):
+        vector.filter("T0")
+
+
 def test_torch_filter_updates_domain_and_rejects_expansion(
     gl_grid: sg.Grid,
     cc_grid: sg.Grid,

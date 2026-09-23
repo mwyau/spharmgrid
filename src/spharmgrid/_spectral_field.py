@@ -16,7 +16,6 @@ from numpy.typing import NDArray
 
 from ._ducc import (
     alm_degrees,
-    alm_orders,
     geometry_for,
     resolve_sht_threads,
     scalar_analysis,
@@ -50,6 +49,7 @@ from .spectral import (
     _spectral_selection_is_within,
     _spectral_selection_weights,
     _validate_taper,
+    _validate_vector_spec,
     resolve_transform_spec,
 )
 
@@ -87,8 +87,7 @@ def analyze_vector(
     layout, canonical_u, canonical_v = vector_inputs(u, v)
     selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     spec = resolve_transform_spec(layout.grid, layout.grid, selection)
-    if spec.lmax < 1:
-        raise ValueError("vector analysis requires a grid supporting total degree l=1")
+    _validate_vector_spec(spec)
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)
     return _analyze_vector(
@@ -320,6 +319,7 @@ class SpectralVectorField:
         _validate_taper(taper)
         effective = self._spec if selection is None else selection
         _validate_selection(self._spec, effective)
+        _validate_vector_spec(effective)
         if taper is None and (selection is None or selection == self._spec):
             return self
         if selection is None:
@@ -453,10 +453,7 @@ class SpectralVectorField:
             target_spec = resolve_transform_spec(
                 self._layout.grid, target_description.grid, selection
             )
-        if target_spec.lmax < 1:
-            raise ValueError(
-                "vector regridding requires a grid supporting total degree l=1"
-            )
+        _validate_vector_spec(target_spec)
         coefficients = self._coefficients
         if selection is None:
             if taper is not None:
@@ -777,35 +774,21 @@ def _repack_coefficients(
         # The packed DUCC layout is unchanged.  A later explicit selection
         # still applies its logical lmin/rhomboidal mask when needed.
         return coefficients
-    if target.lmax <= source.lmax and target.mmax <= source.mmax:
-        from ._ducc import alm_subselection
+    if target.lmax > source.lmax or target.mmax > source.mmax:
+        raise ValueError("target coefficient domain exceeds the source domain")
 
-        indices = alm_subselection(source.lmax, source.mmax, target.lmax, target.mmax)
-        return coefficients.isel({mode_dim: indices})
-    source_degrees = alm_degrees(source.lmax, source.mmax)
-    source_orders = alm_orders(source.lmax, source.mmax)
-    source_lookup = {
-        (int(degree), int(order)): index
-        for index, (degree, order) in enumerate(
-            zip(source_degrees, source_orders, strict=True)
+    # Packed order blocks are contiguous.  Reducing only mmax, or selecting
+    # only m=0, is therefore a prefix view and needs no integer index array.
+    if target.lmax == source.lmax or target.mmax == 0:
+        target_size = (target.mmax + 1) * (target.lmax + 1) - (
+            target.mmax * (target.mmax + 1) // 2
         )
-    }
-    target_degrees = alm_degrees(target.lmax, target.mmax)
-    target_orders = alm_orders(target.lmax, target.mmax)
-    parts: list[xr.DataArray] = []
-    for position, (degree, order) in enumerate(
-        zip(target_degrees, target_orders, strict=True)
-    ):
-        source_index = source_lookup.get((int(degree), int(order)))
-        if source_index is None:
-            part = xr.zeros_like(coefficients.isel({mode_dim: 0}, drop=True))
-        else:
-            part = coefficients.isel({mode_dim: source_index}, drop=True)
-        parts.append(part.expand_dims({mode_dim: [position]}))
-    return xr.concat(parts, dim=mode_dim).transpose(
-        *[dimension for dimension in coefficients.dims if dimension != mode_dim],
-        mode_dim,
-    )
+        return coefficients.isel({mode_dim: slice(0, target_size)})
+
+    from ._ducc import alm_subselection
+
+    indices = alm_subselection(source.lmax, source.mmax, target.lmax, target.mmax)
+    return coefficients.isel({mode_dim: indices})
 
 
 def _apply_weights(

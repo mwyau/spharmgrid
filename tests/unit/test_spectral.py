@@ -7,14 +7,16 @@
 from __future__ import annotations
 
 from typing import Literal
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
 import xarray as xr
 
 import spharmgrid as sg
+import spharmgrid.spectral as spectral_module
 from spharmgrid._ducc import (
-    _ALM_SUBSELECTION_CACHE_SIZE,
+    _ALM_INDEX_CACHE_MAX_BYTES,
     alm_degrees,
     alm_orders,
     alm_subselection,
@@ -143,6 +145,30 @@ def test_selection_containment_regression_domains(
         )
         is expected
     )
+
+
+def test_triangular_selection_does_not_build_order_indices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    coefficient_spec = sg.parse_spectral("T8")
+    selection = sg.parse_spectral("T4")
+    order_builder = Mock(
+        side_effect=AssertionError(
+            "triangular selection should not build order indices"
+        )
+    )
+    monkeypatch.setattr(spectral_module, "alm_orders", order_builder)
+
+    weights = spectral_module._spectral_selection_weights(
+        coefficient_spec,
+        selection,
+        None,
+    )
+    degrees = alm_degrees(coefficient_spec.lmax, coefficient_spec.mmax)
+    expected = (degrees <= selection.lmax).astype(np.float64)
+
+    np.testing.assert_array_equal(weights, expected)
+    order_builder.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -285,8 +311,29 @@ def test_alm_subselection_matches_packed_degree_order_mapping(
     assert not actual.flags.writeable
 
 
-def test_alm_subselection_cache_is_bounded() -> None:
-    assert alm_subselection.cache_info().maxsize == _ALM_SUBSELECTION_CACHE_SIZE == 32
+def test_large_alm_index_helpers_are_not_retained() -> None:
+    small_degrees = alm_degrees(16, 16)
+    small_orders = alm_orders(16, 16)
+    assert alm_degrees(16, 16) is small_degrees
+    assert alm_orders(16, 16) is small_orders
+
+    # T768 is larger than the per-array cache threshold but still small enough
+    # to exercise this policy cheaply in the unit suite.
+    assert ((768 + 1) * (768 + 2) // 2) * np.dtype(
+        np.int64
+    ).itemsize > _ALM_INDEX_CACHE_MAX_BYTES
+    large_degrees = alm_degrees(768, 768)
+    large_orders = alm_orders(768, 768)
+    assert alm_degrees(768, 768) is not large_degrees
+    assert alm_orders(768, 768) is not large_orders
+
+
+def test_alm_subselection_is_transient() -> None:
+    first = alm_subselection(12, 9, 6, 4)
+    second = alm_subselection(12, 9, 6, 4)
+
+    np.testing.assert_array_equal(first, second)
+    assert first is not second
 
 
 def test_trapezoidal_filter_retains_the_lmax_corner() -> None:
