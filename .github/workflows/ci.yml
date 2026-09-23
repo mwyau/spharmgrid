@@ -33,8 +33,10 @@ jobs:
           python-version: "3.14"
       - name: Run prek checks
         env:
-          SKIP: ruff-check,ruff-format,ty
+          SKIP: uv-lock,ruff-check,ruff-format,ty
         run: uvx prek run --all-files
+      - name: Check lockfile
+        run: uv lock --check
       - name: Sync code quality environment
         run: uv sync --extra cf --extra dask --frozen
       - name: Run Ruff lint
