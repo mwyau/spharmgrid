@@ -9,9 +9,9 @@ documentation belongs under `docs/`.
 - Inspect the current branch, working tree, and relevant files before editing. Current
   repository content overrides old chats, prompts, reports, and handoffs.
 - Read the relevant file under `plans/` before changing the public API, supported grids,
-  numerical behavior, backends, dependencies, tests, CLI, or documentation scope. Code
-  and tests determine current behavior; user documentation must match them. Plans may
-  also describe later work.
+  numerical behavior, backends, dependencies, tests, CLI, or documentation scope.
+- Treat code and tests as the source of truth for implemented behavior. Plans may
+  describe later work; user documentation must match the implementation.
 - Do not modify another repository unless the owner explicitly requests it.
 
 ## Writing
@@ -22,7 +22,7 @@ scientific explanations, follow
 including its research-software profile and atmospheric-science guidance.
 Repository-specific rules here take precedence.
 
-Use `spherical harmonic` as a modifier (for example, `spherical harmonic transform`) and
+Use `spherical harmonic` as a modifier, for example `spherical harmonic transform`, and
 `spherical harmonics` only as a plural noun. Never hyphenate either form.
 
 Preserve equations, signs, normalization, grid definitions, radius factors, degree-zero
@@ -31,15 +31,22 @@ conventions, units, coordinates, and API names when editing scientific text.
 ## Scientific and API invariants
 
 - spharmgrid exposes atmospheric and geophysical spherical harmonic operations through
-  Xarray/NumPy and optional PyTorch tensor APIs. `ducc0` performs the spherical harmonic
-  transforms for Xarray/NumPy; `torch-harmonics` performs them for `spharmgrid.torch`.
-  Do not describe spharmgrid as a new transform implementation.
+  Xarray/NumPy and optional JAX and PyTorch APIs. DUCC0, S2FFT, and torch-harmonics are
+  the respective transform engines. Do not describe spharmgrid as a new transform
+  implementation.
 - Supported horizontal grids are full Gauss–Legendre (GL) and Clenshaw–Curtis (CC)
   grids. CC uses equally spaced latitudes from -90 to 90 degrees. Do not reinterpret
   another latitude-longitude grid as CC.
 - Preserve cyclic-longitude equivalence by moving coordinates and data together.
   Coordinate order and longitude convention must not change the physical field.
-- Direct functions and the `.sg` accessor must use the same numerical implementation.
+- Direct functions and their corresponding Xarray accessors must use the same numerical
+  implementation.
+- Backend capabilities differ. Do not assume identical grid shapes, spectral bandwidths,
+  truncations, dtypes, precision, or operations across DUCC0, S2FFT, and
+  torch-harmonics. Reject unsupported combinations clearly and never silently clamp an
+  explicit spectral request.
+- Keep JAX and PyTorch numerical paths framework-native. Do not convert accelerator
+  arrays through NumPy inside differentiable operations.
 - Spectral tapering is off unless `taper` is supplied.
 - Preserve non-spatial dimensions, CF time/calendar objects, and coordinate alignment.
   spharmgrid does not define its own time representation.
@@ -52,53 +59,58 @@ conventions, units, coordinates, and API names when editing scientific text.
 ## Scientific changes and tests
 
 - Do not rewrite vector-transform signs, component ordering, normalization, radius
-  factors, or latitude orientation from memory. Trace the implementation and check
+  factors, or latitude orientation from memory. Trace the implementation and verify
   analytic behavior and an independent implementation where relevant.
 - NCL/SPHEREPACK and pyspharm are implementation and parity references, not scientific
   ground truth.
-- Do not weaken scientific assertions or tolerances to make a failing test pass;
-  diagnose the cause first.
-- Unit tests should protect numerical primitives or small API contracts with
-  deterministic analytic or constructed fields. Parity tests compare against an
-  identified independent implementation.
+- Do not weaken scientific assertions or tolerances to make a failing test pass.
+  Diagnose the cause first.
+- Use deterministic analytic or constructed fields for numerical primitives and small
+  API contracts. Use parity tests for comparisons against an identified independent
+  implementation.
 - Prefer analytic harmonics, identities, round trips, invariance checks, and explicit
   tolerances over large stored reference arrays.
 - Hold grid, coordinates, normalization, radius, truncation, and comparison population
-  fixed before attributing a difference to the implementation.
+  fixed before attributing a difference to an implementation.
 - Test accessor/direct equivalence, GL/CC behavior, both latitude orders, common cyclic
   longitude conventions, leading Xarray dimensions, and Dask behavior where supported.
+- Treat coverage as a diagnostic for untested code, not as scientific validation.
 - Production tests must not require network access or optional parity tooling.
 
 ## Package and tooling
 
 - `pyproject.toml` defines package metadata, dependencies, build configuration, and tool
-  configuration. Keep `uv.lock` synchronized, but do not generate, regenerate, or
-  hand-edit it; if it is stale, ask the owner to run `uv lock` locally and commit the
-  result.
+  configuration.
+- Keep `uv.lock` synchronized, but do not generate, regenerate, or hand-edit it. If it
+  is stale, ask the owner to run `uv lock` locally and commit the result.
 - Do not create temporary GitHub Actions workflows or other automation to refresh the
   lockfile.
 - Keep uv's normal `dev` group enabled so `uv run ruff`, `uv run ty check`, and
   `uv run pytest` work directly. Reduced CI environments should opt out with
   `--no-default-groups`.
-- Use the existing Hatchling, uv, Ruff, ty, pytest, Sphinx/MyST, and Read the Docs setup
-  unless a concrete requirement justifies changing a tool.
+- Use the existing Hatchling, uv, prek, Ruff, ty, pytest, mdformat, Sphinx/MyST, and
+  Read the Docs setup unless a concrete requirement justifies changing a tool.
+- Let the repository configuration define formatting and lint behavior rather than
+  introducing file-specific alternatives.
 - Keep optional capabilities out of core runtime dependencies.
 - Keep the wheel limited to `src/spharmgrid`. Keep repository-only material such as
   `.github/`, `AGENTS.md`, `plans/`, and agent instructions out of source distributions.
+- Preserve the repository SPDX copyright and license headers on covered source files.
 - Keep DUCC thread control explicit and avoid nested oversubscription.
 - The CLI must call the same package API as Python users rather than a separate
   numerical path.
 
 ## CI and publishing
 
-- CI covers the supported Python/OS matrix, minimum direct dependencies, Ruff, typing,
-  strict documentation, and independent parity.
-- `Python Publish` also tests package distributions. Publishing is restricted to release
-  tags; development tags such as `.devN` publish to TestPyPI and stable tags publish to
-  PyPI.
-- Release tags must match the package version exactly. Build wheel and sdist, install
-  and import the wheel, smoke-test the installed CLI, check distribution metadata, and
-  verify repository-only files do not leak into the sdist.
+- CI should cover the supported Python/OS matrix, minimum direct dependencies, code
+  quality, typing, strict documentation, optional backends, and independent parity where
+  applicable.
+- `Python Publish` tests package distributions before publishing. Development tags such
+  as `.devN` publish to TestPyPI; stable release tags publish to PyPI.
+- Release tags must match the package version exactly.
+- Release validation must build wheel and sdist, install and import the wheel,
+  smoke-test the installed CLI, check distribution metadata, and verify repository-only
+  files do not leak into the sdist.
 - Use PyPI Trusted Publishing/OIDC. Grant `id-token: write` only to the publish job and
   publish the distributions produced by the successful package test.
 - Keep the trusted-publishing workflow filename stable unless the corresponding
