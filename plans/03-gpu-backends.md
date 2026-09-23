@@ -118,7 +118,7 @@ backend-native rather than a package-wide coefficient format.
 Backend support is capability-based. Do not promise every engine supports every grid,
 bandwidth, dtype, or operation identically.
 
-For S2FFT in v0.3.0, both rectangular samplings are required:
+The S2FFT-native rectangular samplings are:
 
 ```text
 GL:
@@ -367,13 +367,16 @@ Regridding should resize the S2FFT coefficient domain in JAX before synthesis on
 target grid. Keep coefficient masking, degree multipliers, phase handling, and resizing
 inside JAX so `jit`, `vmap`, and automatic differentiation are preserved.
 
-Use S2FFT's ordinary public JAX transforms with externally generated Price–McEwen
-recursion precomputations. Materialize the O(L²) arrays before passing them to the S2FFT
-transform and cache them in a bounded Python LRU keyed by the static transform settings
-`(bandlimit, sampling, spin, direction)`, with `maxsize=32`. Generate them through the
-public `s2fft.generate_precomputes_jax` function. Scalar transforms use `reality=True`;
-spin-1 transforms use `reality=False`. The scalar `reality=True` path still returns the
-full centered coefficient array required by spharmgrid.
+The S2FFT-native GL `(L, 2L - 1)` and CC/MWSS `(L + 1, 2L)` paths use S2FFT's public JAX
+transforms. The atmospheric regular GL `(L, 2L)` path calls the internal `ftm` latitude
+steps through the version-checked compatibility module described above. All three paths
+use externally generated Price–McEwen recursion precomputations. Materialize the O(L²)
+arrays before passing them to the transform and cache them in a bounded Python LRU keyed
+by the static transform settings `(bandlimit, sampling, spin, direction)`, with
+`maxsize=32`. Generate the arrays through the public `s2fft.generate_precomputes_jax`
+function. Scalar transforms use `reality=True`; spin-1 transforms use `reality=False`.
+The scalar `reality=True` path still returns the full centered coefficient array
+required by spharmgrid.
 
 Measured comparisons showed that the external precomputations materially reduced warmed
 CUDA transform time for the tested `L=16`, `64`, and `128` cases; this justifies
