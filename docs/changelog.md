@@ -11,6 +11,9 @@
   preparation, alignment, and output wrapping across the JAX accessor methods.
 - Split the optional-backend API reference into Xarray accessor and JAX array pages,
   followed by PyTorch functional and neural-network pages.
+- Added reusable `SpectralField` and `SpectralVectorField` representations for Xarray,
+  JAX, and PyTorch, including filtering, regridding, differential operators, and wind
+  diagnostics without repeated forward transforms.
 
 ## v0.3.0 - 2026-09-21
 
