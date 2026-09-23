@@ -26,7 +26,8 @@ regridded = sg.regrid(field, target)
 
 ## Atmospheric kinematics
 
-Dataset methods identify `u` and `v` from canonical variable names or exact CF standard names.
+Dataset methods identify `u` and `v` from canonical variable names or exact CF standard
+names.
 
 ```python
 wind = xr.open_dataset("wind.nc")
@@ -37,6 +38,9 @@ pot = wind.sg.potentials()  # strf: streamfunction; vp: velocity potential
 reconstructed = xr.Dataset({"vo": kin.vo, "d": kin.d}).sg.wind()
 ```
 
-Individual quantities are available as `vorticity()`, `divergence()`, `streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind reconstruction and sign conventions.
+Individual quantities are available as `vorticity()`, `divergence()`,
+`streamfunction()`, and `velocity_potential()`. See {doc}`kinematics` for wind
+reconstruction and sign conventions.
 
-Operations preserve non-spatial dimensions and Xarray coordinates. See {doc}`grids` for supported sampling geometries and coordinate requirements.
+Operations preserve non-spatial dimensions and Xarray coordinates. See {doc}`grids` for
+supported sampling geometries and coordinate requirements.

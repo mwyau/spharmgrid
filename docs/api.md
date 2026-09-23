@@ -1,13 +1,14 @@
 # Xarray API reference
 
-The direct `spharmgrid` functions accept Xarray `DataArray` objects and use
-DUCC through `ducc0` for spherical harmonic transforms. For labeled `.sg`
-methods, see {doc}`accessor_api`. The optional JAX and PyTorch APIs are
-documented in {doc}`jax_api` and {doc}`torch_api`.
+The direct `spharmgrid` functions accept Xarray `DataArray` objects and use DUCC through
+`ducc0` for spherical harmonic transforms. For labeled `.sg` methods, see
+{doc}`accessor_api`. The optional JAX and PyTorch APIs are documented in {doc}`jax_api`
+and {doc}`torch_api`.
 
 ## Typing
 
-The public `spharmgrid` API is fully type annotated and the package ships a `py.typed` marker for downstream static type checking.
+The public `spharmgrid` API is fully type annotated and the package ships a `py.typed`
+marker for downstream static type checking.
 
 ## Constants and descriptors
 
@@ -23,8 +24,8 @@ The public `spharmgrid` API is fully type annotated and the package ships a `py.
 
 ## Grid and spectral selection
 
-`parse_spectral()` returns a `TransformSpec` for the requested triangular,
-trapezoidal, or rhomboidal coefficient domain.
+`parse_spectral()` returns a `TransformSpec` for the requested triangular, trapezoidal,
+or rhomboidal coefficient domain.
 
 ```{eval-rst}
 .. autofunction:: spharmgrid.gaussian_grid
@@ -88,7 +89,6 @@ trapezoidal, or rhomboidal coefficient domain.
 
 ## Execution
 
-`sht_threads` sets the number of DUCC threads per spherical harmonic transform.
-With `None`, eager operations use DUCC's default thread count and Dask-backed
-operations use one thread per transform. The caller controls Dask worker and
-scheduler configuration.
+`sht_threads` sets the number of DUCC threads per spherical harmonic transform. With
+`None`, eager operations use DUCC's default thread count and Dask-backed operations use
+one thread per transform. The caller controls Dask worker and scheduler configuration.

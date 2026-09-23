@@ -25,22 +25,27 @@ ds["vwind"].attrs["standard_name"] = "northward_wind"
 kin = ds.sg.kinematics()
 ```
 
-If more than one variable matches the same quantity, spharmgrid reports the candidates and requires an explicit variable name.
+If more than one variable matches the same quantity, spharmgrid reports the candidates
+and requires an explicit variable name.
 
 ## Output metadata
 
-Derived kinematic quantities use the CF metadata in the table. Renaming an output does not change its physical metadata:
+Derived kinematic quantities use the CF metadata in the table. Renaming an output does
+not change its physical metadata:
 
 ```python
 vo = ds.sg.vorticity(output="vort")
 assert vo.attrs["standard_name"] == "atmosphere_relative_vorticity"
 ```
 
-Filtering and regridding preserve the input variable name and attributes. Generated target coordinates include CF latitude and longitude metadata.
+Filtering and regridding preserve the input variable name and attributes. Generated
+target coordinates include CF latitude and longitude metadata.
 
 ## Dimensions and time
 
-Transforms preserve leading dimensions and coordinate alignment, including arrays such as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects pass through as Xarray coordinates.
+Transforms preserve leading dimensions and coordinate alignment, including arrays such
+as `(time, level, lat, lon)`. NumPy datetimes and `cftime` calendar objects pass through
+as Xarray coordinates.
 
 ## `cf-xarray`
 
@@ -50,7 +55,8 @@ Install the optional `cf-xarray` extra with:
 uv add "spharmgrid[cf]"
 ```
 
-When installed, `cf-xarray` is used for latitude and longitude discovery after exact CF metadata and canonical coordinate names are checked.
+When installed, `cf-xarray` is used for latitude and longitude discovery after exact CF
+metadata and canonical coordinate names are checked.
 
 ## Dask
 
@@ -60,6 +66,6 @@ Install Dask support with:
 uv add "spharmgrid[dask]"
 ```
 
-Dask-backed Xarray inputs execute lazily through spherical harmonic operations.
-They use one DUCC thread per transform by default; `sht_threads` overrides this
-value. The caller controls Dask scheduling.
+Dask-backed Xarray inputs execute lazily through spherical harmonic operations. They use
+one DUCC thread per transform by default; `sht_threads` overrides this value. The caller
+controls Dask scheduling.

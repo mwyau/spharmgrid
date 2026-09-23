@@ -1,8 +1,17 @@
 # API comparison
 
-spharmgrid implements atmospheric spherical harmonic operations corresponding to many [NCL](https://www.ncl.ucar.edu/Document/Functions/spherical.shtml) routines through an API for Xarray objects. [windspharm](https://ajdawson.github.io/windspharm/) is another high-level Python interface for a related subset of SPHEREPACK operations. spharmgrid uses DUCC for spherical harmonic transforms; NCL and windspharm use SPHEREPACK.
+spharmgrid implements atmospheric spherical harmonic operations corresponding to many
+[NCL](https://www.ncl.ucar.edu/Document/Functions/spherical.shtml) routines through an
+API for Xarray objects. [windspharm](https://ajdawson.github.io/windspharm/) is another
+high-level Python interface for a related subset of SPHEREPACK operations. spharmgrid
+uses DUCC for spherical harmonic transforms; NCL and windspharm use SPHEREPACK.
 
-The table maps spharmgrid's direct Xarray functions to the closest NCL and [`windspharm.xarray.VectorWind`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html) methods. The JAX and PyTorch namespaces use the same scientific operation names for JAX arrays and PyTorch tensors. NCL `f` routines use fixed grids and `g` routines use Gaussian grids. A dash means windspharm has no direct `VectorWind` method for that operation; lower-level pyspharm functionality is outside this comparison.
+The table maps spharmgrid's direct Xarray functions to the closest NCL and
+[`windspharm.xarray.VectorWind`](https://ajdawson.github.io/windspharm/api/windspharm.xarray.html)
+methods. The JAX and PyTorch namespaces use the same scientific operation names for JAX
+arrays and PyTorch tensors. NCL `f` routines use fixed grids and `g` routines use
+Gaussian grids. A dash means windspharm has no direct `VectorWind` method for that
+operation; lower-level pyspharm functionality is outside this comparison.
 
 | Task                     | spharmgrid (Xarray)                                                            | NCL                                                                                                                                                                                                                                                                                                                        | windspharm                                                                                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -27,4 +36,6 @@ The table maps spharmgrid's direct Xarray functions to the closest NCL and [`win
 | Vector Laplacian         | {py:func}`sg.vector_laplacian() <spharmgrid.vector_laplacian>`                 | [`lapvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapvf.shtml), [`lapvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/lapvg.shtml)                                                                                                                                                                   | —                                                                                                                                                  |
 | Inverse vector Laplacian | {py:func}`sg.inverse_vector_laplacian() <spharmgrid.inverse_vector_laplacian>` | [`ilapvf`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapvf.shtml), [`ilapvg`](https://www.ncl.ucar.edu/Document/Functions/Built-in/ilapvg.shtml)                                                                                                                                                               | —                                                                                                                                                  |
 
-Grid terminology differs between the packages. spharmgrid's CC grid uses equally spaced latitudes from −90° to 90°; NCL and windspharm call this a fixed or regular grid. spharmgrid's GL grid uses Gaussian latitudes, corresponding to their Gaussian grid.
+Grid terminology differs between the packages. spharmgrid's CC grid uses equally spaced
+latitudes from −90° to 90°; NCL and windspharm call this a fixed or regular grid.
+spharmgrid's GL grid uses Gaussian latitudes, corresponding to their Gaussian grid.

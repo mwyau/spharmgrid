@@ -2,8 +2,8 @@
 
 ## Goal
 
-Extend spharmgrid beyond full rectangular Gauss--Legendre (GL) and
-Clenshaw--Curtis (CC) fields after the Phase-3 backend boundary is established.
+Extend spharmgrid beyond full rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC)
+fields after the Phase-3 backend boundary is established.
 
 Add the two highest-value non-rectangular global grid families separately:
 
@@ -12,9 +12,9 @@ Add the two highest-value non-rectangular global grid families separately:
 4b. reduced Gaussian
 ```
 
-These grids should share spharmgrid's scientific API where the selected backend
-provides a numerically valid analysis/synthesis path, but they do not need to
-share identical transform algorithms or accuracy semantics.
+These grids should share spharmgrid's scientific API where the selected backend provides
+a numerically valid analysis/synthesis path, but they do not need to share identical
+transform algorithms or accuracy semantics.
 
 The expected initial backend capability direction is:
 
@@ -32,16 +32,15 @@ analysis is unavailable.
 
 ## 1. Why grid expansion follows backend work
 
-Do not change the backend architecture and public grid representation at the
-same time.
+Do not change the backend architecture and public grid representation at the same time.
 
-Phase 3 first establishes transform/convention boundaries on the existing GL/CC
-model. Phase 4 can then design new grid objects against more than one real SHT
-engine where available.
+Phase 3 first establishes transform/convention boundaries on the existing GL/CC model.
+Phase 4 can then design new grid objects against more than one real SHT engine where
+available.
 
-This is especially important for HEALPix: both DUCC0 and S2FFT support HEALPix,
-so its public spharmgrid representation should describe the scientific grid,
-not merely mirror one engine's internal ring arguments.
+This is especially important for HEALPix: both DUCC0 and S2FFT support HEALPix, so its
+public spharmgrid representation should describe the scientific grid, not merely mirror
+one engine's internal ring arguments.
 
 Reduced Gaussian may remain DUCC-only until another engine provides a verified
 equivalent transform.
@@ -50,8 +49,8 @@ equivalent transform.
 
 ## 2. Research and verification gate
 
-Before changing the public grid model, verify the installed backend versions and
-record their actual capabilities.
+Before changing the public grid model, verify the installed backend versions and record
+their actual capabilities.
 
 For DUCC0 verify:
 
@@ -71,8 +70,7 @@ For S2FFT verify:
 - ordering/indexing expectations;
 - iterative-refinement behavior and accuracy.
 
-Do not describe a transform as an exact inverse merely because synthesis is
-exact.
+Do not describe a transform as an exact inverse merely because synthesis is exact.
 
 Keep these concepts distinct:
 
@@ -94,11 +92,11 @@ iterative/pseudo analysis
 
 ## 3. Public grid model
 
-The current `Grid` descriptor is intentionally simple for GL/CC. Do not stretch
-it into a dataclass containing unrelated optional fields for every future grid.
+The current `Grid` descriptor is intentionally simple for GL/CC. Do not stretch it into
+a dataclass containing unrelated optional fields for every future grid.
 
-At this phase a small explicit grid-type split is justified, but the public
-objects should describe scientific sampling rather than backend call layouts.
+At this phase a small explicit grid-type split is justified, but the public objects
+should describe scientific sampling rather than backend call layouts.
 
 A possible direction is:
 
@@ -117,8 +115,8 @@ The exact class names may differ after implementation research.
 - keep public grid definitions independent of DUCC/S2FFT coefficient storage;
 - derive backend transform geometry from the public grid object;
 - preserve enough information to reconstruct xarray coordinates/order;
-- do not expose DUCC `ringstart`, `theta`, `nphi`, or `phi0` arrays as the
-  public essence of HEALPix merely because DUCC uses them internally;
+- do not expose DUCC `ringstart`, `theta`, `nphi`, or `phi0` arrays as the public
+  essence of HEALPix merely because DUCC uses them internally;
 - do not force HEALPix and reduced Gaussian into one generic `RingGrid` if their
   user-facing semantics are clearer as separate types.
 
@@ -152,8 +150,8 @@ nside
 ordering
 ```
 
-plus any additional information required to preserve user-visible coordinates
-or metadata.
+plus any additional information required to preserve user-visible coordinates or
+metadata.
 
 Do not make backend-specific ring arrays mandatory constructor arguments.
 
@@ -167,17 +165,17 @@ Use one horizontal pixel dimension:
 (..., pixel)
 ```
 
-Do not represent HEALPix as a rectangular latitude/longitude array and do not
-treat pixel number itself as latitude or longitude.
+Do not represent HEALPix as a rectangular latitude/longitude array and do not treat
+pixel number itself as latitude or longitude.
 
-Auxiliary latitude/longitude coordinates may be provided when useful, but the
-HEALPix grid identity comes from its HEALPix metadata, not inferred equality of
-those coordinates.
+Auxiliary latitude/longitude coordinates may be provided when useful, but the HEALPix
+grid identity comes from its HEALPix metadata, not inferred equality of those
+coordinates.
 
 Prefer RING ordering internally when required by a backend SHT path.
 
-If NESTED input is supported, reorder data and coordinates together and restore
-or document the requested output ordering.
+If NESTED input is supported, reorder data and coordinates together and restore or
+document the requested output ordering.
 
 ---
 
@@ -190,16 +188,16 @@ DUCC0
 S2FFT
 ```
 
-Implement backend-specific geometry/index translation inside the corresponding
-adapters established in Phase 3.
+Implement backend-specific geometry/index translation inside the corresponding adapters
+established in Phase 3.
 
-Do not make torch-harmonics support a Phase-4 requirement unless the library
-adds a verified HEALPix transform.
+Do not make torch-harmonics support a Phase-4 requirement unless the library adds a
+verified HEALPix transform.
 
 ### Analysis semantics
 
-HEALPix does not provide the same quadrature-exact analysis theorem as GL.
-Document whether each backend uses:
+HEALPix does not provide the same quadrature-exact analysis theorem as GL. Document
+whether each backend uses:
 
 ```text
 adjoint analysis
@@ -220,15 +218,15 @@ Do not hide iteration behind a generic `accuracy=True` switch.
 
 ### Vector/spin operations
 
-Do not enable wind diagnostics merely because scalar HEALPix transforms work.
-Verify spin-1/geographic-vector conventions independently for DUCC0 and S2FFT.
+Do not enable wind diagnostics merely because scalar HEALPix transforms work. Verify
+spin-1/geographic-vector conventions independently for DUCC0 and S2FFT.
 
 ---
 
 ## 7. HEALPix scientific operations
 
-Where backend analysis/synthesis is sufficiently accurate and tested, target
-the established physical API:
+Where backend analysis/synthesis is sufficiently accurate and tested, target the
+established physical API:
 
 ```text
 filter
@@ -252,8 +250,8 @@ divergent_wind
 wind
 ```
 
-Availability should be capability-based. Do not pretend all backends provide
-identical numerical analysis semantics.
+Availability should be capability-based. Do not pretend all backends provide identical
+numerical analysis semantics.
 
 ---
 
@@ -268,13 +266,13 @@ Initial input target:
 
 - explicit ring structure/`pl` from decoded datasets;
 - unambiguous detection from coordinates plus ring metadata;
-- common ECMWF-style named constructions only after N/O grid definitions and
-  ring-count algorithms are verified from authoritative sources.
+- common ECMWF-style named constructions only after N/O grid definitions and ring-count
+  algorithms are verified from authoritative sources.
 
 Do not infer an `Nxxx` or `Oxxx` grid from total point count alone.
 
-A dedicated `ReducedGaussianGrid` should describe the sampling without requiring
-users to pass DUCC internal ring arrays directly.
+A dedicated `ReducedGaussianGrid` should describe the sampling without requiring users
+to pass DUCC internal ring arrays directly.
 
 ---
 
@@ -304,20 +302,18 @@ representation.
 
 Use DUCC0 initially unless another backend has a verified equivalent transform.
 
-Determine whether the intended reduced Gaussian sampling supports direct
-quadrature analysis for the requested band limit or requires iterative/pseudo
-analysis.
+Determine whether the intended reduced Gaussian sampling supports direct quadrature
+analysis for the requested band limit or requires iterative/pseudo analysis.
 
-If reliable analysis requires an iterative solver, make the solver/tolerance
-semantics explicit. Do not label the grid as equivalent to full GL merely
-because the latitudes are Gaussian.
+If reliable analysis requires an iterative solver, make the solver/tolerance semantics
+explicit. Do not label the grid as equivalent to full GL merely because the latitudes
+are Gaussian.
 
 ---
 
 ## 11. Reduced-Gaussian scientific operations
 
-Where analysis is justified, target the same established physical API as other
-grids:
+Where analysis is justified, target the same established physical API as other grids:
 
 ```text
 filter
@@ -341,8 +337,8 @@ divergent_wind
 wind
 ```
 
-Do not enable an operation until its required scalar or spin transform is
-validated for the grid.
+Do not enable an operation until its required scalar or spin transform is validated for
+the grid.
 
 ---
 
@@ -366,21 +362,19 @@ HEALPix -> HEALPix
 reduced Gaussian -> reduced Gaussian
 ```
 
-Only enable a direction when the source grid has a valid analysis path and the
-target grid has a valid synthesis path for the selected backend/capability.
+Only enable a direction when the source grid has a valid analysis path and the target
+grid has a valid synthesis path for the selected backend/capability.
 
-No bilinear, nearest-neighbor, spline, or conservative fallback belongs in this
-API.
+No bilinear, nearest-neighbor, spline, or conservative fallback belongs in this API.
 
 ---
 
 ## 13. Transform-accuracy model
 
-Analysis quality belongs to a backend/grid pair, not to the abstract grid name
-alone.
+Analysis quality belongs to a backend/grid pair, not to the abstract grid name alone.
 
-The implementation should be able to classify or internally represent analysis
-as appropriate, for example:
+The implementation should be able to classify or internally represent analysis as
+appropriate, for example:
 
 ```text
 quadrature
@@ -388,11 +382,11 @@ iterative
 adjoint-only
 ```
 
-This classification can remain internal when users have no choice to make, but
-user documentation must state the actual semantics.
+This classification can remain internal when users have no choice to make, but user
+documentation must state the actual semantics.
 
-If users can control iterative analysis, keep those controls on operations that
-perform analysis rather than embedding solver options in grid constructors.
+If users can control iterative analysis, keep those controls on operations that perform
+analysis rather than embedding solver options in grid constructors.
 
 ---
 
@@ -412,8 +406,8 @@ For every new grid type test:
 
 ### Analytic harmonic tests
 
-Generate known low-degree scalar harmonics and verify synthesis/recovery at
-supported band limits.
+Generate known low-degree scalar harmonics and verify synthesis/recovery at supported
+band limits.
 
 Use multiple `l` and `m`, including zonal and non-zonal modes.
 
@@ -429,11 +423,11 @@ Use independently derived gradient, divergent, and rotational fields to test:
 
 ### HEALPix cross-backend validation
 
-Where DUCC0 and S2FFT implement the same operation, compare them on the same
-physical HEALPix field in addition to analytic tests.
+Where DUCC0 and S2FFT implement the same operation, compare them on the same physical
+HEALPix field in addition to analytic tests.
 
-An independent HEALPix implementation such as healpy/libsharp may be used as an
-optional parity dependency where it adds genuinely independent evidence.
+An independent HEALPix implementation such as healpy/libsharp may be used as an optional
+parity dependency where it adds genuinely independent evidence.
 
 ### Reduced-Gaussian validation
 
@@ -463,8 +457,8 @@ ordering conversion
 
 For HEALPix, compare DUCC0 and S2FFT where both are appropriate.
 
-For reduced Gaussian, compare storage and transform cost with full GL at a
-meaningful common spectral resolution.
+For reduced Gaussian, compare storage and transform cost with full GL at a meaningful
+common spectral resolution.
 
 Do not describe reduced storage alone as transform acceleration.
 
@@ -484,8 +478,7 @@ Explain:
 - which operations are supported by which backend/grid combination;
 - any bandwidth, accuracy, precision, or performance limits.
 
-Do not imply that every grid/backend combination has identical mathematical
-semantics.
+Do not imply that every grid/backend combination has identical mathematical semantics.
 
 ---
 
@@ -493,17 +486,17 @@ semantics.
 
 Phase 4 is complete when:
 
-- the public grid model represents rectangular, HEALPix, and reduced-Gaussian
-  sampling without padding or backend-specific constructor bundles;
+- the public grid model represents rectangular, HEALPix, and reduced-Gaussian sampling
+  without padding or backend-specific constructor bundles;
 - existing GL/CC public behavior remains coherent;
 - HEALPix synthesis/analysis is validated with DUCC0 and S2FFT where supported;
 - HEALPix ordering conversions preserve data and coordinates;
 - reduced-Gaussian synthesis is correct on analytic harmonics;
 - reduced-Gaussian analysis semantics and accuracy are explicitly classified;
-- scalar regridding works across the grid combinations whose source analysis and
-  target synthesis are valid;
-- vector regridding and atmospheric wind operations are enabled only after
-  spin-1 parity is demonstrated;
+- scalar regridding works across the grid combinations whose source analysis and target
+  synthesis are valid;
+- vector regridding and atmospheric wind operations are enabled only after spin-1 parity
+  is demonstrated;
 - backend/grid capability failures are explicit;
 - no non-SHT interpolation fallback is introduced.
 
@@ -515,5 +508,5 @@ Phase 4 is complete when:
 - S2FFT: https://github.com/astro-informatics/s2fft
 - HEALPix: https://healpix.sourceforge.io/
 
-Verify installed/current APIs and authoritative grid definitions during
-implementation rather than treating this roadmap as a frozen library reference.
+Verify installed/current APIs and authoritative grid definitions during implementation
+rather than treating this roadmap as a frozen library reference.
