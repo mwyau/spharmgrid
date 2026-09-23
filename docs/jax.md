@@ -85,8 +85,7 @@ filtered = compiled_filter(field)
 
 The same array operations support `vmap` and automatic differentiation.
 
-For repeated spectral work, use the PyTree-compatible analyzed
-representations:
+For repeated spectral work, use the PyTree-compatible analyzed representations:
 
 ```python
 spectral = sgj.analyze(field, grid=grid)
@@ -95,13 +94,13 @@ laplacian = spectral.laplacian().synthesize()
 ```
 
 `SpectralVectorField` provides the corresponding reusable geographic vector
-representation. Its coefficient-domain diagnostics return `SpectralField`
-objects, while coefficient storage remains native to S2FFT and private.
+representation. Its coefficient-domain diagnostics return `SpectralField` objects, while
+coefficient storage remains native to S2FFT and private.
 
-`regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis
-when the source and target grids have different resolutions. The spectral
-selection arguments accept the same triangular, trapezoidal, rhomboidal, and
-taper options as the Xarray API.
+`regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis when the
+source and target grids have different resolutions. The spectral selection arguments
+accept the same triangular, trapezoidal, rhomboidal, and taper options as the Xarray
+API.
 
 ## Wind and kinematics
 

@@ -491,7 +491,10 @@ def _check_selection(
     if selection is None:
         return
     if not _spectral_selection_is_within(state.spec, selection):
-        raise ValueError("requested spectral selection exceeds the analyzed domain")
+        raise ValueError(
+            f"requested spectral selection {selection} exceeds the current "
+            f"spectral domain {state.spec}; discarded modes cannot be restored"
+        )
 
 
 def _validate_torch_selection(selection: TransformSpec | None) -> None:

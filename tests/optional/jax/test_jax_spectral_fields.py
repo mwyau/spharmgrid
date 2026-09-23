@@ -55,6 +55,89 @@ def test_jax_reusable_filters_skip_true_no_ops(gl_grid: sg.Grid) -> None:
     assert vector.filter(vector.spec) is vector
 
 
+def test_jax_filter_updates_domain_and_pytree_state(
+    gl_grid: sg.Grid,
+    cc_target_grid: sg.Grid,
+) -> None:
+    field = jnp.asarray(scalar_values(gl_grid), dtype=jnp.float64)
+    full = sgj.analyze(field, grid=gl_grid)
+    filtered = full.filter("T4")
+
+    assert filtered.spec == sg.parse_spectral("T4")
+    assert full.spec != filtered.spec
+    assert filtered.filter("T4") is filtered
+    assert filtered.filter("T2").spec == sg.parse_spectral("T2")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.filter("T5")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.regrid(cc_target_grid, "T5")
+
+    leaves, treedef = tree_util.tree_flatten(filtered)
+    reconstructed = tree_util.tree_unflatten(treedef, leaves)
+    assert reconstructed.spec == filtered.spec
+    np.testing.assert_allclose(
+        jit(lambda value: value.synthesize())(reconstructed),
+        filtered.synthesize(),
+        atol=2.0e-12,
+    )
+
+
+def test_jax_cumulative_tapers_use_the_current_domain(
+    gl_grid: sg.Grid,
+    cc_target_grid: sg.Grid,
+) -> None:
+    field = jnp.asarray(scalar_values(gl_grid), dtype=jnp.float64)
+
+    actual = (
+        sgj.analyze(field, grid=gl_grid)
+        .filter("T4", taper=0.2)
+        .filter("T4", taper=0.1)
+        .synthesize()
+    )
+    expected = sgj.filter(field, "T4", grid=gl_grid, taper=0.02)
+    np.testing.assert_allclose(actual, expected, atol=2.0e-12)
+
+    actual = (
+        sgj.analyze(field, grid=gl_grid).filter("T4").regrid(cc_target_grid, taper=0.1)
+    )
+    expected = sgj.regrid(
+        field,
+        cc_target_grid,
+        "T4",
+        source_grid=gl_grid,
+        taper=0.1,
+    )
+    np.testing.assert_allclose(actual, expected, atol=2.0e-12)
+
+
+def test_jax_filtered_vector_domain_propagates_to_derived_fields(
+    gl_grid: sg.Grid,
+) -> None:
+    eastward_values, northward_values = vector_values(gl_grid)
+    eastward = jnp.asarray(eastward_values, dtype=jnp.float64)
+    northward = jnp.asarray(northward_values, dtype=jnp.float64)
+    spectral = sgj.analyze_vector(eastward, northward, grid=gl_grid).filter("T4")
+
+    assert spectral.spec == sg.parse_spectral("T4")
+    for derived in (
+        spectral.vorticity(),
+        spectral.divergence(),
+        spectral.streamfunction(),
+        spectral.velocity_potential(),
+        spectral.divergent(),
+        spectral.rotational(),
+    ):
+        assert derived.spec == spectral.spec
+        derived.synthesize()
+
+
+def test_jax_precompute_cache_has_explicit_bounded_policy() -> None:
+    from spharmgrid.jax._backend import _PRECOMPUTE_CACHE_SIZE, _precomputes
+
+    assert _PRECOMPUTE_CACHE_SIZE == 32
+    assert _precomputes.cache_info().maxsize == _PRECOMPUTE_CACHE_SIZE
+
+
 def test_vector_spectral_field_matches_one_shot_operations_under_jit(
     cc_grid: sg.Grid,
 ) -> None:

@@ -21,6 +21,8 @@ from .._transform import TransformSpec
 from ..grids import Grid, GridLayout, grid_layout
 from ..spectral import _validate_taper, resolve_transform_spec
 
+_PRECOMPUTE_CACHE_SIZE = 32
+
 
 @dataclass(frozen=True, slots=True)
 class _JaxTransform:
@@ -161,7 +163,7 @@ def _phase(
     return jnp.exp(sign * unit * modes * phi0_radians)
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=_PRECOMPUTE_CACHE_SIZE)
 def _precomputes(
     bandlimit: int,
     sampling: str,

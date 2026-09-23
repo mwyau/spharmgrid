@@ -48,6 +48,78 @@ def test_torch_reusable_filters_skip_true_no_ops(gl_grid: sg.Grid) -> None:
     assert vector.filter(vector.spec) is vector
 
 
+def test_torch_filter_updates_domain_and_rejects_expansion(
+    gl_grid: sg.Grid,
+    cc_grid: sg.Grid,
+) -> None:
+    field, _, _ = make_fields(gl_grid)
+    full = sgt.analyze(field, grid=gl_grid)
+    filtered = full.filter("T4")
+
+    assert filtered.spec == sg.parse_spectral("T4")
+    assert full.spec != filtered.spec
+    assert filtered.filter("T4") is filtered
+    assert filtered.filter("T2").spec == sg.parse_spectral("T2")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.filter("T5")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.regrid(cc_grid, "T5")
+    assert filtered._coefficients.shape[-2:] == (5, 5)
+
+
+def test_torch_cumulative_tapers_use_the_current_domain(
+    gl_grid: sg.Grid,
+    cc_grid: sg.Grid,
+) -> None:
+    field, _, _ = make_fields(gl_grid)
+
+    actual = (
+        sgt.analyze(field, grid=gl_grid)
+        .filter("T4", taper=0.2)
+        .filter("T4", taper=0.1)
+        .synthesize()
+    )
+    expected = sgt.filter(field, "T4", grid=gl_grid, taper=0.02)
+    torch.testing.assert_close(actual, expected, rtol=0.0, atol=2.0e-12)
+
+    actual = sgt.analyze(field, grid=gl_grid).filter("T4").regrid(cc_grid, taper=0.1)
+    expected = sgt.regrid(
+        field,
+        cc_grid,
+        "T4",
+        source_grid=gl_grid,
+        taper=0.1,
+    )
+    torch.testing.assert_close(actual, expected, rtol=0.0, atol=2.0e-12)
+
+
+def test_torch_filtered_vector_domain_propagates_and_preserves_autograd(
+    gl_grid: sg.Grid,
+) -> None:
+    _, eastward, northward = make_fields(gl_grid)
+    eastward.requires_grad_()
+    northward.requires_grad_()
+    spectral = sgt.analyze_vector(eastward, northward, grid=gl_grid).filter("T4")
+
+    assert spectral.spec == sg.parse_spectral("T4")
+    for derived in (
+        spectral.vorticity(),
+        spectral.divergence(),
+        spectral.streamfunction(),
+        spectral.velocity_potential(),
+        spectral.divergent(),
+        spectral.rotational(),
+    ):
+        assert derived.spec == spectral.spec
+        derived.synthesize()
+
+    spectral.laplacian().synthesize()[0].square().mean().backward()
+    assert eastward.grad is not None
+    assert northward.grad is not None
+    assert bool(torch_isfinite(eastward.grad))
+    assert bool(torch_isfinite(northward.grad))
+
+
 def test_vector_spectral_field_reuses_native_coefficients_and_autograd(
     gl_grid: sg.Grid,
 ) -> None:

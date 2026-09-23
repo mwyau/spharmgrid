@@ -92,8 +92,8 @@ field = xr.open_dataarray("msl.nc")
 filtered = field.sg.filter("T6-42")
 ```
 
-For workflows with several spectral operations, analyze once and reuse the
-private coefficient representation:
+For workflows with several spectral operations, analyze once and reuse the private
+coefficient representation:
 
 ```python
 spectral = field.sg.analyze()
@@ -101,7 +101,9 @@ large_scale = spectral.filter("T5-42").synthesize()
 laplacian = spectral.laplacian().synthesize()
 ```
 
-See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for regridding, atmospheric wind diagnostics, direct-function equivalents, and further examples.
+See the [Quick start](https://spharmgrid.readthedocs.io/en/latest/quickstart.html) for
+regridding, atmospheric wind diagnostics, direct-function equivalents, and further
+examples.
 
 For differentiable JAX workflows, configure JAX x64 mode before creating arrays and use
 `spharmgrid.jax`:

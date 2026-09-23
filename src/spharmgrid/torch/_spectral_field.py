@@ -97,7 +97,7 @@ class SpectralField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The analyzed triangular coefficient domain."""
+        """The spectral domain currently available in this object."""
         spec = self._state.spec
         assert isinstance(spec, TransformSpec)
         return spec
@@ -117,9 +117,19 @@ class SpectralField:
         _check_selection(effective, self._state)
         if taper is None and (selection is None or selection == self.spec):
             return self
+        state = self._state
+        if selection is not None and effective != self.spec:
+            state = _make_state(
+                self.grid,
+                self.grid,
+                effective,
+                vector=False,
+                device=self._coefficients.device,
+            )
+        coefficients = _resize_coefficients(self._coefficients, state.spec)
         return SpectralField(
-            _apply_selection(self._coefficients, self._state, effective, taper),
-            self._state,
+            _apply_selection(coefficients, state, effective, taper),
+            state,
         )
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralField:
@@ -199,7 +209,7 @@ class SpectralVectorField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The analyzed triangular coefficient domain."""
+        """The spectral domain currently available in this object."""
         spec = self._state.spec
         assert isinstance(spec, TransformSpec)
         return spec
@@ -219,9 +229,19 @@ class SpectralVectorField:
         _check_selection(effective, self._state)
         if taper is None and (selection is None or selection == self.spec):
             return self
+        state = self._state
+        if selection is not None and effective != self.spec:
+            state = _make_state(
+                self.grid,
+                self.grid,
+                effective,
+                vector=True,
+                device=self._coefficients.device,
+            )
+        coefficients = _resize_coefficients(self._coefficients, state.spec)
         return SpectralVectorField(
-            _apply_selection(self._coefficients, self._state, effective, taper),
-            self._state,
+            _apply_selection(coefficients, state, effective, taper),
+            state,
         )
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralVectorField:

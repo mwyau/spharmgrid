@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from functools import cache
+from functools import cache, lru_cache
 from numbers import Integral
 from typing import Literal, cast
 
@@ -19,6 +19,7 @@ from .grids import Grid
 Geometry = Literal["CC", "GL"]
 
 DEFAULT_DASK_SHT_THREADS = 1
+_ALM_SUBSELECTION_CACHE_SIZE = 32
 
 
 def resolve_sht_threads(sht_threads: int | None, *, dask: bool) -> int:
@@ -64,7 +65,7 @@ def alm_orders(lmax: int, mmax: int) -> NDArray[np.int64]:
     return orders
 
 
-@cache
+@lru_cache(maxsize=_ALM_SUBSELECTION_CACHE_SIZE)
 def alm_subselection(
     source_lmax: int,
     source_mmax: int,

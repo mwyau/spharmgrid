@@ -14,6 +14,7 @@ import xarray as xr
 
 import spharmgrid as sg
 from spharmgrid._ducc import (
+    _ALM_SUBSELECTION_CACHE_SIZE,
     alm_degrees,
     alm_orders,
     alm_subselection,
@@ -282,6 +283,10 @@ def test_alm_subselection_matches_packed_degree_order_mapping(
     np.testing.assert_array_equal(actual, expected)
     assert actual.dtype == np.intp
     assert not actual.flags.writeable
+
+
+def test_alm_subselection_cache_is_bounded() -> None:
+    assert alm_subselection.cache_info().maxsize == _ALM_SUBSELECTION_CACHE_SIZE == 32
 
 
 def test_trapezoidal_filter_retains_the_lmax_corner() -> None:

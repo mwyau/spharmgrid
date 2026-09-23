@@ -171,7 +171,7 @@ class SpectralField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The analyzed coefficient domain's descriptive limits."""
+        """The spectral domain currently available in this object."""
         return self._transform.spec
 
     def tree_flatten(self) -> tuple[tuple[Array], tuple[Any, ...]]:
@@ -200,7 +200,7 @@ class SpectralField:
             return self
         transform = _make_transform(self.grid, self.grid, effective)
         return SpectralField(
-            _apply_selection(self._coefficients, transform, taper), self._transform
+            _apply_selection(self._coefficients, transform, taper), transform
         )
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralField:
@@ -250,9 +250,12 @@ class SpectralField:
             target_spec = selection
         transform = _make_transform(self.grid, target_grid, target_spec)
         coefficients = self._coefficients
-        if selection is None and taper is not None:
-            coefficients = _apply_selection(coefficients, self._transform, taper)
-        elif selection is not None and (taper is not None or effective != self.spec):
+        if selection is None:
+            if taper is not None:
+                coefficients = _apply_selection(coefficients, self._transform, taper)
+            if target_spec != self.spec:
+                coefficients = _apply_selection(coefficients, transform, None)
+        elif taper is not None or effective != self.spec:
             coefficients = _apply_selection(coefficients, transform, taper)
         return _scalar_synthesis(coefficients, transform).astype(
             jnp.real(self._coefficients).dtype
@@ -275,7 +278,7 @@ class SpectralVectorField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The analyzed coefficient domain's descriptive limits."""
+        """The spectral domain currently available in this object."""
         return self._transform.spec
 
     def tree_flatten(self) -> tuple[tuple[Array], tuple[Any, ...]]:
@@ -304,7 +307,7 @@ class SpectralVectorField:
             return self
         transform = _make_transform(self.grid, self.grid, effective)
         return SpectralVectorField(
-            _apply_selection(self._coefficients, transform, taper), self._transform
+            _apply_selection(self._coefficients, transform, taper), transform
         )
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralVectorField:
@@ -395,9 +398,12 @@ class SpectralVectorField:
         transform = _make_transform(self.grid, target_grid, target_spec)
         _require_vector_bandwidth(transform)
         coefficients = self._coefficients
-        if selection is None and taper is not None:
-            coefficients = _apply_selection(coefficients, self._transform, taper)
-        elif selection is not None and (taper is not None or effective != self.spec):
+        if selection is None:
+            if taper is not None:
+                coefficients = _apply_selection(coefficients, self._transform, taper)
+            if target_spec != self.spec:
+                coefficients = _apply_selection(coefficients, transform, None)
+        elif taper is not None or effective != self.spec:
             coefficients = _apply_selection(coefficients, transform, taper)
         return _vector_synthesis(coefficients, transform)
 
@@ -440,7 +446,10 @@ def _validate_selection(
     analyzed: TransformSpec, selection: TransformSpec | None
 ) -> None:
     if not _spectral_selection_is_within(analyzed, selection):
-        raise ValueError("requested spectral selection exceeds the analyzed domain")
+        raise ValueError(
+            f"requested spectral selection {selection} exceeds the current "
+            f"spectral domain {analyzed}; discarded modes cannot be restored"
+        )
 
 
 jax.tree_util.register_pytree_node_class(SpectralField)

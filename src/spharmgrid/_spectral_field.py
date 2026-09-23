@@ -124,7 +124,7 @@ class SpectralField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The private transform domain's descriptive limits."""
+        """The spectral domain currently available in this object."""
         return self._spec
 
     def filter(
@@ -138,19 +138,33 @@ class SpectralField:
         """Apply a spectral selection without synthesizing the field."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        if selection is None and taper is None:
+        effective = self._spec if selection is None else selection
+        _validate_selection(self._spec, effective)
+        if taper is None and (selection is None or selection == self._spec):
             return self
-        _validate_selection(self._spec, selection)
-        if selection == self._spec and taper is None:
-            return self
-        coefficients = _apply_weights(
-            self._coefficients,
-            self._mode_dim,
-            self._spec,
-            selection,
-            taper,
-        )
-        return _replace_scalar(self, coefficients)
+        if selection is None:
+            coefficients = _apply_weights(
+                self._coefficients,
+                self._mode_dim,
+                self._spec,
+                self._spec,
+                taper,
+            )
+        else:
+            coefficients = _repack_coefficients(
+                self._coefficients,
+                self._mode_dim,
+                self._spec,
+                effective,
+            )
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                effective,
+                effective,
+                taper,
+            )
+        return _replace_scalar(self, coefficients, spec=effective)
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralField:
         """Apply the spherical Laplacian to the stored coefficients."""
@@ -214,30 +228,44 @@ class SpectralField:
                 self._layout.grid, target_description.grid, selection
             )
         coefficients = self._coefficients
-        if selection is None and taper is not None:
-            coefficients = _apply_weights(
+        if selection is None:
+            if taper is not None:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    self._spec,
+                    self._spec,
+                    taper,
+                )
+            coefficients = _repack_coefficients(
                 coefficients,
                 self._mode_dim,
                 self._spec,
-                self._spec,
-                taper,
-            )
-        coefficients = _repack_coefficients(
-            coefficients,
-            self._mode_dim,
-            self._spec,
-            target_spec,
-        )
-        if selection is not None and (
-            taper is not None or effective != self._spec or target_spec != self._spec
-        ):
-            coefficients = _apply_weights(
-                coefficients,
-                self._mode_dim,
                 target_spec,
-                effective,
-                taper,
             )
+            if target_spec != self._spec:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    target_spec,
+                    target_spec,
+                    None,
+                )
+        else:
+            coefficients = _repack_coefficients(
+                coefficients,
+                self._mode_dim,
+                self._spec,
+                target_spec,
+            )
+            if taper is not None or effective != self._spec:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    target_spec,
+                    effective,
+                    taper,
+                )
         result = _synthesize_scalar(
             coefficients,
             self._mode_dim,
@@ -276,7 +304,7 @@ class SpectralVectorField:
 
     @property
     def spec(self) -> TransformSpec:
-        """The private vector transform domain's descriptive limits."""
+        """The spectral domain currently available in this object."""
         return self._spec
 
     def filter(
@@ -290,19 +318,33 @@ class SpectralVectorField:
         """Apply a spectral selection without synthesizing the vector."""
         selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
         _validate_taper(taper)
-        if selection is None and taper is None:
+        effective = self._spec if selection is None else selection
+        _validate_selection(self._spec, effective)
+        if taper is None and (selection is None or selection == self._spec):
             return self
-        _validate_selection(self._spec, selection)
-        if selection == self._spec and taper is None:
-            return self
-        coefficients = _apply_weights(
-            self._coefficients,
-            self._mode_dim,
-            self._spec,
-            selection,
-            taper,
-        )
-        return _replace_vector(self, coefficients)
+        if selection is None:
+            coefficients = _apply_weights(
+                self._coefficients,
+                self._mode_dim,
+                self._spec,
+                self._spec,
+                taper,
+            )
+        else:
+            coefficients = _repack_coefficients(
+                self._coefficients,
+                self._mode_dim,
+                self._spec,
+                effective,
+            )
+            coefficients = _apply_weights(
+                coefficients,
+                self._mode_dim,
+                effective,
+                effective,
+                taper,
+            )
+        return _replace_vector(self, coefficients, spec=effective)
 
     def laplacian(self, *, radius: float = 6_371_220.0) -> SpectralVectorField:
         """Apply the vector spherical Laplacian to E/B coefficients."""
@@ -416,30 +458,44 @@ class SpectralVectorField:
                 "vector regridding requires a grid supporting total degree l=1"
             )
         coefficients = self._coefficients
-        if selection is None and taper is not None:
-            coefficients = _apply_weights(
+        if selection is None:
+            if taper is not None:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    self._spec,
+                    self._spec,
+                    taper,
+                )
+            coefficients = _repack_coefficients(
                 coefficients,
                 self._mode_dim,
                 self._spec,
-                self._spec,
-                taper,
-            )
-        coefficients = _repack_coefficients(
-            coefficients,
-            self._mode_dim,
-            self._spec,
-            target_spec,
-        )
-        if selection is not None and (
-            taper is not None or effective != self._spec or target_spec != self._spec
-        ):
-            coefficients = _apply_weights(
-                coefficients,
-                self._mode_dim,
                 target_spec,
-                effective,
-                taper,
             )
+            if target_spec != self._spec:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    target_spec,
+                    target_spec,
+                    None,
+                )
+        else:
+            coefficients = _repack_coefficients(
+                coefficients,
+                self._mode_dim,
+                self._spec,
+                target_spec,
+            )
+            if taper is not None or effective != self._spec:
+                coefficients = _apply_weights(
+                    coefficients,
+                    self._mode_dim,
+                    target_spec,
+                    effective,
+                    taper,
+                )
         return _synthesize_vector(
             coefficients,
             self._component_dim,
@@ -792,12 +848,13 @@ def _replace_scalar(
     field: SpectralField,
     coefficients: xr.DataArray,
     *,
+    spec: TransformSpec | None = None,
     name: Hashable | None = None,
     attrs: dict[str, Any] | None = None,
 ) -> SpectralField:
     return SpectralField(
         coefficients,
-        field._spec,
+        field._spec if spec is None else spec,
         field._layout,
         field._original_dims,
         field._mode_dim,
@@ -812,6 +869,7 @@ def _replace_vector(
     field: SpectralVectorField,
     coefficients: xr.DataArray,
     *,
+    spec: TransformSpec | None = None,
     names: tuple[Hashable | None, Hashable | None] | None = None,
     attrs: tuple[dict[str, Any], dict[str, Any]] | None = None,
 ) -> SpectralVectorField:
@@ -819,7 +877,7 @@ def _replace_vector(
     component_attrs = (field._u_attrs, field._v_attrs) if attrs is None else attrs
     return SpectralVectorField(
         coefficients,
-        field._spec,
+        field._spec if spec is None else spec,
         field._layout,
         field._original_dims,
         field._component_dim,
@@ -838,7 +896,10 @@ def _validate_selection(
     coefficient_spec: TransformSpec, selection: TransformSpec | None
 ) -> None:
     if not _spectral_selection_is_within(coefficient_spec, selection):
-        raise ValueError("requested spectral selection exceeds the analyzed domain")
+        raise ValueError(
+            f"requested spectral selection {selection} exceeds the current "
+            f"spectral domain {coefficient_spec}; discarded modes cannot be restored"
+        )
 
 
 def _validate_radius(radius: float) -> None:

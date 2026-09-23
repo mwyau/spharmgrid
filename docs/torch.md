@@ -83,11 +83,11 @@ representation. Its coefficient-domain diagnostics such as `vorticity()` and
 `divergence()` return `SpectralField` objects. These objects do not expose the
 torch-harmonics coefficient layout.
 
-`Grid` is required explicitly because tensors do not carry named coordinates.
-Use `source_grid=` with `regrid()` and `regrid_vector()`; the target grid is a
-positional argument. Vector arguments are geographic eastward `u` and
-northward `v`. `wind()` and the single-source inverse wind functions require
-an explicit `source=` because tensors do not carry CF metadata.
+`Grid` is required explicitly because tensors do not carry named coordinates. Use
+`source_grid=` with `regrid()` and `regrid_vector()`; the target grid is a positional
+argument. Vector arguments are geographic eastward `u` and northward `v`. `wind()` and
+the single-source inverse wind functions require an explicit `source=` because tensors
+do not carry CF metadata.
 
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators set the
 degree-zero coefficient to zero, and vector inverse operations remove the nonphysical

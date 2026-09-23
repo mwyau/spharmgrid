@@ -149,6 +149,124 @@ def test_reusable_filter_skips_true_no_op(kind: Literal["cc", "gl"]) -> None:
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_filter_updates_available_scalar_domain_and_rejects_expansion(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind)
+    field = scalar_field(grid)
+    full = sg.analyze(field)
+    filtered = full.filter("T4")
+
+    assert filtered.spec == sg.parse_spectral("T4")
+    assert full.spec != filtered.spec
+    assert filtered.filter("T4") is filtered
+    assert filtered.filter("T2").spec == sg.parse_spectral("T2")
+    assert filtered.filter("T1-4").spec == sg.parse_spectral("T1-4")
+    assert filtered.filter("T4x2").spec == sg.parse_spectral("T4x2")
+    assert filtered.filter("R2").spec == sg.parse_spectral("R2")
+
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.filter("T5")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.filter("R3")
+
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        sg.analyze(field, "T1-4").filter("T4")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        sg.analyze(field, "T4x2").filter("T4")
+
+
+def test_filtered_scalar_domain_rejects_regrid_expansion() -> None:
+    source = supported_grid("cc")
+    target = supported_grid("gl")
+    filtered = sg.analyze(scalar_field(source)).filter("T2")
+
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        filtered.regrid(target, "T3")
+
+
+def test_filtered_scalar_domain_propagates_through_derived_operations() -> None:
+    spectral = sg.analyze(scalar_field(supported_grid("cc"))).filter("T2")
+
+    for derived in (spectral.laplacian(), spectral.inverse_laplacian()):
+        assert derived.spec == spectral.spec
+        derived.synthesize()
+
+
+def test_cumulative_scalar_tapers_use_current_domain() -> None:
+    grid = supported_grid("cc")
+    target = supported_grid("gl")
+    field = scalar_field(grid)
+
+    actual = (
+        sg.analyze(field).filter("T2", taper=0.2).filter("T2", taper=0.1).synthesize()
+    )
+    expected = sg.filter(field, "T2", taper=0.02)
+    np.testing.assert_allclose(actual, expected, rtol=0.0, atol=2.0e-14)
+
+    full = sg.analyze(field)
+    assert full.filter(taper=0.1).spec == full.spec
+
+    actual = sg.analyze(field).filter("T2").filter(taper=0.1).synthesize()
+    expected = sg.filter(field, "T2", taper=0.1)
+    np.testing.assert_allclose(actual, expected, rtol=0.0, atol=2.0e-14)
+
+    filtered = sg.analyze(field).filter("T2", taper=0.2)
+    assert filtered.filter("T2") is filtered
+    actual = filtered.regrid(target, taper=0.1)
+    expected = sg.regrid(field, target, "T2", taper=0.02)
+    np.testing.assert_allclose(actual, expected, rtol=0.0, atol=2.0e-14)
+
+
+def test_filtered_vector_domain_and_derived_operations() -> None:
+    source = supported_grid("cc")
+    target = supported_grid("gl")
+    u, v = solid_body_wind(source)
+    spectral = sg.analyze_vector(u, v).filter("T2")
+
+    assert spectral.spec == sg.parse_spectral("T2")
+    assert spectral.filter("T2") is spectral
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        spectral.filter("T3")
+    with pytest.raises(ValueError, match="exceeds|cannot be restored"):
+        spectral.regrid(target, "T3")
+
+    for derived in (
+        spectral.laplacian(),
+        spectral.inverse_laplacian(),
+        spectral.vorticity(),
+        spectral.divergence(),
+        spectral.streamfunction(),
+        spectral.velocity_potential(),
+        spectral.divergent(),
+        spectral.rotational(),
+    ):
+        assert derived.spec == spectral.spec
+        derived.synthesize()
+
+
+def test_cumulative_vector_tapers_match_one_shot_regrid() -> None:
+    source = supported_grid("cc")
+    target = supported_grid("gl")
+    u, v = solid_body_wind(source)
+
+    actual = (
+        sg.analyze_vector(u, v)
+        .filter("T2", taper=0.2)
+        .filter("T2", taper=0.1)
+        .synthesize()
+    )
+    expected = sg.regrid_vector(u, v, source, "T2", taper=0.02)
+    np.testing.assert_allclose(actual[0], expected.u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(actual[1], expected.v, rtol=0.0, atol=3.0e-14)
+
+    actual = sg.analyze_vector(u, v).filter("T2").regrid(target, taper=0.1)
+    expected = sg.regrid_vector(u, v, target, "T2", taper=0.1)
+    np.testing.assert_allclose(actual[0], expected.u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(actual[1], expected.v, rtol=0.0, atol=3.0e-14)
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl"])
 def test_vector_spectral_methods_match_one_shot_operations(
     kind: Literal["cc", "gl"],
 ) -> None:
