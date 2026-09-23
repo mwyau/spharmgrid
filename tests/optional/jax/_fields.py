@@ -13,7 +13,7 @@ import xarray as xr
 
 import spharmgrid as sg
 
-GridKind = Literal["gl", "cc"]
+GridKind = Literal["gl", "gl_2l", "cc"]
 
 
 def make_grid(
@@ -23,11 +23,18 @@ def make_grid(
     latitude_order: Literal["ascending", "descending"] = "ascending",
     lon0: float = 0.0,
 ) -> sg.Grid:
-    """Construct an exact S2FFT-compatible GL or CC grid."""
+    """Construct a GL or CC grid for backend parity tests."""
     if kind == "gl":
         return sg.gaussian_grid(
             nlat,
             2 * nlat - 1,
+            latitude_order=latitude_order,
+            lon0=lon0,
+        )
+    if kind == "gl_2l":
+        return sg.gaussian_grid(
+            nlat,
+            2 * nlat,
             latitude_order=latitude_order,
             lon0=lon0,
         )

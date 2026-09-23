@@ -28,7 +28,7 @@ sgj = importlib.import_module("spharmgrid.jax")
 
 pytestmark = pytest.mark.parity
 
-GridKind = Literal["gl", "cc"]
+GridKind = Literal["gl", "gl_2l", "cc"]
 
 
 def _tolerances(family: str) -> tuple[float, float]:
@@ -66,20 +66,22 @@ def _require_x64() -> None:
 
 
 def _source_grid(kind: GridKind) -> sg.Grid:
+    gl = kind in ("gl", "gl_2l")
     return make_grid(
         kind,
-        nlat=8 if kind == "gl" else 9,
-        latitude_order="descending" if kind == "gl" else "ascending",
-        lon0=37.0 if kind == "gl" else -75.0,
+        nlat=8 if gl else 9,
+        latitude_order="descending" if gl else "ascending",
+        lon0=37.0 if gl else -75.0,
     )
 
 
 def _target_grid(kind: GridKind) -> sg.Grid:
+    gl = kind in ("gl", "gl_2l")
     return make_grid(
         kind,
-        nlat=10 if kind == "gl" else 11,
-        latitude_order="ascending" if kind == "gl" else "descending",
-        lon0=-75.0 if kind == "gl" else 123.0,
+        nlat=10 if gl else 11,
+        latitude_order="ascending" if gl else "descending",
+        lon0=-75.0 if gl else 123.0,
     )
 
 
@@ -121,7 +123,7 @@ def test_jax_reusable_spectral_fields_match_ducc() -> None:
     )
 
 
-@pytest.mark.parametrize("kind", ["gl", "cc"])
+@pytest.mark.parametrize("kind", ["gl", "gl_2l", "cc"])
 def test_scalar_jax_ducc_parity_and_scalar_regridding(
     kind: GridKind,
 ) -> None:
@@ -153,7 +155,7 @@ def test_scalar_jax_ducc_parity_and_scalar_regridding(
             "scalar_map",
         )
 
-    for target_kind in ("gl", "cc"):
+    for target_kind in ("gl", "gl_2l", "cc"):
         target_grid = _target_grid(target_kind)
         for notation in ("T4", "T4x2", "R2"):
             expected = sg.regrid(reference, target_grid, notation)
@@ -166,7 +168,7 @@ def test_scalar_jax_ducc_parity_and_scalar_regridding(
             _assert_close(actual, expected, "scalar_map")
 
 
-@pytest.mark.parametrize("kind", ["gl", "cc"])
+@pytest.mark.parametrize("kind", ["gl", "gl_2l", "cc"])
 def test_all_vector_jax_ducc_operations_and_wind_sources(
     kind: GridKind,
 ) -> None:
@@ -180,7 +182,7 @@ def test_all_vector_jax_ducc_operations_and_wind_sources(
     reference_u = as_xarray(eastward, source_grid, "u")
     reference_v = as_xarray(northward, source_grid, "v")
 
-    for target_kind in ("gl", "cc"):
+    for target_kind in ("gl", "gl_2l", "cc"):
         target_grid = _target_grid(target_kind)
         for notation in ("T4", "T4x2", "R2"):
             expected = sg.regrid_vector(reference_u, reference_v, target_grid, notation)
