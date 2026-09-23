@@ -181,6 +181,12 @@ def test_gl_2l_jit_vmap_jvp_and_grad() -> None:
 
     _, inverse_jvp = jvp(inverse, (coefficients,), (inverse_direction,))
     assert inverse_jvp.shape == field.shape
+    np.testing.assert_allclose(
+        inverse_jvp,
+        inverse(inverse_direction),
+        rtol=0.0,
+        atol=5.0e-12,
+    )
     gradient = grad(lambda values: jnp.sum(operation(values) ** 2))(field)
 
     assert result.shape == field.shape
@@ -188,6 +194,19 @@ def test_gl_2l_jit_vmap_jvp_and_grad() -> None:
     assert jvp_result.shape == field.shape
     assert gradient.shape == field.shape
     assert bool(jnp.isfinite(gradient).all())
+    np.testing.assert_allclose(result, operation(field), rtol=0.0, atol=5.0e-12)
+    np.testing.assert_allclose(
+        batched,
+        jnp.stack([operation(frame) for frame in batch]),
+        rtol=0.0,
+        atol=5.0e-12,
+    )
+    np.testing.assert_allclose(
+        jvp_result,
+        operation(tangent),
+        rtol=0.0,
+        atol=5.0e-12,
+    )
 
 
 @pytest.mark.parametrize("nlon", [14, 17])
