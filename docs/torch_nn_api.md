@@ -1,7 +1,7 @@
 # PyTorch neural-network API reference
 
-The `spharmgrid.torch.nn` namespace contains reusable PyTorch modules with
-reusable spherical harmonic transform state. For usage examples, see {doc}`torch`.
+The `spharmgrid.torch.nn` namespace contains reusable PyTorch modules with reusable
+spherical harmonic transform state. For usage examples, see {doc}`torch`.
 
 ```{eval-rst}
 .. autoclass:: spharmgrid.torch.nn.SHTOperators

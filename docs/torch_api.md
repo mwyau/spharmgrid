@@ -1,8 +1,8 @@
 # PyTorch API reference
 
-The `spharmgrid.torch` namespace applies spharmgrid operations to
-`torch.Tensor` objects. See {doc}`torch` for installation, grid and bandwidth
-constraints, differentiability, and examples.
+The `spharmgrid.torch` namespace applies spharmgrid operations to `torch.Tensor`
+objects. See {doc}`torch` for installation, grid and bandwidth constraints,
+differentiability, and examples.
 
 For reusable PyTorch modules, see {doc}`torch_nn_api`.
 

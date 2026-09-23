@@ -1,7 +1,7 @@
 # Reference
 
-API documentation for Xarray, Xarray accessors, JAX, and PyTorch, plus
-command-line usage, comparisons, and scientific references.
+API documentation for Xarray, Xarray accessors, JAX, and PyTorch, plus command-line
+usage, comparisons, and scientific references.
 
 ```{toctree}
 ---
