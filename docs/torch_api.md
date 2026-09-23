@@ -9,14 +9,12 @@ For reusable PyTorch modules, see {doc}`torch_nn_api`.
 ## Reusable analyzed representations
 
 `analyze()` and `analyze_vector()` retain native torch-harmonics coefficients for
-workflows that need several spectral operations. The coefficient layout is private and
-tensors remain on their input device.
+repeated spectral work. The coefficient layout remains private, and tensors stay on
+their input device.
 
-The `spec` property describes the spectral domain currently available in the reusable
-object. Narrower selections update it permanently for that object; discarded modes
-cannot be restored, and later requests outside the domain raise `ValueError`. Tapers
-modify the current coefficients and compose when applied repeatedly. The same
-containment rule applies to explicit selections passed to `regrid()`.
+`spec` describes the currently available spectral domain. Filtering may narrow it;
+discarded modes cannot be restored, and later selections or regridding cannot expand it.
+Tapers modify the current coefficients and compose when repeated.
 
 ```python
 spectral = sgt.analyze(field, grid=grid)

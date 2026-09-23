@@ -39,18 +39,14 @@ or rhomboidal coefficient domain.
 
 ## Reusable analyzed representations
 
-The direct functions are convenient one-shot field-space operations. When a workflow
-needs several spectral operations or syntheses, `analyze()` and `analyze_vector()`
-retain the backend-native analyzed representation so those operations reuse one forward
-transform. Coefficients remain private; use `synthesize()` to return to the source grid
-and `regrid()` to synthesize on a different supported grid.
+The direct functions are convenient for one-shot operations. For repeated spectral work,
+`analyze()` and `analyze_vector()` retain the analyzed representation so several
+operations can reuse one forward transform. Coefficients remain private; use
+`synthesize()` to return to the source grid and `regrid()` for another supported grid.
 
-The `spec` property describes the spectral domain currently available in the reusable
-object. Applying a narrower selection updates that domain; discarded modes cannot be
-restored, and a later request outside it raises `ValueError`. A taper modifies
-coefficients within the current domain, and repeated tapers compose because each
-operation acts on the coefficients currently stored. The same containment rule applies
-to explicit selections passed to `regrid()`.
+`spec` describes the currently available spectral domain. Filtering may narrow it;
+discarded modes cannot be restored, and later selections or regridding cannot expand it.
+Tapers modify the current coefficients and therefore compose when applied repeatedly.
 
 ```python
 spectral = field.sg.analyze()
