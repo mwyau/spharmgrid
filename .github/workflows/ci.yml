@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  UV_VERSION: "0.12.10"
+  UV_VERSION: "0.12.17"
 
 jobs:
   code-quality:
@@ -31,13 +31,14 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - name: Check lockfile
-        run: uv lock --check
+      - name: Run prek checks
+        env:
+          SKIP: ruff-check,ruff-format,ty
+        run: uvx prek run --all-files
       - run: uv sync --extra cf --extra dask --frozen
       - run: uv run --no-sync ruff check src tests docs/conf.py
       - run: uv run --no-sync ruff format --check src tests docs/conf.py
       - run: uv run --no-sync ty check
-      - run: uvx prek run spdx --all-files
 
   tests:
     name: Unit tests (${{ matrix.name }}, Python ${{ matrix.python }})
