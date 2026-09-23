@@ -42,4 +42,3 @@ The entries below document `DataArray.sgj` and `Dataset.sgj`.
       :member-order: bysource
       :no-index-entry:
 ```
-

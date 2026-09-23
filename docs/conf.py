@@ -11,8 +11,8 @@ from sphinx.application import Sphinx
 from sphinx.util.inspect import stringify_signature
 
 project = "spharmgrid"
-author = "Albert Yau"
-copyright = f"{datetime.now(UTC).year}, Albert Yau"
+author = "Albert M. W. Yau"
+copyright = f"{datetime.now(UTC).year}, Albert M. W. Yau"
 
 extensions = [
     "myst_parser",

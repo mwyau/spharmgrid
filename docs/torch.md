@@ -149,4 +149,3 @@ bandwidth also raise `ValueError`.
 CUDA execution requires compatible PyTorch and torch-harmonics builds. Use the
 Xarray API for file I/O, CF metadata, and accessors. Learned spherical spectral
 convolution is available from torch-harmonics and neural-operator packages.
-
