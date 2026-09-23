@@ -37,6 +37,35 @@ or rhomboidal coefficient domain.
 .. autofunction:: spharmgrid.parse_spectral
 ```
 
+## Reusable analyzed representations
+
+The direct functions are convenient for one-shot operations. For repeated spectral work,
+`analyze()` and `analyze_vector()` retain the analyzed representation so several
+operations can reuse one forward transform. Coefficients remain private; use
+`synthesize()` to return to the source grid and `regrid()` for another supported grid.
+
+`spec` describes the currently available spectral domain. Filtering may narrow it;
+discarded modes cannot be restored, and later selections or regridding cannot expand it.
+Tapers modify the current coefficients and therefore compose when applied repeatedly.
+
+```python
+spectral = field.sg.analyze()
+large_scale = spectral.filter("T5-42").synthesize()
+laplacian = spectral.laplacian().synthesize()
+```
+
+```{eval-rst}
+.. autoclass:: spharmgrid.SpectralField
+   :members:
+
+.. autoclass:: spharmgrid.SpectralVectorField
+   :members:
+
+.. autofunction:: spharmgrid.analyze
+
+.. autofunction:: spharmgrid.analyze_vector
+```
+
 ## Scalar operations
 
 ```{eval-rst}

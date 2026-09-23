@@ -70,6 +70,19 @@ streamfunction, velocity_potential, potentials, helmholtz
 rotational_wind, divergent_wind, wind
 ```
 
+For repeated spectral work, use the analyzed representations:
+
+```python
+spectral = sgt.analyze(field, grid=grid)
+filtered = spectral.filter("T42").synthesize()
+laplacian = spectral.laplacian().synthesize()
+```
+
+`SpectralVectorField` provides the corresponding reusable geographic vector
+representation. Its coefficient-domain diagnostics such as `vorticity()` and
+`divergence()` return `SpectralField` objects. These objects do not expose the
+torch-harmonics coefficient layout.
+
 `Grid` is required explicitly because tensors do not carry named coordinates. Use
 `source_grid=` with `regrid()` and `regrid_vector()`; the target grid is a positional
 argument. Vector arguments are geographic eastward `u` and northward `v`. `wind()` and

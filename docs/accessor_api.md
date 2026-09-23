@@ -7,6 +7,16 @@ objects. Its methods preserve the coordinate and metadata behavior of the corres
 Examples are given in {doc}`quickstart`, {doc}`filtering`, {doc}`regridding`,
 {doc}`operators`, and {doc}`kinematics`.
 
+`DataArray.sg.analyze()` returns a reusable `SpectralField`, and
+`DataArray.sg.analyze_vector(v)` returns a reusable `SpectralVectorField`.
+`Dataset.sg.analyze_vector()` discovers `u` and `v` from exact CF metadata or canonical
+names, with explicit `u=` and `v=` overrides.
+
+```python
+vector = eastward.sg.analyze_vector(northward, truncation="T6")
+vector = dataset.sg.analyze_vector(u="eastward", v="northward")
+```
+
 The entries below document `DataArray.sg` and `Dataset.sg`.
 
 ## DataArray.sg

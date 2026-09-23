@@ -67,6 +67,24 @@ def test_dataarray_scalar_accessors() -> None:
     )
 
 
+@pytest.mark.parametrize("kind", ["cc", "gl"])
+def test_dataarray_analyze_vector_accessor_matches_direct(
+    kind: Literal["cc", "gl"],
+) -> None:
+    grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
+    u, v = solid_body_wind(grid)
+
+    expected = sg.analyze_vector(u, v, "T2")
+    actual = u.sg.analyze_vector(v, "T2")
+
+    assert isinstance(actual, sg.SpectralVectorField)
+    assert actual.spec == expected.spec
+    expected_u, expected_v = expected.synthesize()
+    actual_u, actual_v = actual.synthesize()
+    np.testing.assert_allclose(actual_u, expected_u, rtol=0.0, atol=3.0e-14)
+    np.testing.assert_allclose(actual_v, expected_v, rtol=0.0, atol=3.0e-14)
+
+
 def test_dataarray_scalar_to_vector_accessors() -> None:
     grid = supported_grid("cc")
     field = degree_one_field(grid)

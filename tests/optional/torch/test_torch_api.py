@@ -17,6 +17,8 @@ import spharmgrid.torch as sgt
 # output containers but absent from tensor calls. They are the only
 # namespace-specific signature differences removed before comparison.
 _XARRAY_ONLY = {
+    "analyze": {"sht_threads"},
+    "analyze_vector": {"sht_threads"},
     "filter": {"sht_threads"},
     "regrid": {"sht_threads"},
     "regrid_vector": {"eastward", "northward", "sht_threads"},
@@ -140,6 +142,14 @@ def test_torch_nn_is_exposed_as_a_submodule() -> None:
     assert "nn" in sgt.__all__
     assert "SHTFilter" not in sgt.__all__
     assert not hasattr(sgt, "SHTFilter")
+
+
+def test_torch_reusable_spectral_api_is_exposed() -> None:
+    assert sgt.SpectralField is not None
+    assert sgt.SpectralVectorField is not None
+    assert callable(sgt.analyze)
+    assert callable(sgt.analyze_vector)
+    assert sgt.nn is not None
 
 
 def test_torch_functional_api_matches_root_api() -> None:

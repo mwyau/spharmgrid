@@ -20,7 +20,12 @@ import torch_harmonics as _torch_harmonics
 
 from .._transform import TransformSpec
 from ..grids import Grid, grid_layout
-from ..spectral import _validate_taper, resolve_transform_spec
+from ..spectral import (
+    _spectral_selection_is_within,
+    _validate_taper,
+    _validate_vector_spec,
+    resolve_transform_spec,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +92,23 @@ def _resolve_transform_spec(
             f"torch-harmonics triangular bandwidth T{limit} for these grids"
         )
     return requested
+
+
+def _intersect_transform_spec(
+    source: Grid,
+    target: Grid,
+    analyzed: TransformSpec,
+) -> TransformSpec:
+    """Resolve a reusable triangular domain within target capabilities."""
+    try:
+        return _resolve_transform_spec(source, target, analyzed)
+    except ValueError:
+        limit = min(
+            _torch_capabilities(source).triangular_lmax,
+            _torch_capabilities(target).triangular_lmax,
+        )
+        lmax = min(analyzed.lmax, limit)
+        return TransformSpec(min(analyzed.lmin, lmax), lmax, lmax)
 
 
 def _cc_bandwidth_error(
@@ -184,9 +206,9 @@ class _TorchTransform(torch.nn.Module):
         if spec.lmax != spec.mmax:
             raise ValueError("torch-harmonics transform state must be triangular")
 
-        self.source_grid = source
-        self.target_grid = target
-        self.spec = spec
+        self.source_grid: Grid = source
+        self.target_grid: Grid = target
+        self.spec: TransformSpec = spec
 
         source_layout = grid_layout(source)
         target_layout = grid_layout(target)
@@ -469,13 +491,10 @@ def _check_selection(
     _validate_torch_selection(selection)
     if selection is None:
         return
-    if selection.lmax > state.spec.lmax:
+    if not _spectral_selection_is_within(state.spec, selection):
         raise ValueError(
-            f"requested lmax={selection.lmax} exceeds transform lmax={state.spec.lmax}"
-        )
-    if selection.mmax > state.spec.mmax:
-        raise ValueError(
-            f"requested mmax={selection.mmax} exceeds transform mmax={state.spec.mmax}"
+            f"requested spectral selection {selection} exceeds the current "
+            f"spectral domain {state.spec}; discarded modes cannot be restored"
         )
 
 
@@ -494,5 +513,4 @@ def _validate_torch_selection(selection: TransformSpec | None) -> None:
 
 
 def _require_vector_bandwidth(state: _TorchTransform) -> None:
-    if state.spec.lmax < 1:
-        raise ValueError("vector operation requires a grid supporting total degree l=1")
+    _validate_vector_spec(state.spec)

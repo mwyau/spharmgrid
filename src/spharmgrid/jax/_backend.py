@@ -19,7 +19,9 @@ from jax.typing import DTypeLike
 
 from .._transform import TransformSpec
 from ..grids import Grid, GridLayout, grid_layout
-from ..spectral import _validate_taper, resolve_transform_spec
+from ..spectral import _validate_taper, _validate_vector_spec, resolve_transform_spec
+
+_PRECOMPUTE_CACHE_SIZE = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,7 +163,7 @@ def _phase(
     return jnp.exp(sign * unit * modes * phi0_radians)
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=_PRECOMPUTE_CACHE_SIZE)
 def _precomputes(
     bandlimit: int,
     sampling: str,
@@ -282,6 +284,8 @@ def _resize(
     source_bandlimit: int,
     target_bandlimit: int,
 ) -> Array:
+    if source_bandlimit == target_bandlimit:
+        return coefficients
     common = min(source_bandlimit, target_bandlimit)
     source_start = source_bandlimit - common
     target_start = target_bandlimit - common
@@ -450,8 +454,7 @@ def _vector_synthesis(
 
 
 def _require_vector_bandwidth(transform: _JaxTransform) -> None:
-    if transform.spec.lmax < 1:
-        raise ValueError("vector operation requires a grid supporting total degree l=1")
+    _validate_vector_spec(transform.spec)
 
 
 def _validate_source(source: str | None) -> None:

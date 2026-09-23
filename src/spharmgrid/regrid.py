@@ -26,6 +26,7 @@ from .metadata import preserve_quantity_metadata
 from .spectral import (
     _resolve_spectral_spec,
     _validate_taper,
+    _validate_vector_spec,
     apply_spectral_selection,
     resolve_transform_spec,
     scalar_transform,
@@ -105,10 +106,7 @@ def regrid_vector(
     target = target_layout(target_grid, source)
     selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     spec = resolve_transform_spec(source.grid, target.grid, selection)
-    if spec.lmax < 1:
-        raise ValueError(
-            "vector regridding requires a grid supporting total degree l=1"
-        )
+    _validate_vector_spec(spec)
     _validate_taper(taper)
     dask = canonical_u.chunks is not None or canonical_v.chunks is not None
     nthreads = resolve_sht_threads(sht_threads, dask=dask)

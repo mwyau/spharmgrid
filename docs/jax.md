@@ -85,6 +85,22 @@ filtered = compiled_filter(field)
 
 The same array operations support `vmap` and automatic differentiation.
 
+For repeated spectral work, use the PyTree-compatible analyzed representations:
+
+```python
+spectral = sgj.analyze(field, grid=grid)
+filtered = spectral.filter("T6").synthesize()
+laplacian = spectral.laplacian().synthesize()
+```
+
+`SpectralVectorField` provides the corresponding reusable geographic vector
+representation. Its coefficient-domain diagnostics return `SpectralField` objects, while
+coefficient storage is native to S2FFT and private.
+
+PyTree reconstruction may express equivalent longitudes differently, such as values that
+differ by 360 degrees. The result is `grids_equivalent()` to the input grid, although
+the coordinate values may differ.
+
 `regrid()` and `regrid_vector()` use S2FFT coefficient analysis and synthesis when the
 source and target grids have different resolutions. The spectral selection arguments
 accept the same triangular, trapezoidal, rhomboidal, and taper options as the Xarray

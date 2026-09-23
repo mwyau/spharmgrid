@@ -11,6 +11,7 @@ spherical harmonic transforms for the Xarray API. The optional
 :mod:`spharmgrid.torch` uses ``torch-harmonics`` for PyTorch tensors.
 """
 
+from ._spectral_field import SpectralField, SpectralVectorField, analyze, analyze_vector
 from ._transform import TransformSpec
 from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
 from .kinematics import (
@@ -40,7 +41,11 @@ from .spectral import filter, parse_spectral
 __all__ = [
     "EARTH_RADIUS_M",
     "Grid",
+    "SpectralField",
+    "SpectralVectorField",
     "TransformSpec",
+    "analyze",
+    "analyze_vector",
     "clenshaw_curtis_grid",
     "detect_grid",
     "divergent_wind",

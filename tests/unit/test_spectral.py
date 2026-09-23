@@ -7,22 +7,65 @@
 from __future__ import annotations
 
 from typing import Literal
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
 import xarray as xr
 
 import spharmgrid as sg
+import spharmgrid.spectral as spectral_module
 from spharmgrid._ducc import (
+    _ALM_INDEX_CACHE_MAX_BYTES,
     alm_degrees,
     alm_orders,
+    alm_subselection,
     geometry_for,
     scalar_synthesis,
 )
 from spharmgrid._transform import TransformSpec
 from spharmgrid.grids import grid_layout
-from spharmgrid.spectral import apply_spectral_selection, resolve_transform_spec
+from spharmgrid.spectral import (
+    _spectral_selection_is_within,
+    apply_spectral_selection,
+    resolve_transform_spec,
+)
 from tests.conftest import scalar_field, supported_grid
+
+
+def _retained_modes(spec: TransformSpec) -> set[tuple[int, int]]:
+    """Enumerate a small domain for the containment oracle only."""
+    modes: set[tuple[int, int]] = set()
+    for degree in range(spec.lmin, spec.lmax + 1):
+        for order in range(min(degree, spec.mmax) + 1):
+            if spec.truncation == "rhomboidal" and (
+                degree - order > spec.lmax - spec.mmax
+            ):
+                continue
+            modes.add((degree, order))
+    return modes
+
+
+def _brute_spectral_selection_is_within(
+    analyzed: TransformSpec, selection: TransformSpec | None
+) -> bool:
+    """Reference containment predicate used only by the tests."""
+    if selection is None:
+        return True
+    analyzed_modes = _retained_modes(analyzed)
+    return _retained_modes(selection).issubset(analyzed_modes)
+
+
+def _small_transform_specs() -> tuple[TransformSpec, ...]:
+    specs: list[TransformSpec] = []
+    for lmax in range(5):
+        for lmin in range(lmax + 1):
+            for mmax in range(lmax + 1):
+                for truncation in ("triangular", "trapezoidal", "rhomboidal"):
+                    if truncation == "triangular" and mmax != lmax:
+                        continue
+                    specs.append(TransformSpec(lmin, lmax, mmax, truncation))
+    return tuple(specs)
 
 
 def _scalar_mode(
@@ -68,6 +111,64 @@ def test_parse_spectral(notation: str, expected: TransformSpec) -> None:
     result = sg.parse_spectral(notation)
 
     assert result == expected
+
+
+def test_analytical_selection_containment_matches_brute_force_oracle() -> None:
+    specs = _small_transform_specs()
+
+    for analyzed in specs:
+        for selection in specs:
+            expected = _brute_spectral_selection_is_within(analyzed, selection)
+            actual = _spectral_selection_is_within(analyzed, selection)
+            assert actual == expected, (analyzed, selection)
+
+
+@pytest.mark.parametrize(
+    ("analyzed", "selection", "expected"),
+    [
+        ("T6", "T2-6", True),
+        ("T6", "R3", True),
+        ("T6x3", "R3", True),
+        ("R3", "R3", True),
+        ("R3", "R2", True),
+        ("R3", "T6", False),
+        ("R3", "T2-6", False),
+        ("R3", "T6x3", False),
+    ],
+)
+def test_selection_containment_regression_domains(
+    analyzed: str, selection: str, expected: bool
+) -> None:
+    assert (
+        _spectral_selection_is_within(
+            sg.parse_spectral(analyzed), sg.parse_spectral(selection)
+        )
+        is expected
+    )
+
+
+def test_triangular_selection_does_not_build_order_indices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    coefficient_spec = sg.parse_spectral("T8")
+    selection = sg.parse_spectral("T4")
+    order_builder = Mock(
+        side_effect=AssertionError(
+            "triangular selection should not build order indices"
+        )
+    )
+    monkeypatch.setattr(spectral_module, "alm_orders", order_builder)
+
+    weights = spectral_module._spectral_selection_weights(
+        coefficient_spec,
+        selection,
+        None,
+    )
+    degrees = alm_degrees(coefficient_spec.lmax, coefficient_spec.mmax)
+    expected = (degrees <= selection.lmax).astype(np.float64)
+
+    np.testing.assert_array_equal(weights, expected)
+    order_builder.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -160,6 +261,79 @@ def test_alm_indices_follow_ducc_packed_order_and_rhomboidal_mask() -> None:
     boundary = (degrees == 4) & (orders == 2)
     np.testing.assert_allclose(tapered[:, boundary], 0.1)
     np.testing.assert_allclose(tapered[:, (degrees == 3) & (orders == 0)], 0.0)
+
+
+@pytest.mark.parametrize(
+    ("source_lmax", "source_mmax", "target_lmax", "target_mmax"),
+    [
+        (0, 0, 0, 0),
+        (3, 3, 3, 3),
+        (8, 6, 5, 6),
+        (8, 8, 8, 3),
+        (12, 9, 6, 4),
+        (80, 60, 70, 20),
+    ],
+)
+def test_alm_subselection_matches_packed_degree_order_mapping(
+    source_lmax: int,
+    source_mmax: int,
+    target_lmax: int,
+    target_mmax: int,
+) -> None:
+    """Check every returned position against DUCC's packed ``(l, m)`` order."""
+    source_degrees = alm_degrees(source_lmax, source_mmax)
+    source_orders = alm_orders(source_lmax, source_mmax)
+    source_positions = {
+        (int(degree), int(order)): position
+        for position, (degree, order) in enumerate(
+            zip(source_degrees, source_orders, strict=True)
+        )
+    }
+    target_degrees = alm_degrees(target_lmax, target_mmax)
+    target_orders = alm_orders(target_lmax, target_mmax)
+    expected = np.asarray(
+        [
+            source_positions[(int(degree), int(order))]
+            for degree, order in zip(target_degrees, target_orders, strict=True)
+        ],
+        dtype=np.intp,
+    )
+
+    actual = alm_subselection(
+        source_lmax,
+        source_mmax,
+        target_lmax,
+        target_mmax,
+    )
+
+    np.testing.assert_array_equal(actual, expected)
+    assert actual.dtype == np.intp
+    assert not actual.flags.writeable
+
+
+def test_large_alm_index_helpers_are_not_retained() -> None:
+    small_degrees = alm_degrees(16, 16)
+    small_orders = alm_orders(16, 16)
+    assert alm_degrees(16, 16) is small_degrees
+    assert alm_orders(16, 16) is small_orders
+
+    # T768 is larger than the per-array cache threshold but still small enough
+    # to exercise this policy cheaply in the unit suite.
+    assert ((768 + 1) * (768 + 2) // 2) * np.dtype(
+        np.int64
+    ).itemsize > _ALM_INDEX_CACHE_MAX_BYTES
+    large_degrees = alm_degrees(768, 768)
+    large_orders = alm_orders(768, 768)
+    assert alm_degrees(768, 768) is not large_degrees
+    assert alm_orders(768, 768) is not large_orders
+
+
+def test_alm_subselection_is_transient() -> None:
+    first = alm_subselection(12, 9, 6, 4)
+    second = alm_subselection(12, 9, 6, 4)
+
+    np.testing.assert_array_equal(first, second)
+    assert first is not second
 
 
 def test_trapezoidal_filter_retains_the_lmax_corner() -> None:

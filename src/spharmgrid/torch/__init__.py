@@ -54,8 +54,13 @@ from ._ops import (
     vorticity,
     wind,
 )
+from ._spectral_field import SpectralField, SpectralVectorField, analyze, analyze_vector
 
 __all__ = [
+    "SpectralField",
+    "SpectralVectorField",
+    "analyze",
+    "analyze_vector",
     "filter",
     "regrid",
     "regrid_vector",

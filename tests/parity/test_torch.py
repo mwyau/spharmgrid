@@ -42,6 +42,12 @@ _TORCH_NUMERICAL_EXPORTS = {
     "divergent_wind",
     "wind",
 }
+_TORCH_REUSABLE_EXPORTS = {
+    "SpectralField",
+    "SpectralVectorField",
+    "analyze",
+    "analyze_vector",
+}
 
 
 def _tolerances(dtype: torch.dtype, family: str) -> tuple[float, float]:
@@ -206,7 +212,43 @@ def cc_target_grid() -> sg.Grid:
 
 
 def test_torch_exports_have_complete_parity_inventory() -> None:
-    assert set(sgt.__all__) == _TORCH_NUMERICAL_EXPORTS | {"nn"}
+    assert set(sgt.__all__) == _TORCH_NUMERICAL_EXPORTS | _TORCH_REUSABLE_EXPORTS | {
+        "nn"
+    }
+
+
+def test_torch_reusable_spectral_fields_match_ducc(
+    gl_grid: sg.Grid,
+) -> None:
+    field = torch.as_tensor(_scalar_values(gl_grid), dtype=torch.float64)
+    reference = _as_xarray(field, gl_grid)
+    spectral = sgt.analyze(field, grid=gl_grid)
+    _assert_close(spectral.synthesize(), reference, torch.float64, "scalar_map")
+    _assert_close(
+        spectral.laplacian().synthesize(),
+        sg.laplacian(reference),
+        torch.float64,
+        "laplacian",
+    )
+
+    eastward_values, northward_values = _vector_values(gl_grid)
+    eastward = torch.as_tensor(eastward_values, dtype=torch.float64)
+    northward = torch.as_tensor(northward_values, dtype=torch.float64)
+    reference_u = _as_xarray(eastward, gl_grid, "u")
+    reference_v = _as_xarray(northward, gl_grid, "v")
+    vector = sgt.analyze_vector(eastward, northward, grid=gl_grid)
+    _assert_close(
+        vector.vorticity().synthesize(),
+        sg.vorticity(reference_u, reference_v),
+        torch.float64,
+        "kinematics",
+    )
+    _assert_close(
+        vector.divergence().synthesize(),
+        sg.divergence(reference_u, reference_v),
+        torch.float64,
+        "kinematics",
+    )
 
 
 @pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
