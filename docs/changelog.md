@@ -4,6 +4,7 @@
 
 ### Xarray and JAX
 
+- Added JAX support for atmospheric regular Gaussian grids with `nlon = 2 * nlat`.
 - Added optional `.sgj` Xarray accessors and explicit `device_put()` / `device_get()`
   helpers. `.sgj` calls the `spharmgrid.jax` functions with JAX-backed data and
   preserves Xarray labels and metadata without requiring `xarray_jax`.

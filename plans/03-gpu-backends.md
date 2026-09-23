@@ -134,8 +134,10 @@ CC:
 
 The MWSS colatitudes are the same pole-including equally spaced latitude nodes as
 spharmgrid CC for these dimensions. CC/MWSS support is a v0.3.0 requirement, not a later
-extension. Other spharmgrid GL/CC shapes are unsupported by the JAX API unless exact
-S2FFT sampling equivalence is established; do not resample them implicitly.
+extension. The JAX API also accepts atmospheric regular GL `(L, 2L)` with bandlimit `L`
+and coefficient shape `(L, 2L - 1)`. This is the only additional GL longitude count;
+other spharmgrid GL/CC shapes are unsupported unless exact S2FFT sampling equivalence is
+established.
 
 Current torch-harmonics uses triangular truncation and its Clenshaw–Curtis/equiangular
 bandwidth behavior differs from DUCC's full representable `lmax`/`mmax` behavior when
@@ -344,12 +346,18 @@ SFNO/SphericalConv layer. It does not require spharmgrid to own a full SFNO mode
 Add `spharmgrid.jax` as a JAX-array API backed by S2FFT. It should expose the same 19
 scientific functions listed in Section 1 as `spharmgrid.torch`.
 
-The v0.3.0 grid requirement is:
+The v0.3.0 grid requirement was:
 
 ```text
 GL       S2FFT "gl" sampling with shape (L, 2L - 1)
 CC       S2FFT "mwss" sampling with shape (L + 1, 2L)
 ```
+
+The current JAX grid capability also includes atmospheric regular GL `(L, 2L)`. Its
+spectral bandlimit and coefficient shape are unchanged from GL `(L, 2L - 1)`. This path
+uses the S2FFT 1.4.0 internal `ftm` latitude steps behind one version-checked
+compatibility module. Keep the length-`2L` longitude FFT, Nyquist projection, and
+longitude-origin handling in spharmgrid.
 
 Support both scalar and spin-1 transforms. Map geographic eastward/northward wind to and
 from S2FFT spin-1 coefficients explicitly and verify the mapping with analytic vector
@@ -799,8 +807,9 @@ Phase 3 is complete when:
 - existing DUCC and PyTorch results and public behavior are unchanged;
 - shared backend code is extracted only where the implementations require it;
 - torch-harmonics remains the PyTorch numerical SHT implementation;
-- S2FFT 1.4 or later is the JAX numerical SHT implementation;
-- `spharmgrid.jax` supports both required rectangular samplings: GL `(L, 2L - 1)` and
+- S2FFT 1.4.0 is the JAX numerical SHT implementation for the pinned GL `(L, 2L)`
+  compatibility path;
+- `spharmgrid.jax` supports GL `(L, 2L - 1)`, atmospheric regular GL `(L, 2L)`, and
   CC/MWSS `(L + 1, 2L)`;
 - `spharmgrid.jax` exports the same 19 scientific functions as `spharmgrid.torch`;
 - `spharmgrid.torch` and `spharmgrid.jax` provide tensor-native differentiable APIs for
@@ -882,6 +891,15 @@ tested for clean rejection.
 The JAX namespace uses trailing latitude/longitude dimensions with arbitrary leading
 dimensions. Regridding resizes the spectral coefficient domain in JAX. The base package
 does not import JAX or S2FFT.
+
+### Atmospheric regular GL extension
+
+The JAX API accepts atmospheric regular Gaussian grids with shape `(L, 2L)` alongside
+the S2FFT-native GL shape `(L, 2L - 1)`. Both use bandlimit `L` and coefficient shape
+`(L, 2L - 1)`. The adapter removes the length-`2L` longitude Nyquist mode before S2FFT's
+latitudinal transform and inserts a zero mode before synthesis. S2FFT 1.4.0 is pinned
+while this path uses its internal `ftm` functions; remove the compatibility module when
+S2FFT exposes a public transform for `(L, 2L)`.
 
 The v0.3.0 release itself does not add HEALPix, Flax/Equinox wrappers, or an xarray
 `backend=` selector. Those additions require their own demonstrated use case or

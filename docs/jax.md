@@ -33,13 +33,16 @@ import spharmgrid.jax as sgj
 The functions accept `jax.Array` values. The last two dimensions are latitude and
 longitude; all preceding dimensions are preserved.
 
-`spharmgrid.jax` accepts these exact rectangular shapes and maps them to the listed
-S2FFT samplings:
+`spharmgrid.jax` accepts these regular rectangular shapes:
 
-| spharmgrid grid      | dimensions    | S2FFT sampling |
-| -------------------- | ------------- | -------------- |
-| Gauss–Legendre (GL)  | `(L, 2L - 1)` | `gl`           |
-| Clenshaw–Curtis (CC) | `(L + 1, 2L)` | `mwss`         |
+| spharmgrid grid        | dimensions    |
+| ---------------------- | ------------- |
+| Gauss–Legendre (GL)    | `(L, 2L - 1)` |
+| Atmospheric regular GL | `(L, 2L)`     |
+| Clenshaw–Curtis (CC)   | `(L + 1, 2L)` |
+
+Both GL shapes use bandlimit `L` and coefficient shape `(L, 2L - 1)`. The 2L-longitude
+grid adds a physical longitude sample, not an additional spherical harmonic order.
 
 CC latitudes are the pole-including equally spaced nodes from −90 to 90 degrees. Both
 latitude orders and cyclic longitude coordinate conventions are accepted.
