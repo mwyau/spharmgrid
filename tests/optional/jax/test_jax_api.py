@@ -11,7 +11,6 @@ import inspect
 import subprocess
 import sys
 from collections.abc import Callable
-from typing import Literal
 
 import jax.numpy as jnp
 import numpy as np
@@ -195,22 +194,26 @@ else:
     subprocess.run([sys.executable, "-c", code], check=True)
 
 
-@pytest.mark.parametrize(
-    ("kind", "shape"),
-    [("gl", (8, 14)), ("cc", (9, 15))],
-)
 @pytest.mark.jax_x64
-def test_non_native_s2fft_shapes_raise_a_capability_error(
-    kind: Literal["gl", "cc"],
-    shape: tuple[int, int],
-) -> None:
+def test_regular_gl_accepts_longitude_counts_outside_s2fft_public_shape() -> None:
+    shape = (8, 14)
     grid = sg.Grid(
-        kind,
-        sg.gaussian_grid(8, 15).latitude
-        if kind == "gl"
-        else sg.clenshaw_curtis_grid(9, 16).latitude,
+        "gl",
+        sg.gaussian_grid(8, 15).latitude,
         np.arange(shape[1], dtype=np.float64) * (360.0 / shape[1]),
     )
     field = jnp.zeros(shape, dtype=jnp.float64)
-    with pytest.raises(ValueError, match="S2FFT band-limit"):
+    assert sgj.filter(field, grid=grid).shape == shape
+
+
+@pytest.mark.jax_x64
+def test_nonstandard_cc_mwss_shape_still_raises_a_capability_error() -> None:
+    shape = (9, 15)
+    grid = sg.Grid(
+        "cc",
+        sg.clenshaw_curtis_grid(9, 16).latitude,
+        np.arange(shape[1], dtype=np.float64) * (360.0 / shape[1]),
+    )
+    field = jnp.zeros(shape, dtype=jnp.float64)
+    with pytest.raises(ValueError, match="CC/MWSS grids only with shape"):
         sgj.filter(field, grid=grid)
