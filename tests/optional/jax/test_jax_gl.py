@@ -220,7 +220,7 @@ def test_first_unavailable_order_is_zero_in_s2fft_domain(nlon: int) -> None:
 
 @pytest.mark.parametrize("spin", [1, -1])
 @pytest.mark.parametrize("nlon", [9, 16, 20])
-def test_spin_and_vector_analysis_synthesis(spin: int, nlon: int) -> None:
+def test_spin_analysis_synthesis(spin: int, nlon: int) -> None:
     _require_x64()
     grid = sg.gaussian_grid(8, nlon, latitude_order="ascending", lon0=37.0)
     eastward, northward = vector_values(grid)
@@ -233,6 +233,13 @@ def test_spin_and_vector_analysis_synthesis(spin: int, nlon: int) -> None:
     reconstructed_spin = _spin_synthesis(spin_coefficients, transform, spin)
     np.testing.assert_allclose(reconstructed_spin, spin_field, rtol=0.0, atol=5.0e-12)
 
+
+@pytest.mark.parametrize("nlon", [9, 16, 20])
+def test_vector_analysis_synthesis(nlon: int) -> None:
+    _require_x64()
+    grid = sg.gaussian_grid(8, nlon, latitude_order="ascending", lon0=37.0)
+    eastward, northward = vector_values(grid)
+    transform = _make_transform(grid, grid, None)
     coefficients = _vector_analysis(
         jnp.asarray(eastward, dtype=jnp.float64),
         jnp.asarray(northward, dtype=jnp.float64),
