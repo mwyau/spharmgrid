@@ -118,7 +118,7 @@ backend-native rather than a package-wide coefficient format.
 Backend support is capability-based. Do not promise every engine supports every grid,
 bandwidth, dtype, or operation identically.
 
-For S2FFT in v0.3.0, both rectangular samplings are required:
+S2FFT's public rectangular sampling APIs use:
 
 ```text
 GL:
@@ -134,8 +134,10 @@ CC:
 
 The MWSS colatitudes are the same pole-including equally spaced latitude nodes as
 spharmgrid CC for these dimensions. CC/MWSS support is a v0.3.0 requirement, not a later
-extension. Other spharmgrid GL/CC shapes are unsupported by the JAX API unless exact
-S2FFT sampling equivalence is established; do not resample them implicitly.
+extension. spharmgrid's regular GL model independently permits any valid longitude
+count. The JAX adapter maps its representable longitude FFT modes into S2FFT's fixed
+internal width `2L - 1` and calls the internal GL latitude steps. Its public spectral
+limits remain `lmax = L - 1` and `mmax = floor((nlon - 1) / 2)`, as for DUCC.
 
 Current torch-harmonics uses triangular truncation and its Clenshaw–Curtis/equiangular
 bandwidth behavior differs from DUCC's full representable `lmax`/`mmax` behavior when
@@ -344,12 +346,20 @@ SFNO/SphericalConv layer. It does not require spharmgrid to own a full SFNO mode
 Add `spharmgrid.jax` as a JAX-array API backed by S2FFT. It should expose the same 19
 scientific functions listed in Section 1 as `spharmgrid.torch`.
 
-The v0.3.0 grid requirement is:
+S2FFT's public JAX GL and CC/MWSS transforms accept:
 
 ```text
 GL       S2FFT "gl" sampling with shape (L, 2L - 1)
 CC       S2FFT "mwss" sampling with shape (L + 1, 2L)
 ```
+
+The JAX backend accepts any regular GL longitude count allowed by `Grid`. The latitude
+count `L` sets `lmax = L - 1`; `nlon` independently sets `mmax = floor((nlon - 1) / 2)`.
+For each physical grid, retain the representable FFT orders, omit an even-length Nyquist
+bin, and embed the modes into S2FFT's fixed internal `ftm` width `2L - 1`. Use the S2FFT
+1.4.0 internal latitude steps behind one version-checked compatibility module. Keep
+physical longitude FFT indexing, longitude-origin handling, and grid semantics in
+spharmgrid.
 
 Support both scalar and spin-1 transforms. Map geographic eastward/northward wind to and
 from S2FFT spin-1 coefficients explicitly and verify the mapping with analytic vector
@@ -359,13 +369,15 @@ Regridding should resize the S2FFT coefficient domain in JAX before synthesis on
 target grid. Keep coefficient masking, degree multipliers, phase handling, and resizing
 inside JAX so `jit`, `vmap`, and automatic differentiation are preserved.
 
-Use S2FFT's ordinary public JAX transforms with externally generated Price–McEwen
-recursion precomputations. Materialize the O(L²) arrays before passing them to the S2FFT
-transform and cache them in a bounded Python LRU keyed by the static transform settings
-`(bandlimit, sampling, spin, direction)`, with `maxsize=32`. Generate them through the
-public `s2fft.generate_precomputes_jax` function. Scalar transforms use `reality=True`;
-spin-1 transforms use `reality=False`. The scalar `reality=True` path still returns the
-full centered coefficient array required by spharmgrid.
+Regular GL uses the internal `ftm` latitude steps through the version-checked
+compatibility module described above. CC/MWSS uses S2FFT's public JAX transforms. Both
+paths use externally generated Price–McEwen recursion precomputations. Materialize the
+O(L²) arrays before passing them to the transform and cache them in a bounded Python LRU
+keyed by the static transform settings `(bandlimit, sampling, spin, direction)`, with
+`maxsize=32`. Generate the arrays through the public `s2fft.generate_precomputes_jax`
+function. Scalar transforms use `reality=True`; spin-1 transforms use `reality=False`.
+The scalar `reality=True` path still returns the full centered coefficient array
+required by spharmgrid.
 
 Measured comparisons showed that the external precomputations materially reduced warmed
 CUDA transform time for the tested `L=16`, `64`, and `128` cases; this justifies
@@ -651,14 +663,14 @@ should use both a user-facing extra and a development group:
 
 ```toml
 [project.optional-dependencies]
-jax = ["jax>=0.5.0", "s2fft>=1.4.0"]
+jax = ["jax>=0.5.0", "s2fft==1.4.0"]
 
 [dependency-groups]
 torch-dev = ["torch>=...", "torch-harmonics>=..."]
 jax-dev = [
   { include-group = "test" },
   "jax>=0.5.0",
-  "s2fft>=1.4.0",
+  "s2fft==1.4.0",
 ]
 cuda-dev = [
   { include-group = "jax-dev" },
@@ -668,9 +680,9 @@ cuda-dev = [
 ```
 
 spharmgrid imports JAX directly, so JAX should be a direct optional dependency rather
-than only a transitive S2FFT dependency. Determine the JAX lower bound from tests with
-S2FFT 1.4.0 and the oldest supported Python version. The verified floor is Python
-`>=3.11`, JAX/JAXLIB `>=0.5.0`, and S2FFT `>=1.4.0`.
+than only a transitive S2FFT dependency. The verified JAX floor is Python `>=3.11` and
+JAX/JAXLIB `>=0.5.0`. Pin S2FFT to `1.4.0` while spharmgrid uses its internal GL
+latitude-step interface.
 
 For portable local JAX development and testing, use:
 
@@ -799,9 +811,10 @@ Phase 3 is complete when:
 - existing DUCC and PyTorch results and public behavior are unchanged;
 - shared backend code is extracted only where the implementations require it;
 - torch-harmonics remains the PyTorch numerical SHT implementation;
-- S2FFT 1.4 or later is the JAX numerical SHT implementation;
-- `spharmgrid.jax` supports both required rectangular samplings: GL `(L, 2L - 1)` and
-  CC/MWSS `(L + 1, 2L)`;
+- S2FFT 1.4.0 is the JAX numerical SHT implementation for arbitrary regular GL grids
+  through its pinned internal latitude-transform compatibility path;
+- `spharmgrid.jax` supports arbitrary regular GL longitude counts and CC/MWSS
+  `(L + 1, 2L)`;
 - `spharmgrid.jax` exports the same 19 scientific functions as `spharmgrid.torch`;
 - `spharmgrid.torch` and `spharmgrid.jax` provide tensor-native differentiable APIs for
   their supported grids;
@@ -865,11 +878,11 @@ over-wide request instead of clamping it.
 
 ## 18. v0.3 JAX/S2FFT slice
 
-v0.3.0 adds `spharmgrid.jax` backed by S2FFT. The JAX API includes all 19 current
-scientific functions on both exact S2FFT rectangular samplings:
+v0.3.0 added `spharmgrid.jax` backed by S2FFT. The JAX API includes all 19 current
+scientific functions on regular GL grids and CC/MWSS sampling:
 
 ```text
-GL       (L, 2L - 1)
+GL       (L, nlon), with mmax = floor((nlon - 1) / 2)
 CC/MWSS  (L + 1, 2L)
 ```
 
@@ -882,6 +895,15 @@ tested for clean rejection.
 The JAX namespace uses trailing latitude/longitude dimensions with arbitrary leading
 dimensions. Regridding resizes the spectral coefficient domain in JAX. The base package
 does not import JAX or S2FFT.
+
+### Regular GL longitude mapping
+
+The JAX backend accepts the same regular GL longitude counts as spharmgrid and DUCC.
+Latitude count `L` sets maximum degree `L - 1`; `nlon` independently limits zonal order
+to `floor((nlon - 1) / 2)`. The adapter maps the representable physical FFT orders into
+S2FFT's fixed centered `ftm` width `2L - 1`, omitting even-length Nyquist bins. S2FFT
+1.4.0 is pinned while this path uses its internal latitude steps; remove the
+compatibility module when S2FFT exposes a suitable public transform API.
 
 The v0.3.0 release itself does not add HEALPix, Flax/Equinox wrappers, or an xarray
 `backend=` selector. Those additions require their own demonstrated use case or
