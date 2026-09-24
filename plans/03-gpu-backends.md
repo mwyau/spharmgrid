@@ -134,10 +134,10 @@ CC:
 
 The MWSS colatitudes are the same pole-including equally spaced latitude nodes as
 spharmgrid CC for these dimensions. CC/MWSS support is a v0.3.0 requirement, not a later
-extension. spharmgrid's regular GL model independently permits any valid longitude
-count. The JAX adapter maps its representable longitude FFT modes into S2FFT's fixed
-internal width `2L - 1` and calls the internal GL latitude steps. Its public spectral
-limits remain `lmax = L - 1` and `mmax = floor((nlon - 1) / 2)`, as for DUCC.
+extension. spharmgrid permits every regular GL longitude count accepted by `Grid`. The
+JAX adapter maps the representable longitude FFT modes into S2FFT's fixed internal width
+`2L - 1` and calls the internal GL latitude steps. For `L = nlat`, the transform uses
+`lmax = L - 1` and `mmax = min(L - 1, floor((nlon - 1) / 2))`.
 
 Current torch-harmonics uses triangular truncation and its Clenshaw–Curtis/equiangular
 bandwidth behavior differs from DUCC's full representable `lmax`/`mmax` behavior when
@@ -353,13 +353,12 @@ GL       S2FFT "gl" sampling with shape (L, 2L - 1)
 CC       S2FFT "mwss" sampling with shape (L + 1, 2L)
 ```
 
-The JAX backend accepts any regular GL longitude count allowed by `Grid`. The latitude
-count `L` sets `lmax = L - 1`; `nlon` independently sets `mmax = floor((nlon - 1) / 2)`.
-For each physical grid, retain the representable FFT orders, omit an even-length Nyquist
-bin, and embed the modes into S2FFT's fixed internal `ftm` width `2L - 1`. Use the S2FFT
-1.4.0 internal latitude steps behind one version-checked compatibility module. Keep
-physical longitude FFT indexing, longitude-origin handling, and grid semantics in
-spharmgrid.
+The JAX backend accepts every regular GL longitude count allowed by `Grid`. For
+`L = nlat`, use `lmax = L - 1` and `mmax = min(L - 1, floor((nlon - 1) / 2))`. Retain
+the representable FFT orders, omit the Nyquist bin for even `nlon`, and embed the modes
+into S2FFT's fixed internal `ftm` width `2L - 1`. Call the S2FFT 1.4.0 internal latitude
+steps through one version-checked compatibility module. Keep longitude FFT indexing,
+longitude-origin handling, and grid semantics in spharmgrid.
 
 Support both scalar and spin-1 transforms. Map geographic eastward/northward wind to and
 from S2FFT spin-1 coefficients explicitly and verify the mapping with analytic vector
@@ -681,8 +680,8 @@ cuda-dev = [
 
 spharmgrid imports JAX directly, so JAX should be a direct optional dependency rather
 than only a transitive S2FFT dependency. The verified JAX floor is Python `>=3.11` and
-JAX/JAXLIB `>=0.5.0`. Pin S2FFT to `1.4.0` while spharmgrid uses its internal GL
-latitude-step interface.
+JAX/JAXLIB `>=0.5.0`. S2FFT is pinned to `1.4.0` because regular GL transforms use that
+release's internal latitude functions.
 
 For portable local JAX development and testing, use:
 
@@ -811,8 +810,8 @@ Phase 3 is complete when:
 - existing DUCC and PyTorch results and public behavior are unchanged;
 - shared backend code is extracted only where the implementations require it;
 - torch-harmonics remains the PyTorch numerical SHT implementation;
-- S2FFT 1.4.0 is the JAX numerical SHT implementation for arbitrary regular GL grids
-  through its pinned internal latitude-transform compatibility path;
+- S2FFT 1.4.0 computes JAX regular GL transforms through its internal latitude
+  functions;
 - `spharmgrid.jax` supports arbitrary regular GL longitude counts and CC/MWSS
   `(L + 1, 2L)`;
 - `spharmgrid.jax` exports the same 19 scientific functions as `spharmgrid.torch`;
@@ -898,12 +897,12 @@ does not import JAX or S2FFT.
 
 ### Regular GL longitude mapping
 
-The JAX backend accepts the same regular GL longitude counts as spharmgrid and DUCC.
-Latitude count `L` sets maximum degree `L - 1`; `nlon` independently limits zonal order
-to `floor((nlon - 1) / 2)`. The adapter maps the representable physical FFT orders into
-S2FFT's fixed centered `ftm` width `2L - 1`, omitting even-length Nyquist bins. S2FFT
-1.4.0 is pinned while this path uses its internal latitude steps; remove the
-compatibility module when S2FFT exposes a suitable public transform API.
+The JAX backend accepts every regular GL longitude count allowed by `Grid`. For
+`L = nlat`, it uses `lmax = L - 1` and `mmax = min(L - 1, floor((nlon - 1) / 2))`. The
+adapter maps the representable physical FFT orders into S2FFT's fixed centered `ftm`
+width `2L - 1` and omits the Nyquist bin for even `nlon`. S2FFT 1.4.0 is pinned while
+this path uses its internal latitude functions; remove the compatibility module when
+S2FFT exposes a suitable public transform API.
 
 The v0.3.0 release itself does not add HEALPix, Flax/Equinox wrappers, or an xarray
 `backend=` selector. Those additions require their own demonstrated use case or

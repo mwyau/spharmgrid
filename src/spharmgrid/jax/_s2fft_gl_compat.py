@@ -4,14 +4,12 @@
 
 """Map regular GL longitude FFTs into S2FFT's fixed GL Fourier domain.
 
-S2FFT 1.4.0 exposes GL sampling with ``(L, 2L - 1)`` physical points. A common
-regular atmospheric GL grid uses ``(L, 2L)``, but spharmgrid's GL grid permits
-any valid longitude count. The spherical harmonic basis still contains only
-``2L - 1`` orders. spharmgrid owns the length-``nlon`` longitude FFT, omits
-unrepresentable modes and an even-length Nyquist bin, and inserts zero bins on
-synthesis; S2FFT performs the latitudinal transform. This internal boundary is
-tracked at https://github.com/astro-informatics/s2fft/issues/406 and should be
-revisited when S2FFT exposes a suitable public API.
+S2FFT 1.4.0 exposes GL sampling with ``(L, 2L - 1)`` physical points, while
+spharmgrid accepts any valid regular longitude count. This module computes the
+length-``nlon`` longitude FFT, drops unrepresentable orders and the Nyquist bin
+for even ``nlon``, and inserts zero bins during synthesis. S2FFT computes the
+latitudinal transform. This use of S2FFT internals is tracked at
+https://github.com/astro-informatics/s2fft/issues/406.
 """
 
 from __future__ import annotations

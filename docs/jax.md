@@ -40,16 +40,14 @@ longitude; all preceding dimensions are preserved.
 | Gauss–Legendre (GL)  | `(L, nlon)`, `nlon ≥ 2` |
 | Clenshaw–Curtis (CC) | `(L + 1, 2L)`           |
 
-The JAX backend supports regular GL grids with the same longitude-count semantics as
-spharmgrid's CPU/DUCC backend. The Gaussian latitude count `L` determines the maximum
-spherical degree `L - 1`; the regular longitude count independently determines the
-available zonal-order limit `floor((nlon - 1) / 2)`. Thus `(L, 2L - 1)`, `(L, 2L)`, and
-`(L, nlon)` with `nlon > 2L` are examples of the same GL grid kind. The JAX coefficient
-representation retains shape `(L, 2L - 1)`.
+For GL grids, `L = nlat` sets the maximum spherical degree `L - 1`. Longitude sampling
+sets `longitude_mmax = floor((nlon - 1) / 2)`, so the transform uses
+`mmax = min(L - 1, longitude_mmax)`. The centered JAX coefficient array has shape
+`(L, 2L - 1)` for every supported `nlon`.
 
-The optional S2FFT dependency is pinned to `1.4.0` because regular GL support uses that
-release's internal latitude-transform steps. The adapter checks the installed version
-and required function signatures before using this interface.
+Regular GL transforms currently require `s2fft==1.4.0` because spharmgrid uses that
+release's internal latitude-transform functions. spharmgrid rejects other S2FFT versions
+or an unexpected internal function signature.
 
 CC latitudes are the pole-including equally spaced nodes from −90 to 90 degrees. Both
 latitude orders and cyclic longitude coordinate conventions are accepted.
