@@ -20,17 +20,20 @@ def make_grid(
     kind: GridKind,
     *,
     nlat: int,
+    nlon: int | None = None,
     latitude_order: Literal["ascending", "descending"] = "ascending",
     lon0: float = 0.0,
 ) -> sg.Grid:
-    """Construct an exact S2FFT-compatible GL or CC grid."""
+    """Construct a GL or CC grid for backend parity tests."""
     if kind == "gl":
         return sg.gaussian_grid(
             nlat,
-            2 * nlat - 1,
+            2 * nlat - 1 if nlon is None else nlon,
             latitude_order=latitude_order,
             lon0=lon0,
         )
+    if nlon is not None:
+        raise ValueError("nlon may be supplied only for GL test grids")
     return sg.clenshaw_curtis_grid(
         nlat,
         2 * (nlat - 1),
