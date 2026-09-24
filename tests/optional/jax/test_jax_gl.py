@@ -129,7 +129,6 @@ def test_scalar_analysis_synthesis_and_round_trip_match_ducc(nlon: int) -> None:
     np.testing.assert_allclose(analyzed.synthesize(), expected_values, atol=2.0e-12)
 
 
-
 @pytest.mark.parametrize("notation", ["T4", "T6x4", "T4x2", "R2"])
 def test_analyzed_coefficients_follow_the_resolved_selection(notation: str) -> None:
     _require_x64()
