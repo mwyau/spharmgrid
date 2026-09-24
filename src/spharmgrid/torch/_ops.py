@@ -51,8 +51,10 @@ def filter(
         grid,
         grid,
         selection,
-        vector=False,
+        scalar_analysis=True,
+        scalar_synthesis=True,
         device=field.device,
+        dtype=field.dtype,
     )
     return _filter_impl(field, state, state.spec, taper)
 
@@ -77,8 +79,10 @@ def regrid(
         source_grid,
         target_grid,
         selection,
-        vector=False,
+        scalar_analysis=True,
+        scalar_synthesis=True,
         device=field.device,
+        dtype=field.dtype,
     )
     return _regrid_impl(field, state, state.spec, taper, selection is not None)
 
@@ -104,8 +108,10 @@ def regrid_vector(
         source_grid,
         target_grid,
         selection,
-        vector=True,
+        vector_analysis=True,
+        vector_synthesis=True,
         device=u.device,
+        dtype=u.dtype,
     )
     _require_vector_bandwidth(state)
     return _regrid_vector_impl(
@@ -128,7 +134,12 @@ def gradient(
     _validate_grid(grid)
     _require_tensor(field, grid)
     _validate_radius(radius)
-    state = _full_state(field, grid, vector=True)
+    state = _full_state(
+        field,
+        grid,
+        scalar_analysis=True,
+        vector_synthesis=True,
+    )
     return _gradient_with_state(field, state, radius)
 
 
@@ -157,7 +168,12 @@ def inverse_gradient(
     _validate_grid(grid)
     _require_vector_tensors(eastward, northward, grid)
     _validate_radius(radius)
-    state = _full_state(eastward, grid, vector=True)
+    state = _full_state(
+        eastward,
+        grid,
+        scalar_synthesis=True,
+        vector_analysis=True,
+    )
     return _inverse_gradient_with_state(eastward, northward, state, radius)
 
 
@@ -192,7 +208,12 @@ def laplacian(
     _validate_grid(grid)
     _require_tensor(field, grid)
     _validate_radius(radius)
-    state = _full_state(field, grid, vector=False)
+    state = _full_state(
+        field,
+        grid,
+        scalar_analysis=True,
+        scalar_synthesis=True,
+    )
     return _laplacian_with_state(field, state, radius)
 
 
@@ -216,7 +237,12 @@ def inverse_laplacian(
     _validate_grid(grid)
     _require_tensor(field, grid)
     _validate_radius(radius)
-    state = _full_state(field, grid, vector=False)
+    state = _full_state(
+        field,
+        grid,
+        scalar_analysis=True,
+        scalar_synthesis=True,
+    )
     return _inverse_laplacian_with_state(field, state, radius)
 
 
@@ -333,7 +359,12 @@ def helmholtz(
     _validate_grid(grid)
     _require_vector_tensors(u, v, grid)
     _validate_radius(radius)
-    state = _full_state(u, grid, vector=True)
+    state = _full_state(
+        u,
+        grid,
+        vector_analysis=True,
+        vector_synthesis=True,
+    )
     return _helmholtz_with_state(u, v, state)
 
 
@@ -406,7 +437,12 @@ def wind(
     _validate_grid(grid)
     _require_vector_tensors(first, second, grid)
     _validate_radius(radius)
-    state = _full_state(first, grid, vector=True)
+    state = _full_state(
+        first,
+        grid,
+        scalar_analysis=True,
+        vector_synthesis=True,
+    )
     return _wind_with_state(first, second, state, source, radius)
 
 
@@ -472,13 +508,25 @@ def _regrid_vector_impl(
     return state.vector_synthesis(coefficients)
 
 
-def _full_state(field: Tensor, grid: Grid, *, vector: bool) -> _TorchTransform:
+def _full_state(
+    field: Tensor,
+    grid: Grid,
+    *,
+    scalar_analysis: bool = False,
+    scalar_synthesis: bool = False,
+    vector_analysis: bool = False,
+    vector_synthesis: bool = False,
+) -> _TorchTransform:
     return _make_state(
         grid,
         grid,
         None,
-        vector=vector,
+        scalar_analysis=scalar_analysis,
+        scalar_synthesis=scalar_synthesis,
+        vector_analysis=vector_analysis,
+        vector_synthesis=vector_synthesis,
         device=field.device,
+        dtype=field.dtype,
     )
 
 
@@ -493,7 +541,12 @@ def _vector_laplacian(
     _validate_grid(grid)
     _require_vector_tensors(u, v, grid)
     _validate_radius(radius)
-    state = _full_state(u, grid, vector=True)
+    state = _full_state(
+        u,
+        grid,
+        vector_analysis=True,
+        vector_synthesis=True,
+    )
     return _vector_laplacian_with_state(u, v, state, radius, inverse)
 
 
@@ -524,7 +577,12 @@ def _kinematics_impl(
     _validate_grid(grid)
     _require_vector_tensors(u, v, grid)
     _validate_radius(radius)
-    state = _full_state(u, grid, vector=True)
+    state = _full_state(
+        u,
+        grid,
+        vector_analysis=True,
+        scalar_synthesis=True,
+    )
     return _kinematics_with_state(u, v, state, radius)
 
 
@@ -555,7 +613,12 @@ def _potentials_impl(
     _validate_grid(grid)
     _require_vector_tensors(u, v, grid)
     _validate_radius(radius)
-    state = _full_state(u, grid, vector=True)
+    state = _full_state(
+        u,
+        grid,
+        vector_analysis=True,
+        scalar_synthesis=True,
+    )
     return _potentials_with_state(u, v, state, radius)
 
 
@@ -587,7 +650,12 @@ def _single_source_wind(
     _validate_grid(grid)
     _require_tensor(field, grid)
     _validate_radius(radius)
-    state = _full_state(field, grid, vector=True)
+    state = _full_state(
+        field,
+        grid,
+        scalar_analysis=True,
+        vector_synthesis=True,
+    )
     return _single_source_wind_with_state(field, state, source, kind, radius)
 
 

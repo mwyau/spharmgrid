@@ -373,6 +373,18 @@ jobs:
             --python .venv/bin/python \
             --group torch-ci \
             --torch-backend=cpu
+      - name: Verify minimum Torch backend
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata
+
+          import torch
+          import torch_harmonics
+
+          print("torch", torch.__version__)
+          print("torch-harmonics", importlib.metadata.version("torch-harmonics"))
+          print("triton", importlib.metadata.version("triton"))
+          PY
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"

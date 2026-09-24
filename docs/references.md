@@ -16,11 +16,19 @@ citation metadata are provided in
 - Reinecke, M. (2020):
   [DUCC: Distinctly Useful Code Collection](https://ascl.net/2008.023), *Astrophysics
   Source Code Library*, ascl:2008.023. DUCC performs the spherical harmonic transforms
-  for spharmgrid's Xarray API through the `ducc0` package.
+  used by spharmgrid's Xarray and NumPy APIs through the `ducc0` package.
+- Reinecke, M., S. Belkner, and J. Carron (2023):
+  [Improved cosmic microwave background (de-)lensing using general spherical harmonic transforms](https://doi.org/10.1051/0004-6361/202346717),
+  *Astronomy & Astrophysics*, 678, A165. Appendix A describes map analysis using shifted
+  equiangular rings and Clenshaw–Curtis quadrature. spharmgrid applies a folded form of
+  this method to extended pole-including CC analysis, with spharmgrid-owned FFT and
+  projection contractions in `spharmgrid.torch`.
 - [S2FFT](https://github.com/astro-informatics/s2fft) performs the scalar and
   spin-weighted spherical harmonic transforms for the JAX API.
-- [torch-harmonics](https://github.com/NVIDIA/torch-harmonics) performs the scalar and
-  vector spherical harmonic transforms for the PyTorch API.
+- [torch-harmonics](https://github.com/NVIDIA/torch-harmonics) supplies the scalar and
+  vector projection definitions and native transforms used by the PyTorch API.
+  spharmgrid extends CC analysis beyond native direct quadrature through folded latitude
+  resampling and dense projection tables.
 - [NCL spherical harmonic functions](https://www.ncl.ucar.edu/Document/Functions/spherical.shtml)
   and SPHEREPACK are implementation references for the atmospheric operations compared
   with spharmgrid.
