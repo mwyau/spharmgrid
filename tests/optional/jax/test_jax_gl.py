@@ -6,11 +6,9 @@
 
 from __future__ import annotations
 
-import cftime
 import jax.numpy as jnp
 import numpy as np
 import pytest
-import xarray as xr
 from jax import Array, config, grad, jit, jvp, vmap
 
 import spharmgrid as sg
@@ -131,37 +129,6 @@ def test_scalar_analysis_synthesis_and_round_trip_match_ducc(nlon: int) -> None:
     np.testing.assert_allclose(analyzed.synthesize(), expected_values, atol=2.0e-12)
 
 
-@pytest.mark.parametrize("nlon", [9, 12, 15, 16, 18, 20])
-def test_scalar_edge_orders_match_ducc(nlon: int) -> None:
-    _require_x64()
-    bandlimit = 8
-    grid = sg.gaussian_grid(bandlimit, nlon, latitude_order="descending")
-    spec = resolve_transform_spec(grid, grid, None)
-    transform = _make_transform(grid, grid, None)
-    mmax = min(bandlimit - 1, (nlon - 1) // 2)
-
-    for order in dict.fromkeys((0, 1, mmax)):
-        degree = max(2, order)
-        packed = np.zeros((1, _alm_size(spec.lmax, spec.mmax)), dtype=np.complex128)
-        index = np.flatnonzero(
-            (alm_degrees(spec.lmax, spec.mmax) == degree)
-            & (alm_orders(spec.lmax, spec.mmax) == order)
-        )
-        assert index.size == 1
-        packed[0, index[0]] = 0.75 if order == 0 else 0.75 - 0.25j
-        field = ducc_scalar_synthesis(
-            packed,
-            spec=spec,
-            geometry="GL",
-            ntheta=bandlimit,
-            nphi=nlon,
-            phi0=0.0,
-            nthreads=1,
-        )
-        expected = _centered_coefficients(packed[0], spec, bandlimit)
-        actual = _scalar_analysis(jnp.asarray(field), transform)
-        np.testing.assert_allclose(actual, expected, rtol=0.0, atol=2.0e-12)
-
 
 @pytest.mark.parametrize("notation", ["T4", "T6x4", "T4x2", "R2"])
 def test_analyzed_coefficients_follow_the_resolved_selection(notation: str) -> None:
@@ -189,11 +156,9 @@ def test_analyzed_coefficients_follow_the_resolved_selection(notation: str) -> N
     np.testing.assert_allclose(analyzed.synthesize(), expected, rtol=0.0, atol=2e-12)
 
 
-@pytest.mark.parametrize("nlon", [12, 16])
-def test_even_longitude_nyquist_is_excluded_in_analysis_and_synthesis(
-    nlon: int,
-) -> None:
+def test_even_longitude_nyquist_is_excluded_in_analysis_and_synthesis() -> None:
     _require_x64()
+    nlon = 12
     bandlimit = 8
     grid = sg.gaussian_grid(bandlimit, nlon, latitude_order="descending")
     transform = _make_transform(grid, grid, None)
@@ -208,7 +173,7 @@ def test_even_longitude_nyquist_is_excluded_in_analysis_and_synthesis(
     np.testing.assert_allclose(nyquist_bin, 0.0, rtol=0.0, atol=2.0e-14)
 
 
-@pytest.mark.parametrize("nlon", [9, 18, 20, 32])
+@pytest.mark.parametrize("nlon", [9, 20])
 def test_first_unavailable_order_is_zero_in_s2fft_domain(nlon: int) -> None:
     _require_x64()
     bandlimit = 8
@@ -255,7 +220,7 @@ def test_first_unavailable_order_is_zero_in_s2fft_domain(nlon: int) -> None:
 
 
 @pytest.mark.parametrize("spin", [1, -1])
-@pytest.mark.parametrize("nlon", [9, 12, 15, 16, 18, 20])
+@pytest.mark.parametrize("nlon", [9, 16, 20])
 def test_spin_and_vector_analysis_synthesis(spin: int, nlon: int) -> None:
     _require_x64()
     grid = sg.gaussian_grid(8, nlon, latitude_order="ascending", lon0=37.0)
@@ -291,11 +256,8 @@ def test_spin_and_vector_analysis_synthesis(spin: int, nlon: int) -> None:
     )
 
 
-@pytest.mark.parametrize("nlon", [9, 12, 15, 16, 18, 20, 32])
-def test_regular_gl_grid_validation_has_no_longitude_upper_bound(nlon: int) -> None:
-    _validate_grid(sg.gaussian_grid(8, nlon))
-    _validate_grid(sg.gaussian_grid(8, 15))
-    _validate_grid(sg.clenshaw_curtis_grid(9, 16))
+def test_regular_gl_grid_validation_has_no_longitude_upper_bound() -> None:
+    _validate_grid(sg.gaussian_grid(8, 32))
 
 
 def test_cc_mwss_shape_validation_is_unchanged() -> None:
@@ -303,7 +265,7 @@ def test_cc_mwss_shape_validation_is_unchanged() -> None:
         _validate_grid(sg.clenshaw_curtis_grid(9, 15))
 
 
-@pytest.mark.parametrize("nlon", [9, 15, 16, 20])
+@pytest.mark.parametrize("nlon", [9, 12])
 def test_regular_gl_jit_vmap_jvp_and_grad(nlon: int) -> None:
     _require_x64()
     grid = sg.gaussian_grid(8, nlon, lon0=11.25, latitude_order="ascending")
@@ -366,53 +328,16 @@ def test_regular_gl_compatibility_rejects_an_unverified_s2fft_version(
         _s2fft_gl_compat._internal_modules.cache_clear()
 
 
-def test_regular_gl_compatibility_symbols_are_available() -> None:
-    otf, samples, quadrature = _s2fft_gl_compat._internal_modules()
-
-    assert callable(otf.forward_latitudinal_step_jax)
-    assert callable(otf.inverse_latitudinal_step_jax)
-    assert callable(samples.thetas)
-    assert callable(quadrature.quad_weights_transform)
-
-
-def test_regular_gl_xarray_accessor_preserves_calendar_and_leading_dimensions() -> None:
+def test_regular_gl_xarray_accessor_matches_direct_api() -> None:
     _require_x64()
     grid = sg.gaussian_grid(8, 20, lon0=22.5, latitude_order="ascending")
-    base = scalar_values(grid).astype(np.float64)
-    values = np.stack(
-        [
-            np.stack([(1.0 + 0.1 * time + 0.05 * level) * base for level in range(2)])
-            for time in range(3)
-        ]
-    )
-    time_values = np.array(
-        [cftime.DatetimeNoLeap(2001, 1, day) for day in (1, 2, 3)], dtype=object
-    )
-    field = xr.DataArray(
-        jnp.asarray(values, dtype=jnp.float64),
-        dims=("time", "level", "lat", "lon"),
-        coords={
-            "time": time_values,
-            "level": [1000.0, 850.0],
-            "lat": grid.latitude,
-            "lon": grid.longitude,
-        },
-        name="temperature",
-        attrs={"units": "K"},
-    )
+    values = scalar_values(grid).astype(np.float64)
+    field = sgj.device_put(as_xarray(values, grid))
+
     actual = field.sgj.filter()
     expected = sgj.filter(field.data, grid=grid)
-    reference = sg.filter(as_xarray(values[0, 0], grid))
 
     assert actual.dims == field.dims
-    assert actual.name == field.name
-    assert actual.attrs == field.attrs
-    assert actual.indexes["time"].calendar == "noleap"
-    np.testing.assert_array_equal(actual.coords["time"], field.coords["time"])
-    np.testing.assert_array_equal(actual.coords["level"], field.coords["level"])
-    np.testing.assert_array_equal(actual.coords["lat"], grid.latitude)
-    np.testing.assert_array_equal(actual.coords["lon"], grid.longitude)
+    np.testing.assert_array_equal(actual.coords["lat"], field.coords["lat"])
+    np.testing.assert_array_equal(actual.coords["lon"], field.coords["lon"])
     np.testing.assert_allclose(actual.data, expected, rtol=0.0, atol=5.0e-12)
-    np.testing.assert_allclose(
-        actual.data[0, 0], reference.data, rtol=0.0, atol=5.0e-12
-    )

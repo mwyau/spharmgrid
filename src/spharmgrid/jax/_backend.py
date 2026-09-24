@@ -190,7 +190,7 @@ def _forward_one(
 ) -> Array:
     precomps = _precomputes(bandlimit, sampling, spin, forward=True)
     if sampling == "gl":
-        return _s2fft_gl_compat.forward_ftm_to_flm(field, bandlimit, spin, precomps)
+        return _s2fft_gl_compat.forward_regular_gl(field, bandlimit, spin, precomps)
     return cast(
         Array,
         s2fft.forward_jax(
@@ -214,7 +214,7 @@ def _inverse_one(
 ) -> Array:
     precomps = _precomputes(bandlimit, sampling, spin, forward=False)
     if sampling == "gl":
-        return _s2fft_gl_compat.inverse_flm_to_ftm(
+        return _s2fft_gl_compat.inverse_regular_gl(
             coefficients, bandlimit, spin, nlon, precomps
         )
     return cast(
