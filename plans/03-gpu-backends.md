@@ -137,9 +137,8 @@ spharmgrid CC for these dimensions. CC/MWSS support is a v0.3.0 requirement, not
 extension. Other spharmgrid GL/CC shapes are unsupported by the JAX API unless exact
 S2FFT sampling equivalence is established; do not resample them implicitly.
 
-Current torch-harmonics uses triangular truncation and its Clenshaw–Curtis/equiangular
-bandwidth behavior differs from DUCC's full representable `lmax`/`mmax` behavior when
-spharmgrid is called without an explicit `Tn` range.
+`spharmgrid.torch` represents triangular coefficient domains. A no-selection request
+fails when the full grid domain is non-triangular.
 
 Therefore:
 
@@ -158,7 +157,7 @@ conventions.
 
 ## 5. torch-harmonics is the PyTorch numerical engine
 
-Do not independently implement the torch-harmonics SHT inside spharmgrid.
+Do not implement a general spherical harmonic transform engine in spharmgrid.
 
 Current torch-harmonics implements the scalar transforms in:
 
@@ -175,13 +174,23 @@ RealVectorSHT
 InverseRealVectorSHT
 ```
 
-The scalar transform itself combines a real FFT in longitude with the
-latitude/associated-Legendre quadrature transform. torch-harmonics owns that algorithm,
-its PyTorch autograd behavior, CUDA/cuFFT execution, coefficient normalization/layout,
-precomputed quadrature data, and distributed variants.
+The standard torch-harmonics scalar transform combines a real FFT in longitude with a
+latitude/associated-Legendre quadrature projection. torch-harmonics owns that transform,
+the Legendre and vector-projection definitions and normalization, native module autograd
+behavior, CUDA/cuFFT execution, coefficient layout, precomputed quadrature data, and
+distributed variants.
 
-spharmgrid should call those installed modules rather than copy their FFT, Legendre, or
-SHT/ISHT implementation.
+On pole-including CC grids, torch-harmonics analyzes fields with native direct
+quadrature through degree `(nlat - 1) // 2`. Above that boundary, spharmgrid owns the
+extended path's longitude FFT, folded latitude resampling, and projection contractions.
+It derives dense scalar or vector projection tables from torch-harmonics precomputed
+forward weights after removing ordinary CC quadrature. Synthesis uses the native
+`InverseRealSHT` and `InverseRealVectorSHT` modules at every supported bandwidth. Dense
+projection tables can require substantial memory at large bandwidths. Construct only the
+analysis and synthesis directions required by each operation, and release analysis
+modules after reusable spectral coefficients have been produced. Convert floating
+projection buffers to the transform dtype before moving them to an accelerator; retain
+integer index buffers as integers.
 
 ### 5.1 What the spharmgrid adapter owns
 
@@ -210,19 +219,24 @@ torch.Tensor field
 ```
 
 Likewise, Laplacians, inverse operators, and atmospheric wind relationships use
-torch-harmonics for transforms and spharmgrid for the physical/spectral multipliers and
-sign/radius conventions.
+torch-harmonics for standard transforms and spharmgrid for the physical/spectral
+multipliers and sign/radius conventions. The extended CC path keeps its FFT and
+projection orchestration in spharmgrid while following torch-harmonics projection
+definitions and normalization.
 
 The adapter may cache or reuse transform modules where useful, but cache design should
 follow measured workload needs rather than become a new public object hierarchy.
 
 ### 5.2 Initial target
 
+The adapter supports the triangular sampling limits for GL and pole-including CC grids.
+Torch coefficient domains are triangular; do not enable trapezoidal or rhomboidal
+domains.
+
 Start with:
 
 ```text
-GL
-torch-harmonics equiangular/CC only after exact coordinate and convention parity
+GL and pole-including CC on the shared triangular bandwidth
 ```
 
 For each operation, compare against DUCC spharmgrid on the same physical grid and
@@ -855,11 +869,9 @@ spheroidal and toroidal coefficients map to spharmgrid's E and B coefficients as
 phase handling and both latitude orders are tested against DUCC and analytic degree-one
 fields.
 
-The current torch-harmonics equiangular transform has a narrower CC latitude bandwidth
-than DUCC. The adapter therefore accepts explicit triangular `Tn` ranges only through
-`min((nlat - 1) // 2, (nlon - 1) // 2)` on CC (and the corresponding GL limit
-`min(nlat - 1, (nlon - 1) // 2)`). It raises a clear error for a non-triangular or
-over-wide request instead of clamping it.
+The supported triangular limits are `min(nlat - 2, (nlon - 1) // 2)` on CC and
+`min(nlat - 1, (nlon - 1) // 2)` on GL. Standard 73×144 CC grids support analysis
+through T71. Explicit requests above a grid's limit raise `ValueError`.
 
 ---
 

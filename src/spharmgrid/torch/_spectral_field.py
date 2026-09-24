@@ -41,17 +41,32 @@ def analyze(
     _validate_grid(grid)
     _require_tensor(field, grid)
     selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
-    state = _make_state(
+    analysis_state = _make_state(
         grid,
         grid,
         selection,
-        vector=False,
+        scalar_analysis=True,
         device=field.device,
+        dtype=field.dtype,
     )
-    coefficients = state.scalar_analysis(field)
+    coefficients = analysis_state.scalar_analysis(field)
     if selection is not None:
-        coefficients = _apply_selection(coefficients, state, selection, None)
-    return SpectralField(coefficients, state)
+        coefficients = _apply_selection(
+            coefficients,
+            analysis_state,
+            selection,
+            None,
+        )
+    analysis_state._discard_analysis()
+    synthesis_state = _make_state(
+        grid,
+        grid,
+        selection,
+        scalar_synthesis=True,
+        device=field.device,
+        dtype=field.dtype,
+    )
+    return SpectralField(coefficients, synthesis_state)
 
 
 def analyze_vector(
@@ -67,18 +82,34 @@ def analyze_vector(
     _validate_grid(grid)
     _require_vector_tensors(u, v, grid)
     selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
-    state = _make_state(
+    analysis_state = _make_state(
         grid,
         grid,
         selection,
-        vector=True,
+        vector_analysis=True,
         device=u.device,
+        dtype=u.dtype,
     )
-    _require_vector_bandwidth(state)
-    coefficients = state.vector_analysis(u, v)
+    _require_vector_bandwidth(analysis_state)
+    coefficients = analysis_state.vector_analysis(u, v)
     if selection is not None:
-        coefficients = _apply_selection(coefficients, state, selection, None)
-    return SpectralVectorField(coefficients, state)
+        coefficients = _apply_selection(
+            coefficients,
+            analysis_state,
+            selection,
+            None,
+        )
+    analysis_state._discard_analysis()
+    synthesis_state = _make_state(
+        grid,
+        grid,
+        selection,
+        vector_synthesis=True,
+        device=u.device,
+        dtype=u.dtype,
+    )
+    _require_vector_bandwidth(synthesis_state)
+    return SpectralVectorField(coefficients, synthesis_state)
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,8 +154,9 @@ class SpectralField:
                 self.grid,
                 self.grid,
                 effective,
-                vector=False,
+                scalar_synthesis=True,
                 device=self._coefficients.device,
+                dtype=self._coefficients.real.dtype,
             )
         coefficients = _resize_coefficients(self._coefficients, state.spec)
         return SpectralField(
@@ -170,17 +202,16 @@ class SpectralField:
         effective = self._state.spec if selection is None else selection
         _check_selection(effective, self._state)
         if selection is None:
-            target_spec = _intersect_transform_spec(
-                self.grid, target_grid, self._state.spec
-            )
+            target_spec = _intersect_transform_spec(target_grid, self._state.spec)
         else:
             target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
         state = _make_state(
             self.grid,
             target_grid,
             target_spec,
-            vector=False,
+            scalar_synthesis=True,
             device=self._coefficients.device,
+            dtype=self._coefficients.real.dtype,
         )
         coefficients = self._coefficients
         if selection is None and taper is not None:
@@ -236,8 +267,9 @@ class SpectralVectorField:
                 self.grid,
                 self.grid,
                 effective,
-                vector=True,
+                vector_synthesis=True,
                 device=self._coefficients.device,
+                dtype=self._coefficients.real.dtype,
             )
         coefficients = _resize_coefficients(self._coefficients, state.spec)
         return SpectralVectorField(
@@ -258,14 +290,14 @@ class SpectralVectorField:
         _validate_radius(radius)
         scale = _degree_scale(self._state, radius, self._coefficients)
         coefficients = -self._coefficients.select(-3, 1) * scale
-        return SpectralField(coefficients, self._state)
+        return SpectralField(coefficients, self._scalar_synthesis_state())
 
     def divergence(self, *, radius: float = 6_371_220.0) -> SpectralField:
         """Derive divergence coefficients from the vector."""
         _validate_radius(radius)
         scale = _degree_scale(self._state, radius, self._coefficients)
         coefficients = -self._coefficients.select(-3, 0) * scale
-        return SpectralField(coefficients, self._state)
+        return SpectralField(coefficients, self._scalar_synthesis_state())
 
     def streamfunction(self, *, radius: float = 6_371_220.0) -> SpectralField:
         """Derive streamfunction coefficients from the vector."""
@@ -311,17 +343,16 @@ class SpectralVectorField:
         effective = self._state.spec if selection is None else selection
         _check_selection(effective, self._state)
         if selection is None:
-            target_spec = _intersect_transform_spec(
-                self.grid, target_grid, self._state.spec
-            )
+            target_spec = _intersect_transform_spec(target_grid, self._state.spec)
         else:
             target_spec = _resolve_transform_spec(self.grid, target_grid, selection)
         state = _make_state(
             self.grid,
             target_grid,
             target_spec,
-            vector=True,
+            vector_synthesis=True,
             device=self._coefficients.device,
+            dtype=self._coefficients.real.dtype,
         )
         _require_vector_bandwidth(state)
         coefficients = self._coefficients
@@ -348,7 +379,17 @@ class SpectralVectorField:
         scale = _degree_scale(self._state, radius, self._coefficients)
         inverse = _inverse_laplacian_multiplier(self._state, radius, self._coefficients)
         coefficients = -self._coefficients.select(-3, component) * scale * inverse
-        return SpectralField(coefficients, self._state)
+        return SpectralField(coefficients, self._scalar_synthesis_state())
+
+    def _scalar_synthesis_state(self) -> _TorchTransform:
+        return _make_state(
+            self.grid,
+            self.grid,
+            self.spec,
+            scalar_synthesis=True,
+            device=self._coefficients.device,
+            dtype=self._coefficients.real.dtype,
+        )
 
 
 def _resize_coefficients(coefficients: Tensor, spec: TransformSpec) -> Tensor:
