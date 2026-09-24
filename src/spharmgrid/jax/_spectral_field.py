@@ -55,8 +55,7 @@ def analyze(
     selection = _resolve_spectral_spec(truncation, lmin=lmin, lmax=lmax)
     transform = _make_transform(grid, grid, selection)
     coefficients = _scalar_analysis(field, transform)
-    if selection is not None:
-        coefficients = _apply_selection(coefficients, transform, None)
+    coefficients = _apply_selection(coefficients, transform, None)
     return SpectralField(coefficients, transform)
 
 
@@ -76,8 +75,7 @@ def analyze_vector(
     transform = _make_transform(grid, grid, selection)
     _require_vector_bandwidth(transform)
     coefficients = _vector_analysis(u, v, transform)
-    if selection is not None:
-        coefficients = _apply_selection(coefficients, transform, None)
+    coefficients = _apply_selection(coefficients, transform, None)
     return SpectralVectorField(coefficients, transform)
 
 
