@@ -12,33 +12,20 @@ the backend's coefficient representation as part of the public API.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
-from typing import Any, cast
+from typing import cast
 
 import torch
 import torch_harmonics as _torch_harmonics
 
 from .._transform import TransformSpec
-from ..grids import Grid, grid_layout
+from ..grids import Grid, grid_capabilities, grid_layout
 from ..spectral import (
     _spectral_selection_is_within,
     _validate_taper,
     _validate_vector_spec,
     resolve_transform_spec,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class _TorchGridCapabilities:
-    """Conservative bandwidth limits demonstrated for torch-harmonics."""
-
-    latitude_lmax: int
-    longitude_mmax: int
-
-    @property
-    def triangular_lmax(self) -> int:
-        """Largest inclusive total degree in a triangular transform."""
-        return min(self.latitude_lmax, self.longitude_mmax)
+from ._cc_sht import _ExtendedCCRealSHT, _ExtendedCCRealVectorSHT
 
 
 def _validate_grid(grid: Grid, name: str = "grid") -> None:
@@ -46,100 +33,87 @@ def _validate_grid(grid: Grid, name: str = "grid") -> None:
         raise TypeError(f"{name} must be a spharmgrid.Grid")
 
 
-def _torch_capabilities(grid: Grid) -> _TorchGridCapabilities:
-    """Return the verified spharmgrid-compatible torch-harmonics limits."""
-    latitude_lmax = grid.nlat - 1 if grid.kind == "gl" else (grid.nlat - 1) // 2
-    # Match DUCC's ``(nphi - 1) // 2`` longitude limit; for even ``nlon`` this
-    # excludes the real-FFT Nyquist mode.
-    longitude_mmax = (grid.nlon - 1) // 2
-    return _TorchGridCapabilities(latitude_lmax, longitude_mmax)
-
-
 def _resolve_transform_spec(
     source: Grid,
     target: Grid,
     selection: TransformSpec | None,
 ) -> TransformSpec:
-    """Resolve a transform without changing the requested coefficient domain."""
+    """Resolve a Torch transform domain and require triangular coefficients."""
     _validate_grid(source, "source_grid")
     _validate_grid(target, "target_grid")
     _validate_torch_selection(selection)
     requested = resolve_transform_spec(source, target, selection)
-    limit = min(
-        _torch_capabilities(source).triangular_lmax,
-        _torch_capabilities(target).triangular_lmax,
-    )
-
-    if requested.lmax > limit and (source.kind == "cc" or target.kind == "cc"):
-        raise ValueError(
-            _cc_bandwidth_error(
-                source,
-                target,
-                limit,
-                requested_lmax=None if selection is None else selection.lmax,
-            )
-        )
 
     if requested.lmax != requested.mmax:
         raise ValueError(
-            "torch-harmonics can only reproduce a triangular spharmgrid "
-            "coefficient domain; truncation=None requests a non-triangular "
+            "spharmgrid.torch supports only triangular coefficient domains; "
+            "truncation=None requests a non-triangular "
             "full bandwidth on these grids, so supply an explicit supported Tn"
-        )
-    if requested.lmax > limit:
-        raise ValueError(
-            f"requested lmax={requested.lmax} exceeds the verified "
-            f"torch-harmonics triangular bandwidth T{limit} for these grids"
         )
     return requested
 
 
 def _intersect_transform_spec(
-    source: Grid,
     target: Grid,
     analyzed: TransformSpec,
 ) -> TransformSpec:
-    """Resolve a reusable triangular domain within target capabilities."""
-    try:
-        return _resolve_transform_spec(source, target, analyzed)
-    except ValueError:
-        limit = min(
-            _torch_capabilities(source).triangular_lmax,
-            _torch_capabilities(target).triangular_lmax,
-        )
-        lmax = min(analyzed.lmax, limit)
-        return TransformSpec(min(analyzed.lmin, lmax), lmax, lmax)
-
-
-def _cc_bandwidth_error(
-    source: Grid,
-    target: Grid,
-    limit: int,
-    *,
-    requested_lmax: int | None,
-) -> str:
-    """Describe the current torch-harmonics CC bandwidth boundary."""
-    cc_grids = [grid for grid in (source, target) if grid.kind == "cc"]
-    cc_limit = min(_torch_capabilities(grid).triangular_lmax for grid in cc_grids)
-    if requested_lmax is None:
-        request = "Full-domain operations exceed this limit"
-    else:
-        request = f"Requested T{requested_lmax} exceeds this limit"
-    pair_limit = (
-        ""
-        if cc_limit == limit
-        else f" The supplied grid pair supports through T{limit}."
-    )
-    return (
-        "torch-harmonics supports CC triangular bands through "
-        f"T{cc_limit} (n <= min((nlat - 1) // 2, (nlon - 1) // 2)). "
-        f"{request}.{pair_limit} Explicit Tn filter, regrid, and "
-        f"regrid_vector operations support bands through T{limit}."
-    )
+    """Restrict an analyzed triangular domain to the target grid."""
+    limit = grid_capabilities(target).triangular_lmax
+    lmax = min(analyzed.lmax, limit)
+    return TransformSpec(min(analyzed.lmin, lmax), lmax, lmax)
 
 
 def _torch_grid_name(grid: Grid) -> str:
     return "legendre-gauss" if grid.kind == "gl" else "equiangular"
+
+
+def _make_analysis_module(
+    source: Grid,
+    spec: TransformSpec,
+    *,
+    vector: bool,
+) -> torch.nn.Module:
+    """Build the forward analysis module for a grid and spectral domain."""
+    lmax = spec.lmax + 1
+    mmax = spec.mmax + 1
+    if source.kind == "cc" and spec.lmax > (source.nlat - 1) // 2:
+        module_type = _ExtendedCCRealVectorSHT if vector else _ExtendedCCRealSHT
+        return module_type(source.nlat, source.nlon, lmax=lmax, mmax=mmax)
+    module_type = _torch_harmonics.RealVectorSHT if vector else _torch_harmonics.RealSHT
+    return module_type(
+        source.nlat,
+        source.nlon,
+        lmax=lmax,
+        mmax=mmax,
+        grid=_torch_grid_name(source),
+        norm="ortho",
+        csphase=True,
+    )
+
+
+def _make_synthesis_module(
+    target: Grid,
+    spec: TransformSpec,
+    *,
+    vector: bool,
+) -> torch.nn.Module:
+    """Build the native torch-harmonics inverse transform."""
+    lmax = spec.lmax + 1
+    mmax = spec.mmax + 1
+    module_type = (
+        _torch_harmonics.InverseRealVectorSHT
+        if vector
+        else _torch_harmonics.InverseRealSHT
+    )
+    return module_type(
+        target.nlat,
+        target.nlon,
+        lmax=lmax,
+        mmax=mmax,
+        grid=_torch_grid_name(target),
+        norm="ortho",
+        csphase=True,
+    )
 
 
 def _require_tensor(
@@ -200,11 +174,19 @@ class _TorchTransform(torch.nn.Module):
         target: Grid,
         spec: TransformSpec,
         *,
-        vector: bool,
+        scalar_analysis: bool = False,
+        scalar_synthesis: bool = False,
+        vector_analysis: bool = False,
+        vector_synthesis: bool = False,
+        dtype: torch.dtype = torch.float64,
     ) -> None:
         super().__init__()
         if spec.lmax != spec.mmax:
             raise ValueError("torch-harmonics transform state must be triangular")
+        if not any(
+            (scalar_analysis, scalar_synthesis, vector_analysis, vector_synthesis)
+        ):
+            raise ValueError("transform state must request at least one direction")
 
         self.source_grid: Grid = source
         self.target_grid: Grid = target
@@ -212,102 +194,93 @@ class _TorchTransform(torch.nn.Module):
 
         source_layout = grid_layout(source)
         target_layout = grid_layout(target)
-        self.register_buffer(
-            "_source_latitude_indices",
-            torch.as_tensor(source_layout.latitude.canonical_indices, dtype=torch.long),
-            persistent=False,
-        )
-        self.register_buffer(
-            "_source_longitude_indices",
-            torch.as_tensor(
-                source_layout.longitude.canonical_indices,
-                dtype=torch.long,
-            ),
-            persistent=False,
-        )
-        self.register_buffer(
-            "_target_latitude_restore",
-            torch.as_tensor(target_layout.latitude.restore_indices, dtype=torch.long),
-            persistent=False,
-        )
-        self.register_buffer(
-            "_target_longitude_restore",
-            torch.as_tensor(target_layout.longitude.restore_indices, dtype=torch.long),
-            persistent=False,
-        )
-
-        modes = torch.arange(spec.mmax + 1, dtype=torch.float64)
+        modes = torch.arange(spec.mmax + 1, dtype=dtype)
         source_angle = modes * source_layout.phi0_radians
         target_angle = modes * target_layout.phi0_radians
+        needs_analysis = scalar_analysis or vector_analysis
+        needs_synthesis = scalar_synthesis or vector_synthesis
         self.register_buffer(
             "_source_to_zero_phase_real",
-            torch.cos(source_angle),
+            torch.cos(source_angle) if needs_analysis else None,
             persistent=False,
         )
         self.register_buffer(
             "_source_to_zero_phase_imag",
-            -torch.sin(source_angle),
+            -torch.sin(source_angle) if needs_analysis else None,
             persistent=False,
         )
         self.register_buffer(
             "_target_from_zero_phase_real",
-            torch.cos(target_angle),
+            torch.cos(target_angle) if needs_synthesis else None,
             persistent=False,
         )
         self.register_buffer(
             "_target_from_zero_phase_imag",
-            torch.sin(target_angle),
+            torch.sin(target_angle) if needs_synthesis else None,
+            persistent=False,
+        )
+        self.register_buffer(
+            "_source_latitude_indices",
+            torch.as_tensor(source_layout.latitude.canonical_indices, dtype=torch.long)
+            if needs_analysis
+            else None,
+            persistent=False,
+        )
+        self.register_buffer(
+            "_source_longitude_indices",
+            torch.as_tensor(source_layout.longitude.canonical_indices, dtype=torch.long)
+            if needs_analysis
+            else None,
+            persistent=False,
+        )
+        self.register_buffer(
+            "_target_latitude_restore",
+            torch.as_tensor(target_layout.latitude.restore_indices, dtype=torch.long)
+            if needs_synthesis
+            else None,
+            persistent=False,
+        )
+        self.register_buffer(
+            "_target_longitude_restore",
+            torch.as_tensor(target_layout.longitude.restore_indices, dtype=torch.long)
+            if needs_synthesis
+            else None,
             persistent=False,
         )
         self.register_buffer(
             "_degrees",
-            torch.arange(spec.lmax + 1, dtype=torch.float64).reshape(-1, 1),
+            torch.arange(spec.lmax + 1, dtype=dtype).reshape(-1, 1),
             persistent=False,
         )
 
-        grid_name = _torch_grid_name(source)
-        self._scalar_analysis = _torch_harmonics.RealSHT(
-            source.nlat,
-            source.nlon,
-            lmax=spec.lmax + 1,
-            mmax=spec.mmax + 1,
-            grid=grid_name,
-            norm="ortho",
-            csphase=True,
+        self._scalar_analysis = (
+            _make_analysis_module(source, spec, vector=False)
+            if scalar_analysis
+            else None
         )
-        self._scalar_synthesis = _torch_harmonics.InverseRealSHT(
-            target.nlat,
-            target.nlon,
-            lmax=spec.lmax + 1,
-            mmax=spec.mmax + 1,
-            grid=_torch_grid_name(target),
-            norm="ortho",
-            csphase=True,
+        self._scalar_synthesis = (
+            _make_synthesis_module(target, spec, vector=False)
+            if scalar_synthesis
+            else None
         )
-        self._vector_analysis: Any = None
-        self._vector_synthesis: Any = None
-        if vector:
-            self._vector_analysis = _torch_harmonics.RealVectorSHT(
-                source.nlat,
-                source.nlon,
-                lmax=spec.lmax + 1,
-                mmax=spec.mmax + 1,
-                grid=grid_name,
-                norm="ortho",
-                csphase=True,
-            )
-            self._vector_synthesis = _torch_harmonics.InverseRealVectorSHT(
-                target.nlat,
-                target.nlon,
-                lmax=spec.lmax + 1,
-                mmax=spec.mmax + 1,
-                grid=_torch_grid_name(target),
-                norm="ortho",
-                csphase=True,
-            )
+        self._vector_analysis = (
+            _make_analysis_module(source, spec, vector=True)
+            if vector_analysis
+            else None
+        )
+        self._vector_synthesis = (
+            _make_synthesis_module(target, spec, vector=True)
+            if vector_synthesis
+            else None
+        )
+        self.to(dtype=dtype)
 
-    def _move_to(self, device: torch.device) -> _TorchTransform:
-        self.to(device=device)
+    def _move_to(
+        self,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> _TorchTransform:
+        self.to(device=device, dtype=dtype)
         return self
 
     @property
@@ -325,6 +298,13 @@ class _TorchTransform(torch.nn.Module):
             raise ValueError(
                 "transform state and input tensor must be on the same device; "
                 "move the SHT module with .to(input.device)"
+            )
+
+    def _check_dtype(self, values: torch.Tensor) -> None:
+        if values.dtype != self._degrees_tensor.dtype:
+            raise TypeError(
+                "transform state and input tensor must use the same dtype; "
+                f"move the SHT module with .to(dtype={values.dtype})"
             )
 
     def _canonicalize(self, field: torch.Tensor) -> torch.Tensor:
@@ -354,6 +334,9 @@ class _TorchTransform(torch.nn.Module):
 
     def scalar_analysis(self, field: torch.Tensor) -> torch.Tensor:
         """Analyze a field and return zero-origin scalar coefficients."""
+        if self._scalar_analysis is None:
+            raise RuntimeError("scalar analysis direction was not requested")
+        self._check_dtype(field)
         canonical = self._canonicalize(field)
         coefficients = cast(torch.Tensor, self._scalar_analysis(canonical))
         phase = self._phase(
@@ -365,6 +348,9 @@ class _TorchTransform(torch.nn.Module):
 
     def scalar_synthesis(self, coefficients: torch.Tensor) -> torch.Tensor:
         """Synthesize zero-origin scalar coefficients in target order."""
+        if self._scalar_synthesis is None:
+            raise RuntimeError("scalar synthesis direction was not requested")
+        self._check_dtype(coefficients.real)
         phase = self._phase(
             cast(torch.Tensor, self._target_from_zero_phase_real),
             cast(torch.Tensor, self._target_from_zero_phase_imag),
@@ -376,7 +362,9 @@ class _TorchTransform(torch.nn.Module):
     def vector_analysis(self, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         """Analyze geographic wind and return DUCC-like E/B coefficients."""
         if self._vector_analysis is None:
-            raise RuntimeError("vector transform state was not requested")
+            raise RuntimeError("vector analysis direction was not requested")
+        self._check_dtype(u)
+        self._check_dtype(v)
         canonical_u = self._canonicalize(u)
         canonical_v = self._canonicalize(v)
         vector_map = torch.stack((-canonical_v, canonical_u), dim=-3)
@@ -406,7 +394,8 @@ class _TorchTransform(torch.nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Synthesize DUCC-like E/B coefficients as geographic wind."""
         if self._vector_synthesis is None:
-            raise RuntimeError("vector transform state was not requested")
+            raise RuntimeError("vector synthesis direction was not requested")
+        self._check_dtype(coefficients.real)
         scale = self._degree_scale.to(
             device=coefficients.device, dtype=coefficients.real.dtype
         )
@@ -433,6 +422,15 @@ class _TorchTransform(torch.nn.Module):
             self._restore_target(values.select(-3, 1)),
             self._restore_target(-values.select(-3, 0)),
         )
+
+    def _discard_analysis(self) -> None:
+        """Release source-side state after reusable coefficients are available."""
+        self._scalar_analysis = None
+        self._vector_analysis = None
+        self._source_latitude_indices = None
+        self._source_longitude_indices = None
+        self._source_to_zero_phase_real = None
+        self._source_to_zero_phase_imag = None
 
 
 def _spectral_weights(
@@ -476,12 +474,25 @@ def _make_state(
     target: Grid,
     selection: TransformSpec | None,
     *,
-    vector: bool,
+    scalar_analysis: bool = False,
+    scalar_synthesis: bool = False,
+    vector_analysis: bool = False,
+    vector_synthesis: bool = False,
     device: torch.device,
+    dtype: torch.dtype = torch.float64,
 ) -> _TorchTransform:
     spec = _resolve_transform_spec(source, target, selection)
-    state = _TorchTransform(source, target, spec, vector=vector)
-    return state._move_to(device)
+    state = _TorchTransform(
+        source,
+        target,
+        spec,
+        scalar_analysis=scalar_analysis,
+        scalar_synthesis=scalar_synthesis,
+        vector_analysis=vector_analysis,
+        vector_synthesis=vector_synthesis,
+        dtype=dtype,
+    )
+    return state._move_to(device, dtype)
 
 
 def _check_selection(

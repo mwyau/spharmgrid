@@ -13,7 +13,7 @@ import pytest
 
 import spharmgrid as sg
 import spharmgrid.torch as sgt
-from tests.optional.torch.conftest import make_fields, torch
+from tests.optional.torch.conftest import torch
 
 
 def _assert_close(
@@ -42,19 +42,6 @@ def _assert_close(
 def _value_tolerances(dtype: torch.dtype) -> tuple[float, float]:
     """Return tolerances for dimensionless field and analytic comparisons."""
     return (1.0e-12, 1.0e-13) if dtype == torch.float64 else (5.0e-6, 2.0e-6)
-
-
-def test_cc_full_state_operations_raise_capability_error(cc_grid: sg.Grid) -> None:
-    field, eastward, northward = make_fields(cc_grid)
-    error = (
-        r"torch-harmonics.*CC triangular bands through T8.*"
-        r"Full-domain operations.*filter, regrid, and regrid_vector"
-    )
-
-    with pytest.raises(ValueError, match=error):
-        sgt.gradient(field, grid=cc_grid)
-    with pytest.raises(ValueError, match=error):
-        sgt.kinematics(eastward, northward, grid=cc_grid)
 
 
 @pytest.mark.parametrize("latitude_order", ["ascending", "descending"])

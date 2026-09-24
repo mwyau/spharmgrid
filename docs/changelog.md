@@ -15,6 +15,12 @@
   JAX, and PyTorch, including filtering, regridding, differential operators, and wind
   diagnostics without repeated forward transforms.
 
+### PyTorch
+
+- Extended PyTorch analysis to the full triangular bandwidth on pole-including CC grids,
+  including T71 on 73×144 grids, using folded latitude resampling and dense
+  torch-harmonics-compatible projection tables.
+
 ## v0.3.0 - 2026-09-21
 
 ### JAX

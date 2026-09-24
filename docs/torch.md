@@ -25,10 +25,10 @@ For a spharmgrid development checkout, install the Torch development dependencie
 uv sync --group torch-dev
 ```
 
-`torch-harmonics` computes the scalar and vector spherical harmonic transforms.
-spharmgrid maps its `Grid` descriptors to those transforms and applies the spectral
-selections, radius factors, and atmospheric vector conventions. Import
-`spharmgrid.torch` to load the PyTorch API.
+`torch-harmonics` defines the Legendre/vector projections and normalization used by the
+Torch backend, and provides the native transforms for small tables. spharmgrid maps its
+`Grid` descriptors to the backend and applies spectral selections, radius factors, and
+atmospheric vector conventions. Import `spharmgrid.torch` to load the PyTorch API.
 
 The Xarray API uses DUCC and handles file and metadata workflows:
 
@@ -125,38 +125,39 @@ target_u, target_v = vector_layer(u, v)
 `SHTOperators` exposes reusable transform and diagnostic methods and owns reusable
 transform state. `SHTFilter`, `SHTRegrid`, and `SHTVectorRegrid` are callable layers
 with fixed grids and spectral selections. Move a module and its input tensors together
-with `.to(device)` or `.to(dtype=...)`.
+with `.to(device=..., dtype=...)`, using the input dtype. Projection buffers are
+constructed in float64 for accuracy, then retained in the requested transform dtype.
 
-`SHTOperators` builds a full same-grid transform state and therefore requires
-full-bandwidth support for the grid. On CC grids, the fixed filtering and regridding
-modules accept explicit supported `Tn` ranges.
+`SHTOperators` uses the full triangular domain supported by its grid. It raises
+`ValueError` when the full grid domain is non-triangular.
 
 ## Grid and bandwidth capabilities
 
 Supported grids are full rectangular GL grids and pole-including CC grids with equally
 spaced latitudes from -90° to 90°.
 
-The Torch implementation currently executes triangular coefficient domains. For an
-explicit triangular request, the verified inclusive limits are
+`spharmgrid.torch` supports triangular coefficient domains. The inclusive limits for an
+explicit triangular request are
 
 ```text
 GL
 n <= min(nlat - 1, (nlon - 1) // 2)
 
 CC
-n <= min((nlat - 1) // 2, (nlon - 1) // 2)
+n <= min(nlat - 2, (nlon - 1) // 2)
 ```
 
-For regridding, an explicit `Tn` must fit the limit of both source and target grids. A
-full same-grid state is supported on GL when spharmgrid's requested domain is
-representable by torch-harmonics. For CC, torch-harmonics supports triangular bands
-through the CC limit above; spharmgrid's full same-grid domain generally exceeds that
-limit.
+For regridding, an explicit `Tn` must fit the limit of both source and target grids. CC
+analysis uses native torch-harmonics direct quadrature through degree `(nlat - 1) // 2`.
+Above that limit, spharmgrid extends analysis to the full triangular grid bandwidth by
+folded latitude resampling. It uses dense projection tables derived from native
+torch-harmonics weights with the ordinary CC quadrature removed. Scalar and vector
+synthesis use the native `InverseRealSHT` and `InverseRealVectorSHT` modules. Projection
+tables are dense, so memory use grows with the requested bandwidth.
 
-CC filtering and regridding use explicit `Tn` bands within the documented limit.
-Differential and wind functions require the full same-grid domain and raise `ValueError`
-when it exceeds the limit. Requests outside the documented bandwidth also raise
-`ValueError`.
+Trapezoidal (`Tnxm`) and rhomboidal (`Rn`) requests are unsupported. An explicit `Tn`
+outside the grid limits raises `ValueError`. Without an explicit `Tn`, operations use
+the full domain and raise `ValueError` when it is non-triangular.
 
 CUDA execution requires compatible PyTorch and torch-harmonics builds. Use the Xarray
 API for file I/O, CF metadata, and accessors. Learned spherical spectral convolution is

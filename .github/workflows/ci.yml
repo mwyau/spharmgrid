@@ -382,8 +382,20 @@ jobs:
           uv --no-config pip install \
             --python .venv/bin/python \
             --only-binary=:all: \
-            --no-deps \
             "torch-harmonics==0.6.5"
+      - name: Verify minimum Torch backend
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata
+
+          import torch
+          import torch_harmonics
+
+          assert importlib.metadata.version("torch-harmonics") == "0.6.5"
+          print("torch", torch.__version__)
+          print("torch-harmonics", importlib.metadata.version("torch-harmonics"))
+          print("triton", importlib.metadata.version("triton"))
+          PY
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"

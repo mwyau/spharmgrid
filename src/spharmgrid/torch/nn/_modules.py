@@ -67,7 +67,10 @@ class SHTOperators(torch.nn.Module):
             grid,
             grid,
             None,
-            vector=True,
+            scalar_analysis=True,
+            scalar_synthesis=True,
+            vector_analysis=True,
+            vector_synthesis=True,
             device=torch.device("cpu"),
         )
 
@@ -250,7 +253,8 @@ class SHTFilter(torch.nn.Module):
             grid,
             grid,
             selection,
-            vector=False,
+            scalar_analysis=True,
+            scalar_synthesis=True,
             device=torch.device("cpu"),
         )
 
@@ -291,7 +295,8 @@ class SHTRegrid(torch.nn.Module):
             source_grid,
             target_grid,
             selection,
-            vector=False,
+            scalar_analysis=True,
+            scalar_synthesis=True,
             device=torch.device("cpu"),
         )
 
@@ -333,7 +338,8 @@ class SHTVectorRegrid(torch.nn.Module):
             source_grid,
             target_grid,
             selection,
-            vector=True,
+            vector_analysis=True,
+            vector_synthesis=True,
             device=torch.device("cpu"),
         )
         _require_vector_bandwidth(self._state)
