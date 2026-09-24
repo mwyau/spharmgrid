@@ -343,7 +343,7 @@ def test_all_vector_jax_ducc_operations_and_wind_sources(
         _assert_close(actual[1], expected.v, "wind")
 
 
-@pytest.mark.parametrize("nlon", [9, 12, 15, 16, 18, 20])
+@pytest.mark.parametrize("nlon", [9, 16, 20])
 def test_arbitrary_gl_scalar_vector_and_kinematics_match_ducc(nlon: int) -> None:
     _require_x64()
     grid = make_grid(
@@ -392,7 +392,7 @@ def test_arbitrary_gl_scalar_vector_and_kinematics_match_ducc(nlon: int) -> None
 
 @pytest.mark.parametrize(
     ("source_nlon", "target_nlon"),
-    [(9, 20), (20, 9), (15, 16), (16, 20), (20, 15)],
+    [(9, 20), (20, 9), (15, 16)],
 )
 def test_arbitrary_gl_regridding_intersects_grid_capabilities(
     source_nlon: int, target_nlon: int

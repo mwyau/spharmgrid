@@ -101,7 +101,7 @@ def _internal_modules() -> tuple[ModuleType, ModuleType, ModuleType]:
     return otf, samples, quadrature
 
 
-def _retained_order_count(bandlimit: int, nlon: int) -> int:
+def _retained_mmax(bandlimit: int, nlon: int) -> int:
     """Return the largest physical zonal order representable by the grid."""
     if nlon < 2:
         raise ValueError("regular GL longitude count must be at least 2")
@@ -112,7 +112,7 @@ def _centered_slice(center: int, half_width: int) -> slice:
     return slice(center - half_width, center + half_width + 1)
 
 
-def forward_ftm_to_flm(
+def forward_regular_gl(
     field: Array,
     bandlimit: int,
     spin: int,
@@ -122,7 +122,7 @@ def forward_ftm_to_flm(
     if field.ndim != 2 or field.shape[0] != bandlimit:
         raise ValueError("the regular GL transform requires one (L, nlon) frame")
     nlon = field.shape[-1]
-    m_keep = _retained_order_count(bandlimit, nlon)
+    m_keep = _retained_mmax(bandlimit, nlon)
     otf, samples, quadrature = _internal_modules()
     reality = spin == 0
     fixed_center = bandlimit - 1
@@ -182,7 +182,7 @@ def forward_ftm_to_flm(
     return cast(Array, flm * (-1) ** abs(spin))
 
 
-def inverse_flm_to_ftm(
+def inverse_regular_gl(
     coefficients: Array,
     bandlimit: int,
     spin: int,
@@ -194,7 +194,7 @@ def inverse_flm_to_ftm(
         raise ValueError(
             "the regular GL inverse requires (L, 2L-1) spherical harmonic coefficients"
         )
-    m_keep = _retained_order_count(bandlimit, nlon)
+    m_keep = _retained_mmax(bandlimit, nlon)
     otf, samples, _ = _internal_modules()
     degrees = jnp.arange(bandlimit, dtype=jnp.float64)
     normalized = (
