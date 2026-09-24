@@ -20,6 +20,7 @@ from jax.typing import DTypeLike
 from .._transform import TransformSpec
 from ..grids import Grid, GridLayout, grid_layout
 from ..spectral import _validate_taper, _validate_vector_spec, resolve_transform_spec
+from . import _s2fft_gl_compat
 
 _PRECOMPUTE_CACHE_SIZE = 32
 
@@ -41,16 +42,10 @@ def _validate_grid(grid: Grid, name: str = "grid") -> None:
     if not isinstance(grid, Grid):
         raise TypeError(f"{name} must be a spharmgrid.Grid")
     bandlimit = _native_bandlimit(grid)
-    expected_nlon = 2 * bandlimit - 1 if grid.kind == "gl" else 2 * bandlimit
-    if grid.nlon != expected_nlon:
-        sampling = "GL" if grid.kind == "gl" else "CC/MWSS"
+    if grid.kind == "cc" and grid.nlon != 2 * bandlimit:
         raise ValueError(
-            f"spharmgrid.jax supports {sampling} grids only with shape "
-            f"({bandlimit}, {expected_nlon}) for the S2FFT band-limit; got "
-            f"({grid.nlat}, {grid.nlon})"
-            if grid.kind == "gl"
-            else f"spharmgrid.jax supports {sampling} grids only with shape "
-            f"({bandlimit + 1}, {expected_nlon}) for the S2FFT band-limit; got "
+            "spharmgrid.jax supports CC/MWSS grids only with shape "
+            f"({bandlimit + 1}, {2 * bandlimit}) for the S2FFT band-limit; got "
             f"({grid.nlat}, {grid.nlon})"
         )
 
@@ -193,6 +188,9 @@ def _forward_one(
     sampling: str,
     spin: int,
 ) -> Array:
+    precomps = _precomputes(bandlimit, sampling, spin, forward=True)
+    if sampling == "gl":
+        return _s2fft_gl_compat.forward_ftm_to_flm(field, bandlimit, spin, precomps)
     return cast(
         Array,
         s2fft.forward_jax(
@@ -201,7 +199,7 @@ def _forward_one(
             spin=spin,
             sampling=sampling,
             reality=spin == 0,
-            precomps=_precomputes(bandlimit, sampling, spin, forward=True),
+            precomps=precomps,
             spmd=False,
         ),
     )
@@ -212,7 +210,13 @@ def _inverse_one(
     bandlimit: int,
     sampling: str,
     spin: int,
+    nlon: int,
 ) -> Array:
+    precomps = _precomputes(bandlimit, sampling, spin, forward=False)
+    if sampling == "gl":
+        return _s2fft_gl_compat.inverse_flm_to_ftm(
+            coefficients, bandlimit, spin, nlon, precomps
+        )
     return cast(
         Array,
         s2fft.inverse_jax(
@@ -221,7 +225,7 @@ def _inverse_one(
             spin=spin,
             sampling=sampling,
             reality=spin == 0,
-            precomps=_precomputes(bandlimit, sampling, spin, forward=False),
+            precomps=precomps,
             spmd=False,
         ),
     )
@@ -236,12 +240,18 @@ def _forward(field: Array, bandlimit: int, sampling: str, spin: int) -> Array:
     return result.reshape(leading_shape + (bandlimit, 2 * bandlimit - 1))
 
 
-def _inverse(coefficients: Array, bandlimit: int, sampling: str, spin: int) -> Array:
+def _inverse(
+    coefficients: Array,
+    bandlimit: int,
+    sampling: str,
+    spin: int,
+    nlon: int,
+) -> Array:
     leading_shape = coefficients.shape[:-2]
     flattened = coefficients.reshape((-1, bandlimit, 2 * bandlimit - 1))
-    result = jax.vmap(lambda frame: _inverse_one(frame, bandlimit, sampling, spin))(
-        flattened
-    )
+    result = jax.vmap(
+        lambda frame: _inverse_one(frame, bandlimit, sampling, spin, nlon)
+    )(flattened)
     return result.reshape(leading_shape + result.shape[-2:])
 
 
@@ -318,6 +328,7 @@ def _scalar_synthesis(coefficients: Array, transform: _JaxTransform) -> Array:
         transform.target_bandlimit,
         _sampling(transform.target),
         0,
+        transform.target.nlon,
     )
     return _restore(jnp.real(values), transform.target_layout)
 
@@ -343,6 +354,7 @@ def _spin_synthesis(
         transform.target_bandlimit,
         _sampling(transform.target),
         spin,
+        transform.target.nlon,
     )
     return _restore(values, transform.target_layout)
 
