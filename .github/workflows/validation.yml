@@ -1,18 +1,21 @@
-name: NCL parity tests
+name: Validation tests
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  UV_VERSION: "0.12.17"
 
 jobs:
   ncl-parity:
     name: NCL/SPHEREPACK parity tests
     runs-on: ubuntu-26.04
     timeout-minutes: 60
-    env:
-      UV_VERSION: "0.12.10"
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -26,7 +29,6 @@ jobs:
           channel-priority: strict
 
       - name: Install NCL 6.6.2
-        shell: bash
         run: conda create --yes --name spharmgrid-ncl --channel conda-forge ncl=6.6.2
 
       - name: Set up Python environment
@@ -37,11 +39,9 @@ jobs:
           python-version: "3.14"
 
       - name: Install Python test environment
-        shell: bash
-        run: uv sync --no-default-groups --group test --frozen
+        run: uv sync --no-default-groups --group test --extra cli --frozen
 
       - name: Generate deterministic Python inputs
-        shell: bash
         run: |
           set -o pipefail
           mkdir -p \
@@ -53,7 +53,6 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/generate-inputs.log"
 
       - name: Generate NCL outputs
-        shell: bash
         run: |
           set -o pipefail
           for grid in gl cc; do
@@ -69,7 +68,6 @@ jobs:
           done
 
       - name: Normalize NCL outputs
-        shell: bash
         run: |
           set -o pipefail
           uv run --no-sync python tests/ncl/normalize_references.py \
@@ -79,7 +77,6 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/normalize-references.log"
 
       - name: Run spharmgrid against NCL outputs
-        shell: bash
         run: |
           set -o pipefail
           SPHARMGRID_NCL_OUTPUT_DIR="$RUNNER_TEMP/spharmgrid-ncl/normalized" \
@@ -94,3 +91,69 @@ jobs:
           path: ${{ runner.temp }}/spharmgrid-ncl
           if-no-files-found: warn
           retention-days: 14
+
+  jax-integration:
+    name: xarray_jax integration (Python 3.14)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Sync JAX environment
+        run: uv sync --no-default-groups --group jax-dev --frozen
+
+      - name: Run xarray_jax tests
+        env:
+          JAX_ENABLE_X64: "1"
+        run: uv run --no-sync pytest tests/optional/jax/test_xarray_jax.py
+
+  torch-integration:
+    name: torch-harmonics integration (Python 3.14)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          save-cache: false
+          python-version: "3.14"
+
+      - name: Sync test environment
+        run: uv sync --no-default-groups --group test --frozen
+
+      - name: Install Torch 2.14 CPU
+        run: uv pip install --python .venv/bin/python --index https://download.pytorch.org/whl/cpu "torch==2.14.0+cpu"
+
+      - name: Build torch-harmonics 0.9.2
+        run: >-
+          uv pip install
+          --python .venv/bin/python
+          --index https://download.pytorch.org/whl/cpu
+          --no-deps
+          "torch==2.14.0+cpu"
+          "torch-harmonics @ git+https://github.com/NVIDIA/torch-harmonics.git@v0.9.2"
+
+      - name: Verify versions
+        run: >-
+          uv run --no-sync python -c
+          "import sys; import torch; from importlib.metadata import version;
+          assert sys.version_info[:2] == (3, 14);
+          assert torch.__version__ == '2.14.0+cpu';
+          assert torch.version.cuda is None;
+          assert version('torch-harmonics') == '0.9.2'"
+
+      - name: Run Torch tests
+        run: uv run --no-sync pytest tests/optional/torch

@@ -85,7 +85,6 @@ docs = [
 ]
 test = [
     "cftime>=1.6.5",
-    "h5netcdf[h5py]>=1.8.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
 ]
@@ -130,9 +129,6 @@ requires-dist = ["torch>=2.6.0", "numpy>=1.22.4"]
 
 [tool.uv.extra-build-dependencies]
 torch-harmonics = [{ requirement = "torch", match-runtime = true }]
-
-[tool.uv.extra-build-variables]
-torch-harmonics = { CUDA_VISIBLE_DEVICES = "" }
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]
