@@ -350,26 +350,27 @@ dask            lazy Dask-backed xarray execution
 cli             NetCDF and Zarr read/write plus GRIB input for the CLI
 ```
 
-The ordinary test environment directly declares cftime, h5netcdf, and Zarr: the
-calendar-preservation test imports cftime, and the CLI NetCDF and Zarr read/write paths
-are exercised directly. GRIB remains optional and is checked in a dedicated Linux
-backend lane because cfgrib/ecCodes have a heavier platform footprint. cftime is
-test-only rather than a direct spharmgrid runtime dependency. `pyspharm-syl` remains an
-independent parity-only dependency.
+The ordinary unit-test group directly declares `cftime`, `pytest`, and `pytest-cov`. CLI
+backend tests install the user-facing `cli` extra, which supplies `h5netcdf`, Zarr, and
+cfgrib/ecCodes. NCL parity also installs this extra because its NetCDF inputs and
+normalized references use `h5netcdf`. `cftime` remains test-only rather than a direct
+spharmgrid runtime dependency. `pyspharm-syl` remains an independent parity-only
+dependency.
 
 uv's normal `dev` dependency group remains enabled so standard local commands such as
 `uv run ruff`, `uv run ty check`, and `uv run pytest` work without additional group
 flags. CI lanes that intentionally need a smaller environment must use
 `--no-default-groups` explicitly.
 
-Python 3.11--3.14 is the current supported matrix. The independent parity dependency may
-use a narrower interpreter range without narrowing production support.
+Python 3.11--3.14 is the current supported matrix. CI additionally exercises Python 3.15
+on Ubuntu and Python 3.15t in the free-threaded compatibility probe. The independent
+parity dependency may use a narrower interpreter range without narrowing production
+support.
 
-The free-threaded compatibility probe checks each direct supported module in a fresh
-Python process: the three core dependencies, `cf_xarray`, `dask`, the three CLI
-backends, and `spharmgrid`. A package that cannot import or that enables the GIL is
-reported as a warning so one incompatibility does not prevent the remaining checks from
-running. Transitive implementation dependencies are not probed separately.
+The free-threaded compatibility probe checks NumPy, Xarray, and DUCC0 in fresh Python
+processes. A package that cannot import or that enables the GIL is reported as a warning
+so one incompatibility does not prevent the remaining checks from running. Transitive
+implementation dependencies are not probed separately.
 
 ---
 
