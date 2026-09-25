@@ -33,13 +33,21 @@ import spharmgrid.jax as sgj
 The functions accept `jax.Array` values. The last two dimensions are latitude and
 longitude; all preceding dimensions are preserved.
 
-`spharmgrid.jax` accepts these exact rectangular shapes and maps them to the listed
-S2FFT samplings:
+`spharmgrid.jax` accepts these regular rectangular shapes:
 
-| spharmgrid grid      | dimensions    | S2FFT sampling |
-| -------------------- | ------------- | -------------- |
-| Gauss–Legendre (GL)  | `(L, 2L - 1)` | `gl`           |
-| Clenshaw–Curtis (CC) | `(L + 1, 2L)` | `mwss`         |
+| spharmgrid grid      | dimensions              |
+| -------------------- | ----------------------- |
+| Gauss–Legendre (GL)  | `(L, nlon)`, `nlon ≥ 2` |
+| Clenshaw–Curtis (CC) | `(L + 1, 2L)`           |
+
+For GL grids, `L = nlat` sets the maximum spherical degree `L - 1`. Longitude sampling
+sets `longitude_mmax = floor((nlon - 1) / 2)`, so the transform uses
+`mmax = min(L - 1, longitude_mmax)`. The centered JAX coefficient array has shape
+`(L, 2L - 1)` for every supported `nlon`.
+
+Regular GL transforms currently require `s2fft==1.4.0` because spharmgrid uses that
+release's internal latitude-transform functions. spharmgrid rejects other S2FFT versions
+or an unexpected internal function signature.
 
 CC latitudes are the pole-including equally spaced nodes from −90 to 90 degrees. Both
 latitude orders and cyclic longitude coordinate conventions are accepted.
