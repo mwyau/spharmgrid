@@ -368,9 +368,9 @@ parity dependency may use a narrower interpreter range without narrowing product
 support.
 
 The free-threaded compatibility probe checks NumPy, Xarray, and DUCC0 in fresh Python
-processes. A package that cannot import or that enables the GIL is reported as a warning
-so one incompatibility does not prevent the remaining checks from running. Transitive
-implementation dependencies are not probed separately.
+processes. Import failures are errors and make the job fail after the remaining modules
+are checked. A successful import that enables the GIL is reported as a warning.
+Transitive implementation dependencies are not probed separately.
 
 ---
 
