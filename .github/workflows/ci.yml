@@ -316,9 +316,9 @@ jobs:
       - name: Check core free-threaded imports
         shell: bash
         run: |
-          check_import() {
-            local module="$1"
-            uv run --no-sync python - "$module" <<'PY'
+          failed=0
+          for module in numpy xarray ducc0; do
+            if ! uv run --no-sync python - "$module" <<'PY'
           import importlib
           import sys
 
@@ -326,19 +326,19 @@ jobs:
           try:
               importlib.import_module(module)
           except Exception as exc:
-              print(f"::warning::{module} failed to import on free-threaded Python: {exc}")
-              raise SystemExit(0)
+              print(f"::error::{module} failed to import on free-threaded Python: {exc}")
+              raise SystemExit(1)
 
           gil_enabled = sys._is_gil_enabled()
           print(f"{module:12}: GIL {'ON' if gil_enabled else 'OFF'}")
           if gil_enabled:
               print(f"::warning::{module} enables the GIL on free-threaded Python")
           PY
-          }
-
-          check_import numpy
-          check_import xarray
-          check_import ducc0
+            then
+              failed=1
+            fi
+          done
+          exit "$failed"
 
   minimum-dependencies:
     name: Minimum-dependency tests (Python 3.11)
