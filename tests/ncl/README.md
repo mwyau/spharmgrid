@@ -1,9 +1,9 @@
 # NCL/SPHEREPACK parity
 
 This suite compares spharmgrid with NCL 6.6.2/SPHEREPACK on the same scalar and wind
-fields. It runs from `.github/workflows/ncl-parity.yml` only when started with
-`workflow_dispatch`. Each run generates its inputs, NCL output, and normalized
-comparison arrays. No NCL-generated numerical data is committed.
+fields. It runs from `.github/workflows/validation.yml` on pushes to `main` or by manual
+dispatch. Each run generates its inputs, NCL output, and normalized comparison arrays.
+No NCL-generated numerical data is committed.
 
 The suite lives under `tests/ncl/`, so `pytest tests/parity` does not require NCL.
 
@@ -95,7 +95,7 @@ Conda supplies NCL 6.6.2. uv supplies spharmgrid and the Python test dependencie
 
 ```bash
 conda create --yes --name spharmgrid-ncl --channel conda-forge ncl=6.6.2
-uv sync --no-default-groups --group test --frozen
+uv sync --no-default-groups --group test --extra cli --frozen
 ```
 
 Generate the inputs and NCL output in a temporary directory:
