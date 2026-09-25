@@ -81,10 +81,14 @@ conventions, units, coordinates, and API names when editing scientific text.
 
 - `pyproject.toml` defines package metadata, dependencies, build configuration, and tool
   configuration.
-- Keep `uv.lock` synchronized, but do not generate, regenerate, or hand-edit it. If it
-  is stale, ask the owner to run `uv lock` locally and commit the result.
-- Do not create temporary GitHub Actions workflows or other automation to refresh the
-  lockfile.
+- Keep `uv.lock` synchronized and never hand-edit it. When `pyproject.toml`
+  changes affect dependency resolution, regenerate the lockfile with `uv lock` in the
+  current local execution environment. If that environment cannot regenerate the
+  lockfile successfully, do not create temporary automation; ask the owner to run
+  `uv lock` locally and commit the result.
+- Never create temporary GitHub Actions workflows, temporary CI jobs, or other one-off
+  automation for repository maintenance, validation, lockfile generation, or similar
+  tasks. Use existing workflows or local tooling instead.
 - Keep uv's normal `dev` group enabled so `uv run ruff`, `uv run ty check`, and
   `uv run pytest` work directly. Reduced CI environments should opt out with
   `--no-default-groups`.

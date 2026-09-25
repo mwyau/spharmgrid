@@ -67,6 +67,9 @@ jobs:
           - os: ubuntu-26.04
             name: Ubuntu
             python: "3.14"
+          - os: ubuntu-26.04
+            name: Ubuntu
+            python: "3.15"
           - os: windows-2025
             name: Windows
             python: "3.14"
@@ -198,15 +201,7 @@ jobs:
           save-cache: false
           python-version: "3.12"
       - name: Sync JAX test environment
-        run: >-
-          uv sync
-          --no-default-groups
-          --group dev
-          --group jax-dev
-          --extra cf
-          --extra dask
-          --extra jax
-          --frozen
+        run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra jax --frozen
       - name: Type-check with JAX installed
         run: uv run --no-sync ty check
       - name: Verify unsupported JAX single precision is rejected
@@ -263,14 +258,7 @@ jobs:
           save-cache: false
           python-version: "3.14"
       - name: Sync optional test environment
-        run: >-
-          uv sync
-          --no-default-groups
-          --group test
-          --extra cf
-          --extra dask
-          --extra cli
-          --frozen
+        run: uv sync --no-default-groups --group test --extra cf --extra dask --extra cli --frozen
       - name: Run optional tests with coverage
         run: >-
           uv run --no-sync pytest
@@ -306,10 +294,14 @@ jobs:
           fail_ci_if_error: false
 
   free-threaded:
-    name: Free-threaded tests (Python 3.14t)
+    name: Free-threaded tests (Python ${{ matrix.python }})
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.14t", "3.15t"]
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -318,7 +310,7 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          python-version: "3.14t"
+          python-version: ${{ matrix.python }}
       - name: Sync free-threaded environment
         run: uv sync --no-default-groups --frozen
       - name: Check core free-threaded imports
@@ -378,7 +370,7 @@ jobs:
           uv pip install \
             --python .venv/bin/python \
             --index https://download.pytorch.org/whl/cpu \
-            "torch==2.13.0"
+            "torch==2.13.0+cpu"
           uv --no-config pip install \
             --python .venv/bin/python \
             --only-binary=:all: \
@@ -387,10 +379,7 @@ jobs:
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"
-        run: >-
-          uv run --no-sync pytest
-          tests/unit
-          tests/optional
+        run: uv run --no-sync pytest tests/unit tests/optional
 
   docs:
     name: Docs tests (Python 3.14)
@@ -428,19 +417,9 @@ jobs:
           save-cache: false
           python-version: "3.12"
       - name: Sync parity test environment
-        run: >-
-          uv sync
-          --no-default-groups
-          --group test
-          --group parity
-          --frozen
+        run: uv sync --no-default-groups --group test --group parity --frozen
       - name: Install JAX parity dependencies
-        run: >-
-          uv pip install
-          --python .venv/bin/python
-          --upgrade
-          ".[jax]"
-          "numpy<2"
+        run: uv pip install --python .venv/bin/python --upgrade ".[jax]" "numpy<2"
       - name: Install Torch parity dependencies
         run: |
           uv pip install \
