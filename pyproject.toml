@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 [build-system]
-requires = ["hatchling>=1.32.3"]
+requires = ["hatchling>=1.32.4"]
 build-backend = "hatchling.build"
 
 [project]
@@ -42,7 +42,7 @@ DOI = "https://doi.org/10.5281/zenodo.22559210"
 
 [project.optional-dependencies]
 cf = ["cf-xarray>=0.10.4"]
-dask = ["dask[array]>=2024.1.0"]
+dask = ["dask[array]>=2026.8.0"]
 cli = [
     "h5netcdf[h5py]>=1.8.1",
     "zarr>=3.0.0",
@@ -76,7 +76,7 @@ dev = [
     { include-group = "docs" },
     { include-group = "test" },
     "ruff>=0.16.5",
-    "ty==0.0.82",
+    "ty==0.0.83",
 ]
 docs = [
     "myst-parser>=5.1.0",
