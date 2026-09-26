@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 [build-system]
-requires = ["hatchling>=1.32.3"]
+requires = ["hatchling>=1.32.4"]
 build-backend = "hatchling.build"
 
 [project]
@@ -76,7 +76,7 @@ dev = [
     { include-group = "docs" },
     { include-group = "test" },
     "ruff>=0.16.5",
-    "ty==0.0.82",
+    "ty==0.0.83",
 ]
 docs = [
     "myst-parser>=5.1.0",
