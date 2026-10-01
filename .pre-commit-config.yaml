@@ -11,7 +11,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.17
+    rev: 0.12.18
     hooks:
       - id: uv-lock
 
@@ -23,7 +23,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.82
+    rev: v0.0.83
     hooks:
       - id: ty
         args: [--isolated, --python=3.12, --extra=cf, --extra=dask]
