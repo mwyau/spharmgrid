@@ -86,6 +86,8 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - name: Sync test environment
+        env:
+          DUCC0_OPTIMIZATION: 'portable'
         run: uv sync --no-default-groups --group test --frozen
       - name: Run unit tests
         if: ${{ matrix.os != 'ubuntu-26.04' || matrix.python != '3.14' }}
@@ -369,13 +371,8 @@ jobs:
         run: |
           uv pip install \
             --python .venv/bin/python \
-            --index https://download.pytorch.org/whl/cpu \
-            "torch==2.13.0+cpu"
-          uv --no-config pip install \
-            --python .venv/bin/python \
-            --only-binary=:all: \
-            --no-deps \
-            "torch-harmonics==0.6.5"
+            --group torch-ci \
+            --torch-backend=cpu
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"
