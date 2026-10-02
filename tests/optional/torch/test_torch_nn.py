@@ -51,15 +51,6 @@ def test_core_import_does_not_load_torch() -> None:
     )
 
 
-def test_cc_sht_operators_raise_capability_error(cc_grid: sg.Grid) -> None:
-    error = (
-        r"torch-harmonics.*CC triangular bands through T8.*"
-        r"Full-domain operations.*filter, regrid, and regrid_vector"
-    )
-    with pytest.raises(ValueError, match=error):
-        sgnn.SHTOperators(cc_grid)
-
-
 def test_sht_operators_match_functional_api(gl_grid: sg.Grid) -> None:
     field, eastward, northward = make_fields(gl_grid)
     operators = sgnn.SHTOperators(gl_grid)
@@ -163,14 +154,20 @@ def test_sht_operators_match_functional_api(gl_grid: sg.Grid) -> None:
     )
 
 
-def test_sht_operators_reuse_transform_state(gl_grid: sg.Grid) -> None:
+def test_sht_operators_reuse_active_transform(gl_grid: sg.Grid) -> None:
     field, _, _ = make_fields(gl_grid)
     operators = sgnn.SHTOperators(gl_grid)
-    state = operators._state
 
+    assert operators._active_transform is None
     operators.filter(field, "T2")
+    active = operators._active_transform
+    assert active is not None
 
-    assert operators._state is state
+    operators.laplacian(field)
+    assert operators._active_transform is active
+
+    operators.gradient(field)
+    assert operators._active_transform is not active
 
 
 def test_sht_operators_preserve_dtype_and_leading_dimensions(
@@ -281,7 +278,7 @@ def test_fixed_filter_module_runs_under_torch_compile_eager() -> None:
         .reshape(grid.nlat, grid.nlon)
         .requires_grad_()
     )
-    layer = sgnn.SHTFilter(grid, "T2")
+    layer = sgnn.SHTFilter(grid, "T2").to(dtype=torch.float32)
     compiled = torch.compile(layer, backend="eager")
     torch.testing.assert_close(compiled(field), layer(field))
 

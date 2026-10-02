@@ -168,10 +168,33 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
     gl_grid: sg.Grid,
 ) -> None:
     field, _, _ = make_fields(cc_grid)
-    with pytest.raises(ValueError, match="Full-domain operations.*filter, regrid"):
-        sgt.filter(field, grid=cc_grid)
-    with pytest.raises(ValueError, match="CC triangular bands through T8"):
-        sgt.filter(field, "T9", grid=cc_grid)
+    full = sgt.filter(field, "T15", grid=cc_grid)
+    torch.testing.assert_close(
+        full,
+        sgt.filter(field, grid=cc_grid),
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+    with pytest.raises(
+        ValueError,
+        match="supported triangular bandwidth 15",
+    ):
+        sgt.filter(field, "T16", grid=cc_grid)
+    narrow_cc = sg.clenshaw_curtis_grid(17, 20)
+    narrow_field = make_fields(narrow_cc)[0]
+    torch.testing.assert_close(
+        sgt.filter(narrow_field, "T9", grid=narrow_cc),
+        narrow_field,
+        rtol=0.0,
+        atol=2.0e-12,
+    )
+    with pytest.raises(
+        ValueError,
+        match="supported triangular bandwidth 9",
+    ):
+        sgt.filter(narrow_field, "T10", grid=narrow_cc)
+    with pytest.raises(ValueError, match="only triangular coefficient domains"):
+        sgt.filter(narrow_field, grid=narrow_cc)
     with pytest.raises(ValueError, match="exceeds"):
         sgt.filter(make_fields(gl_grid)[0], "T99", grid=gl_grid)
 
