@@ -154,14 +154,20 @@ def test_sht_operators_match_functional_api(gl_grid: sg.Grid) -> None:
     )
 
 
-def test_sht_operators_reuse_transform_state(gl_grid: sg.Grid) -> None:
+def test_sht_operators_reuse_active_transform(gl_grid: sg.Grid) -> None:
     field, _, _ = make_fields(gl_grid)
     operators = sgnn.SHTOperators(gl_grid)
-    state = operators._state
 
+    assert operators._active_transform is None
     operators.filter(field, "T2")
+    active = operators._active_transform
+    assert active is not None
 
-    assert operators._state is state
+    operators.laplacian(field)
+    assert operators._active_transform is active
+
+    operators.gradient(field)
+    assert operators._active_transform is not active
 
 
 def test_sht_operators_preserve_dtype_and_leading_dimensions(

@@ -438,16 +438,6 @@ def test_high_cc_vector_analysis_passes_gradcheck() -> None:
 def test_full_band_cc_operations_preserve_cuda_autograd() -> None:
     grid = sg.clenshaw_curtis_grid(73, 144)
     operators = sgnn.SHTOperators(grid).to(device="cuda", dtype=torch.float32)
-    state_buffers = list(operators._state.buffers())
-    floating_buffers = [
-        buffer for buffer in state_buffers if buffer.is_floating_point()
-    ]
-    integer_buffers = [
-        buffer for buffer in state_buffers if not buffer.is_floating_point()
-    ]
-    assert all(buffer.device.type == "cuda" for buffer in state_buffers)
-    assert all(buffer.dtype == torch.float32 for buffer in floating_buffers)
-    assert all(buffer.dtype == torch.long for buffer in integer_buffers)
     field = torch.randn(
         grid.nlat,
         grid.nlon,
@@ -459,6 +449,18 @@ def test_full_band_cc_operations_preserve_cuda_autograd() -> None:
     northward = torch.randn_like(field, requires_grad=True)
 
     filtered = operators.filter(field, "T71")
+    active = operators._active_transform
+    assert isinstance(active, _TorchTransform)
+    state_buffers = list(active.buffers())
+    floating_buffers = [
+        buffer for buffer in state_buffers if buffer.is_floating_point()
+    ]
+    integer_buffers = [
+        buffer for buffer in state_buffers if not buffer.is_floating_point()
+    ]
+    assert all(buffer.device.type == "cuda" for buffer in state_buffers)
+    assert all(buffer.dtype == torch.float32 for buffer in floating_buffers)
+    assert all(buffer.dtype == torch.long for buffer in integer_buffers)
     vorticity, divergence = operators.kinematics(eastward, northward)
     loss = (
         filtered.square().mean()
