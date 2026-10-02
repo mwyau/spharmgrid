@@ -4,6 +4,8 @@
 
 ### Xarray and JAX
 
+- Added JAX support for regular Gauss–Legendre grids with any valid longitude count;
+  `nlat` sets the maximum spherical degree and `nlon` sets the zonal-order bandwidth.
 - Added optional `.sgj` Xarray accessors and explicit `device_put()` / `device_get()`
   helpers. `.sgj` calls the `spharmgrid.jax` functions with JAX-backed data and
   preserves Xarray labels and metadata without requiring `xarray_jax`.
