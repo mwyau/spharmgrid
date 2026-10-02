@@ -368,14 +368,9 @@ jobs:
       - name: Install minimum Torch dependencies
         run: |
           uv pip install \
-            --python .venv/bin/python \
-            --index https://download.pytorch.org/whl/cpu \
-            "torch==2.13.0+cpu"
-          uv --no-config pip install \
-            --python .venv/bin/python \
-            --only-binary=:all: \
-            --no-deps \
-            "torch-harmonics==0.6.5"
+          --python .venv/bin/python \
+          --group torch-ci \
+          --torch-backend=cpu
       - name: Run minimum-dependency tests
         env:
           JAX_ENABLE_X64: "1"
