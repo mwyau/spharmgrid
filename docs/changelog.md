@@ -1,27 +1,36 @@
 # Changelog
 
-## v0.3.1.dev0 - Unreleased
+## v0.4.0 - 2026-10-02
+
+### Spectral representations
+
+- Added reusable `SpectralField` and `SpectralVectorField` representations for Xarray,
+  JAX, and PyTorch. `analyze()` and `analyze_vector()` run the forward spherical
+  harmonic transform once so filtering, regridding, Laplacian operators, and wind
+  diagnostics can reuse the coefficients.
 
 ### Xarray and JAX
 
-- Added JAX support for regular Gauss–Legendre grids with any valid longitude count;
-  `nlat` sets the maximum spherical degree and `nlon` sets the zonal-order bandwidth.
 - Added optional `.sgj` Xarray accessors and explicit `device_put()` / `device_get()`
-  helpers. `.sgj` calls the `spharmgrid.jax` functions with JAX-backed data and
-  preserves Xarray labels and metadata without requiring `xarray_jax`.
-- Moved accessor implementation classes to private modules and shared Xarray
-  preparation, alignment, and output wrapping across the JAX accessor methods.
-- Split the optional-backend API reference into Xarray accessor and JAX array pages,
-  followed by PyTorch functional and neural-network pages.
-- Added reusable `SpectralField` and `SpectralVectorField` representations for Xarray,
-  JAX, and PyTorch, including filtering, regridding, differential operators, and wind
-  diagnostics without repeated forward transforms.
+  helpers for JAX-backed data. They return labeled Xarray outputs without requiring
+  `xarray_jax`.
+- Extended JAX transforms to regular Gauss–Legendre grids with any valid longitude
+  count. `nlat` sets the maximum spherical degree and longitude sampling sets the
+  available zonal-order bandwidth.
 
 ### PyTorch
 
-- Extended PyTorch analysis to the full triangular bandwidth on pole-including CC grids,
-  including T71 on 73×144 grids, using folded latitude resampling and dense
-  torch-harmonics-compatible projection tables.
+- Extended analysis on pole-including Clenshaw–Curtis grids to the full triangular grid
+  bandwidth, including T71 on 73×144 grids. High-bandwidth analysis uses folded latitude
+  resampling and dense projection tables; `SHTOperators` holds only the active analysis
+  or synthesis transform bundle.
+
+### Validation and documentation
+
+- Added DUCC comparisons for the new JAX regular-GL and PyTorch extended-CC paths, moved
+  NCL/SPHEREPACK parity to post-merge validation, and split the optional-backend API
+  reference into Xarray accessor, JAX array, PyTorch functional, and PyTorch
+  neural-network pages.
 
 ## v0.3.0 - 2026-09-21
 
