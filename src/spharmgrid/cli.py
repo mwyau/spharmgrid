@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -17,6 +17,7 @@ from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
 from pathlib import Path
+from typing import Literal
 
 import xarray as xr
 
@@ -297,7 +298,7 @@ def _validate_positive_option(value: int | None, name: str) -> None:
 
 
 @contextmanager
-def _local_dask_executor(workers: int) -> Iterator[None]:
+def _local_dask_executor(workers: int) -> Generator[None, None, None]:
     """Own a temporary local Dask pool for one complete CLI operation."""
     try:
         import dask
@@ -435,7 +436,7 @@ def _grib_is_unsupported() -> bool:
     )
 
 
-def _open_dataset(path: str, *, chunks: str | None = None) -> xr.Dataset:
+def _open_dataset(path: str, *, chunks: Literal["auto"] | None = None) -> xr.Dataset:
     """Open NetCDF, Zarr, or another xarray-supported input path."""
     if _is_zarr_path(path):
         if find_spec("zarr") is None:

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from contextlib import AbstractContextManager, nullcontext
-from typing import cast
+from typing import Literal, cast
 from unittest.mock import Mock
 
 import numpy as np
@@ -194,7 +194,7 @@ def test_cli_uses_its_executor_through_lazy_output_materialization(
     observed_sht_threads: list[int] = []
 
     def fake_open_dataset(
-        path: str, *, chunks: str | None = None
+        path: str, *, chunks: Literal["auto"] | None = None
     ) -> AbstractContextManager[xr.Dataset]:
         open_chunks.append(chunks)
         return cast(AbstractContextManager[xr.Dataset], nullcontext(opened))
