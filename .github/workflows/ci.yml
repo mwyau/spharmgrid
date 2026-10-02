@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  UV_VERSION: "0.12.17"
+  UV_VERSION: "0.12.18"
 
 jobs:
   code-quality:

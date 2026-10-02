@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -298,7 +298,7 @@ def _validate_positive_option(value: int | None, name: str) -> None:
 
 
 @contextmanager
-def _local_dask_executor(workers: int) -> Iterator[None]:
+def _local_dask_executor(workers: int) -> Generator[None, None, None]:
     """Own a temporary local Dask pool for one complete CLI operation."""
     try:
         import dask

@@ -75,7 +75,7 @@ exclude = [
 dev = [
     { include-group = "docs" },
     { include-group = "test" },
-    "ruff>=0.16.5",
+    "ruff>=0.16.10",
     "ty==0.0.83",
 ]
 docs = [
