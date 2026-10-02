@@ -3143,7 +3143,7 @@ wheels = [
 
 [[package]]
 name = "spharmgrid"
-version = "0.3.1.dev0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "ducc0" },
