@@ -76,7 +76,7 @@ dev = [
     { include-group = "docs" },
     { include-group = "test" },
     "ruff>=0.16.10",
-    "ty==0.0.83",
+    "ty==0.0.84",
 ]
 docs = [
     "myst-parser>=5.1.0",
@@ -89,7 +89,7 @@ test = [
     "pytest-cov>=7.1.0",
 ]
 torch-ci = [
-    "torch==2.13.0",
+    "torch==2.14.0",
     "torch-harmonics==0.6.5",
 ]
 torch-dev = [
