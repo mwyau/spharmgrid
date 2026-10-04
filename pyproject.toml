@@ -76,7 +76,7 @@ dev = [
     { include-group = "docs" },
     { include-group = "test" },
     "ruff>=0.16.10",
-    "ty==0.0.83",
+    "ty==0.0.84",
 ]
 docs = [
     "myst-parser>=5.1.0",
