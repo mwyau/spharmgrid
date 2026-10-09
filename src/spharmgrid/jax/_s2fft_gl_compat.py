@@ -4,7 +4,7 @@
 
 """Map regular GL longitude FFTs into S2FFT's fixed GL Fourier domain.
 
-S2FFT 1.4.0 exposes GL sampling with ``(L, 2L - 1)`` physical points, while
+S2FFT 1.5.0 exposes GL sampling with ``(L, 2L - 1)`` physical points, while
 spharmgrid accepts any valid regular longitude count. This module computes the
 length-``nlon`` longitude FFT, drops unrepresentable orders and the Nyquist bin
 for even ``nlon``, and inserts zero bins during synthesis. S2FFT computes the
@@ -24,10 +24,10 @@ from typing import cast
 import jax.numpy as jnp
 from jax import Array
 
-_S2FFT_VERSION = "1.4.0"
-_S2FFT_TAG_COMMIT = "e140536880fc53081a98156fb0245d9d197d1e5d"
+_S2FFT_VERSION = "1.5.0"
+_S2FFT_TAG_COMMIT = "895b8aaddb3f12da1502e527d3ca941c4edd2627"
 _GL_SUPPORT = (
-    "spharmgrid's regular GL JAX support currently depends on S2FFT 1.4.0 "
+    "spharmgrid's regular GL JAX support currently depends on S2FFT 1.5.0 "
     "internals; another version is unsupported until verified. This restriction "
     "can be relaxed once S2FFT provides a suitable public API."
 )
@@ -93,7 +93,7 @@ def _internal_modules() -> tuple[ModuleType, ModuleType, ModuleType]:
         actual = tuple(inspect.signature(function).parameters)
         if actual[: len(expected)] != expected:
             raise RuntimeError(
-                "the s2fft==1.4.0 internal GL latitude-step signature changed; "
+                "the s2fft==1.5.0 internal GL latitude-step signature changed; "
                 "verify the required symbols and signatures before changing the pin"
             )
     return otf, samples, quadrature

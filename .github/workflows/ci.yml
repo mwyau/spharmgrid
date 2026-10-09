@@ -177,7 +177,7 @@ jobs:
           fail_ci_if_error: false
 
   jax:
-    name: JAX tests (Python 3.12)
+    name: JAX tests (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 40
@@ -190,9 +190,9 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           save-cache: false
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Sync JAX test environment
-        run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra jax --frozen
+        run: uv sync --no-default-groups --group dev --group jax-dev --extra cf --extra dask --extra jax --frozen
       - name: Type-check with JAX installed
         run: uv run --no-sync ty check
       - name: Verify unsupported JAX single precision is rejected
@@ -218,7 +218,7 @@ jobs:
           files: ./junit-jax.xml
           report_type: test_results
           flags: jax
-          name: jax-py312
+          name: jax-py314
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
@@ -228,7 +228,7 @@ jobs:
         with:
           files: ./coverage-jax.xml
           flags: jax
-          name: jax-py312
+          name: jax-py314
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
