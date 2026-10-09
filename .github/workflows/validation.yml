@@ -91,4 +91,3 @@ jobs:
           path: ${{ runner.temp }}/spharmgrid-ncl
           if-no-files-found: warn
           retention-days: 14
-

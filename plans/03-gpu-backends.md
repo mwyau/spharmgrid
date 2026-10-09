@@ -914,9 +914,10 @@ does not import JAX or S2FFT.
 The JAX backend accepts every regular GL longitude count allowed by `Grid`. For
 `L = nlat`, it uses `lmax = L - 1` and `mmax = min(L - 1, floor((nlon - 1) / 2))`. The
 adapter maps the representable physical FFT orders into S2FFT's fixed centered `ftm`
-width `2L - 1` and omits the Nyquist bin for even `nlon`. The original v0.3.0 implementation pinned S2FFT 1.4.0. The current pin is 1.5.0
-while this path uses internal latitude functions; remove the compatibility module when
-S2FFT exposes a suitable public transform API.
+width `2L - 1` and omits the Nyquist bin for even `nlon`. The original v0.3.0
+implementation pinned S2FFT 1.4.0. The current pin is 1.5.0 while this path uses
+internal latitude functions; remove the compatibility module when S2FFT exposes a
+suitable public transform API.
 
 The v0.3.0 release itself does not add HEALPix, Flax/Equinox wrappers, or an xarray
 `backend=` selector. Those additions require their own demonstrated use case or
