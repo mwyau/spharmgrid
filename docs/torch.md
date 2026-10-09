@@ -19,10 +19,10 @@ then install `spharmgrid[torch]`.
 
 ## Development
 
-For a spharmgrid development checkout, install the Torch development dependencies with:
+For a spharmgrid development checkout, install the released Torch dependencies with:
 
 ```bash
-uv sync --group torch-dev
+uv sync --extra torch
 ```
 
 `torch-harmonics` defines the Legendre/vector projections and normalization used by the
