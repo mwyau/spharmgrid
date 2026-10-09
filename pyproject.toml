@@ -98,7 +98,7 @@ cuda-dev = [
     { include-group = "jax-dev" },
     "torch>=2.13.0",
     "torch-harmonics>=0.9.3",
-    "jax[cuda13]; sys_platform == 'linux'",
+    "jax[cuda13]>=0.7.0; sys_platform == 'linux'",
 ]
 parity = [
     "pyspharm-syl>=1.2.1; python_version < '3.14'",
