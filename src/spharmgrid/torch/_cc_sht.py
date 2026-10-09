@@ -84,7 +84,7 @@ def _native_projection_weights(
     *,
     vector: bool,
 ) -> Tensor:
-    """Remove ordinary CC quadrature from native forward projection weights."""
+    """Remove native CC quadrature and the built-in longitude scale."""
     module_type = _torch_harmonics.RealVectorSHT if vector else _torch_harmonics.RealSHT
     native = module_type(
         nlat,
@@ -130,9 +130,13 @@ def _native_projection_weights(
         )
 
     quadrature = quadrature.to(device=native_weights.device, dtype=native_weights.dtype)
-    # The module is temporary, so divide its buffer in place instead of holding
-    # native quadrature weights and a second complete projection at once.
-    native_weights.div_(quadrature.reshape((1,) * (native_weights.ndim - 1) + (nlat,)))
+    # torch-harmonics >=0.9.3 folds the 2*pi longitude integration factor into
+    # its forward weights. Our resampling quadrature already includes 2*pi, so
+    # remove both the native latitude quadrature and this longitude factor.
+    # Divide in place to avoid keeping two complete projections in memory.
+    native_weights.div_(
+        (2.0 * math.pi * quadrature).reshape((1,) * (native_weights.ndim - 1) + (nlat,))
+    )
     return native_weights
 
 
