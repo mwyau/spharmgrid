@@ -677,17 +677,19 @@ should use both a user-facing extra and a development group:
 ```toml
 [project.optional-dependencies]
 jax = ["jax>=0.5.0", "s2fft==1.4.0"]
+torch = ["torch>=2.13.0", "torch-harmonics>=0.9.3"]
 
 [dependency-groups]
-torch-dev = ["torch>=...", "torch-harmonics>=..."]
 jax-dev = [
   { include-group = "test" },
   "jax>=0.5.0",
   "s2fft==1.4.0",
+  "gdm-xarray-jax @ git+https://github.com/google-deepmind/xarray_jax.git@main ; python_version >= '3.12'",
 ]
 cuda-dev = [
   { include-group = "jax-dev" },
-  { include-group = "torch-dev" },
+  "torch>=2.13.0",
+  "torch-harmonics>=0.9.3",
   "jax[cuda13]; sys_platform == 'linux'",
 ]
 ```
