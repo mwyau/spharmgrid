@@ -88,11 +88,6 @@ test = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
 ]
-torch-dev = [
-    { include-group = "test" },
-    "torch>=2.13.0",
-    "torch-harmonics @ git+https://github.com/NVIDIA/torch-harmonics.git@main",
-]
 jax-dev = [
     { include-group = "test" },
     "jax>=0.5.0",
@@ -101,7 +96,8 @@ jax-dev = [
 ]
 cuda-dev = [
     { include-group = "jax-dev" },
-    { include-group = "torch-dev" },
+    "torch>=2.13.0",
+    "torch-harmonics>=0.9.3",
     "jax[cuda13]; sys_platform == 'linux'",
 ]
 parity = [
@@ -109,21 +105,10 @@ parity = [
     "numpy<2; python_version < '3.13'",
 ]
 
-[tool.uv]
-conflicts = [
-    [
-        { extra = "torch" },
-        { group = "torch-dev" },
-    ],
-]
-
 [tool.uv.sources]
 # Temporary workaround: the S2FFT 1.4.0 abi3 wheel has a CPython-3.12-specific
 # extension filename, so build that release from source on Python >=3.13.
 s2fft = { git = "https://github.com/astro-informatics/s2fft.git", tag = "v1.4.0", marker = "python_version >= '3.13'" }
-
-[tool.uv.extra-build-dependencies]
-torch-harmonics = [{ requirement = "torch", match-runtime = true }]
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]
