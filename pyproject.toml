@@ -105,6 +105,15 @@ parity = [
     "numpy<2; python_version < '3.13'",
 ]
 
+[tool.uv]
+# The NumPy 1.x parity environment cannot coexist with CUDA 13 JAX (NumPy 2.x).
+conflicts = [
+    [
+        { group = "parity" },
+        { group = "cuda-dev" },
+    ],
+]
+
 [tool.uv.sources]
 # Temporary workaround: the S2FFT 1.4.0 abi3 wheel has a CPython-3.12-specific
 # extension filename, so build that release from source on Python >=3.13.
