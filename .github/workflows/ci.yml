@@ -126,7 +126,7 @@ jobs:
           fail_ci_if_error: false
 
   torch:
-    name: Torch tests (Python 3.12)
+    name: Torch tests (Python 3.14)
     needs: code-quality
     runs-on: ubuntu-26.04
     timeout-minutes: 40
@@ -139,20 +139,9 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           save-cache: false
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Sync Torch test environment
-        run: uv sync --no-default-groups --group dev --extra cf --extra dask --frozen
-      - name: Install Torch test dependencies
-        run: |
-          uv pip install \
-            --python .venv/bin/python \
-            --index https://download.pytorch.org/whl/cpu \
-            "torch==2.11.0+cpu"
-          uv --no-config pip install \
-            --python .venv/bin/python \
-            --only-binary=:all: \
-            --no-deps \
-            "torch-harmonics==0.9.2"
+        run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra torch --frozen
       - name: Type-check with Torch installed
         run: uv run --no-sync ty check
       - name: Run Torch tests with coverage
@@ -172,7 +161,7 @@ jobs:
           files: ./junit-torch.xml
           report_type: test_results
           flags: torch
-          name: torch-py312
+          name: torch-py314
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
@@ -182,7 +171,7 @@ jobs:
         with:
           files: ./coverage-torch.xml
           flags: torch
-          name: torch-py312
+          name: torch-py314
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
@@ -366,13 +355,8 @@ jobs:
           --extra dask
           --extra cli
           --extra jax
+          --extra torch
           --resolution lowest-direct
-      - name: Install minimum Torch dependencies
-        run: |
-          uv pip install \
-            --python .venv/bin/python \
-            --group torch-ci \
-            --torch-backend=cpu
       - name: Verify minimum Torch backend
         run: |
           uv run --no-sync python - <<'PY'
@@ -383,7 +367,6 @@ jobs:
 
           print("torch", torch.__version__)
           print("torch-harmonics", importlib.metadata.version("torch-harmonics"))
-          print("triton", importlib.metadata.version("triton"))
           PY
       - name: Run minimum-dependency tests
         env:
@@ -426,20 +409,9 @@ jobs:
           save-cache: false
           python-version: "3.12"
       - name: Sync parity test environment
-        run: uv sync --no-default-groups --group test --group parity --frozen
-      - name: Install JAX parity dependencies
-        run: uv pip install --python .venv/bin/python --upgrade ".[jax]" "numpy<2"
-      - name: Install Torch parity dependencies
-        run: |
-          uv pip install \
-            --python .venv/bin/python \
-            --index https://download.pytorch.org/whl/cpu \
-            "torch==2.11.0+cpu"
-          uv --no-config pip install \
-            --python .venv/bin/python \
-            --only-binary=:all: \
-            --no-deps \
-            "torch-harmonics==0.9.2"
+        run: >-
+          uv sync --no-default-groups --group test --group parity
+          --extra jax --extra torch --frozen
       - name: Run parity tests with coverage
         env:
           JAX_ENABLE_X64: "1"
