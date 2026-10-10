@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.4.1 - 2026-10-10
+
+### Backend compatibility
+
+- Updated the JAX dependency to S2FFT 1.5.0 and removed the Git source override for
+  Python 3.13 and later. Regular GL transforms check the S2FFT 1.5.0 internal
+  latitude-transform interface.
+- Updated the PyTorch extra from `torch-harmonics==0.6.5` to `torch-harmonics>=0.9.3`.
+  Adjusted high-bandwidth Clenshaw–Curtis scalar and vector analysis for the released
+  library's forward-weight normalization.
+
+### Numerical validation
+
+- Tightened NCL 6.6.2/SPHEREPACK comparisons to operation-specific absolute tolerances
+  (`rtol=0`), using measured errors from 400 comparisons across GL and CC grids,
+  analytic and seeded random fields, and spectral selections. The largest normalized
+  error was `3.71e-11` for CC scalar filtering with the hard `T5-42` cutoff.
+- Adjusted the JAX analytic vector Laplacian tolerance for the minimum-dependency
+  environment.
+
+### CI and dependencies
+
+- Moved `xarray_jax` integration into the Python 3.14 JAX CI job and removed duplicate
+  Torch and JAX jobs from the validation workflow. NCL/SPHEREPACK comparisons continue
+  in the separate validation job.
+- Removed the Torch Git development build, and separated the NumPy 1.x parity
+  environment from CUDA 13 development dependencies. CUDA 13 development requires JAX
+  0.7 or later.
+
 ## v0.4.0 - 2026-10-02
 
 ### Spectral representations
