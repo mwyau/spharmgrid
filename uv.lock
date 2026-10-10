@@ -2885,7 +2885,7 @@ wheels = [
 
 [[package]]
 name = "spharmgrid"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "ducc0" },
