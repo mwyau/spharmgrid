@@ -303,6 +303,8 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - name: Sync free-threaded environment
+        env:
+          DUCC0_OPTIMIZATION: 'portable'
         run: uv sync --no-default-groups --frozen
       - name: Check core free-threaded imports
         shell: bash
