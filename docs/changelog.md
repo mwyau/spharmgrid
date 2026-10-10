@@ -22,6 +22,8 @@
 
 ### CI and dependencies
 
+- Declared Python 3.15 support for the core package. The Ubuntu unit-test matrix
+  includes Python 3.15.
 - Moved `xarray_jax` integration into the Python 3.14 JAX CI job and removed duplicate
   Torch and JAX jobs from the validation workflow. NCL/SPHEREPACK comparisons continue
   in the separate validation job.
