@@ -45,7 +45,7 @@ sets `longitude_mmax = floor((nlon - 1) / 2)`, so the transform uses
 `mmax = min(L - 1, longitude_mmax)`. The centered JAX coefficient array has shape
 `(L, 2L - 1)` for every supported `nlon`.
 
-Regular GL transforms currently require `s2fft==1.4.0` because spharmgrid uses that
+Regular GL transforms currently require `s2fft==1.5.0` because spharmgrid uses that
 release's internal latitude-transform functions. spharmgrid rejects other S2FFT versions
 or an unexpected internal function signature.
 

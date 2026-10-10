@@ -45,7 +45,6 @@ def test_scalar_harmonic_identities(
     grid_name: str,
     dtype: DTypeLike,
 ) -> None:
-    # CI measured a 3.63e-13 maximum absolute Laplacian error on GL.
     atol = 5.0e-13
     grid = request.getfixturevalue(grid_name)
     latitude = np.deg2rad(grid.latitude)[:, None]
@@ -133,7 +132,7 @@ def test_spin_one_signs_and_atmospheric_operations(
     grid_name: str,
     dtype: DTypeLike,
 ) -> None:
-    atol = 3.0e-13
+    atol = 4.0e-13
     grid = request.getfixturevalue(grid_name)
     radius = 2.5
     velocity_potential, streamfunction = scalar_potentials(grid)

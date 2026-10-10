@@ -121,42 +121,29 @@ def _assert_close(
         ) from error
 
 
-def _common_tolerance(operation: str, grid_kind: str, input_family: str) -> _Tolerance:
-    random_gl = grid_kind == "gl" and input_family == "random"
+def _common_tolerance(operation: str, input_family: str) -> _Tolerance:
     if operation == "gradient":
-        return _Tolerance(0.0, 3.0e-6 if random_gl else 2.0e-17)
+        return _Tolerance(0.0, 1.0e-18)
     if operation == "kinematics":
-        return _Tolerance(0.0, 4.0e-6 if random_gl else 2.0e-17)
+        return _Tolerance(0.0, 2.0e-19)
     if operation == "inverse_gradient":
-        return _Tolerance(0.0, 1.0e-13)
+        return _Tolerance(0.0, 8.0e-14)
     if operation == "laplacian":
-        return _Tolerance(
-            0.0, 5.0e-11 if grid_kind == "cc" and input_family == "random" else 1.0e-20
-        )
+        return _Tolerance(0.0, 3.0e-23)
     if operation == "inverse_laplacian":
-        if input_family == "random":
-            if grid_kind == "cc":
-                return _Tolerance(3.5e-3, 2.5e9)
-            return _Tolerance(3.5e-3, 1.0e6)
-        return _Tolerance(1.0e-14, 2.0e-2)
+        return _Tolerance(0.0, 2.0e-2)
     if operation == "inverse_vector_laplacian":
-        if input_family == "random":
-            atol = 3.5e9 if grid_kind == "gl" else 2.5e9
-            return _Tolerance(3.5e-3, atol)
-        return _Tolerance(1.0e-14, 2.0e-2)
+        atol = 2.0e-2 if input_family == "analytic" else 4.0e-2
+        return _Tolerance(0.0, atol)
     if operation == "potential":
-        if random_gl:
-            return _Tolerance(4.0e-2, 3.3e4)
-        return _Tolerance(2.0e-12, 1.0e-6)
+        return _Tolerance(0.0, 1.0e-8)
     if operation == "helmholtz":
-        if random_gl:
-            return _Tolerance(1.3e-1, 2.7e-1)
-        return _Tolerance(0.0, 2.0e-12)
+        return _Tolerance(0.0, 2.0e-14)
     if operation == "vector_laplacian":
-        if input_family == "random":
-            return _Tolerance(2.5e-1, 4.2e-11)
-        return _Tolerance(0.0, 1.0e-20)
-    if operation == "wind":
+        return _Tolerance(0.0, 3.0e-24)
+    if operation == "wind_synthesis":
+        return _Tolerance(0.0, 2.0e-14)
+    if operation == "wind_from_potentials":
         return _Tolerance(0.0, 2.0e-12)
     raise AssertionError(f"no NCL parity tolerance for {operation}")
 
@@ -165,26 +152,25 @@ def _spectral_tolerance(
     operation: Literal["filter", "regrid_scalar", "regrid_vector"],
     source_grid: str,
     input_family: str,
-    target_grid: str | None,
     domain: str,
-    taper: float | None,
 ) -> _Tolerance:
-    if input_family == "analytic":
-        return _Tolerance(0.0, 2.0e-11)
-    if domain == "R21":
-        return _Tolerance(0.0, 3.0e-5 if taper is None else 2.5e-5)
-    if domain == "full":
-        if operation == "filter":
-            return _Tolerance(0.0, 2.0e-13)
-        if operation == "regrid_scalar":
-            same_grid = source_grid == target_grid
-            return _Tolerance(0.0, 2.0e-13 if same_grid else 1.2e-5)
-        return _Tolerance(0.0, 0.4)
-    if taper is None:
-        atol = 1.1e-3 if operation == "regrid_vector" else 4.0e-4
+    if source_grid == "cc":
+        if operation in ("filter", "regrid_scalar") and domain == "full":
+            atol = 5.0e-14 if input_family == "random" else 2.0e-11
+        elif operation in ("filter", "regrid_scalar"):
+            atol = 2.0e-11 if input_family == "analytic" else 6.0e-11
+        elif operation == "regrid_vector":
+            atol = 2.0e-11 if input_family == "analytic" else 3.0e-11
+        else:
+            raise AssertionError(f"no NCL spectral tolerance for {operation}")
         return _Tolerance(0.0, atol)
-    atol = 3.5e-4 if operation == "regrid_vector" else 1.5e-4
-    return _Tolerance(0.0, atol)
+    if operation == "filter":
+        return _Tolerance(0.0, 5.0e-14)
+    if operation == "regrid_scalar":
+        return _Tolerance(0.0, 1.0e-13)
+    if operation == "regrid_vector":
+        return _Tolerance(0.0, 5.0e-14)
+    raise AssertionError(f"no NCL spectral tolerance for {operation}")
 
 
 def _fields(
@@ -271,7 +257,7 @@ def test_ncl_scalar_filter(
     _assert_close(
         actual,
         expected_values(arrays, key, grid_kind),
-        _spectral_tolerance("filter", grid_kind, input_family, None, domain, taper),
+        _spectral_tolerance("filter", grid_kind, input_family, domain),
         f"{grid_kind}-{input_family}-{key}",
     )
 
@@ -286,7 +272,7 @@ def test_ncl_untruncated_scalar_baseline(
     _assert_close(
         actual,
         arrays["filter_full_hard"],
-        _spectral_tolerance("filter", grid_kind, input_family, None, "full", None),
+        _spectral_tolerance("filter", grid_kind, input_family, "full"),
         f"{grid_kind}-{input_family}-filter-full-hard",
     )
 
@@ -311,7 +297,7 @@ def test_ncl_scalar_operators(
             _assert_close(
                 actual[name],
                 arrays[name],
-                _common_tolerance(operation, grid_kind, input_family),
+                _common_tolerance(operation, input_family),
                 f"{grid_kind}-{input_family}-{operation}-{name}",
             )
         return
@@ -328,7 +314,7 @@ def test_ncl_scalar_operators(
     _assert_close(
         actual,
         arrays[operation],
-        _common_tolerance(operation, grid_kind, input_family),
+        _common_tolerance(operation, input_family),
         f"{grid_kind}-{input_family}-{operation}",
     )
 
@@ -368,15 +354,15 @@ def test_ncl_vector_operators(
         "streamfunction": "potential",
         "velocity_potential": "potential",
         "potentials": "potential",
-        "rotational_wind": "wind",
-        "divergent_wind": "wind",
-        "wind_vorticity_divergence": "wind",
-        "wind_potentials": "wind",
+        "rotational_wind": "wind_synthesis",
+        "divergent_wind": "wind_synthesis",
+        "wind_vorticity_divergence": "wind_synthesis",
+        "wind_potentials": "wind_from_potentials",
         "helmholtz": "helmholtz",
         "vector_laplacian": "vector_laplacian",
         "inverse_vector_laplacian": "inverse_vector_laplacian",
     }[operation]
-    tolerance = _common_tolerance(tolerance_operation, grid_kind, input_family)
+    tolerance = _common_tolerance(tolerance_operation, input_family)
     if operation == "vorticity":
         actual = sg.vorticity(u, v, sht_threads=1)
         outputs = (("vorticity", actual),)
@@ -492,9 +478,7 @@ def test_ncl_scalar_regrid(
     _assert_close(
         actual,
         expected_values(arrays, key, source_grid, target_grid=target_grid),
-        _spectral_tolerance(
-            "regrid_scalar", source_grid, input_family, target_grid, domain, taper
-        ),
+        _spectral_tolerance("regrid_scalar", source_grid, input_family, domain),
         f"{source_grid}-{input_family}-to-{target_grid}-{key}",
     )
 
@@ -521,9 +505,7 @@ def test_ncl_vector_regrid(
         sht_threads=1,
     )
     suffix = "taper" if taper is not None else "hard"
-    tolerance = _spectral_tolerance(
-        "regrid_vector", source_grid, input_family, target_grid, domain, taper
-    )
+    tolerance = _spectral_tolerance("regrid_vector", source_grid, input_family, domain)
     for component in ("u", "v"):
         key = f"regrid_vector_{component}_{target_grid}_{domain}_{suffix}"
         _assert_close(
@@ -554,7 +536,7 @@ def test_ncl_descending_latitude_normalization(
             expected_values(
                 arrays, "filter_T42x10_taper", grid_kind, latitude_order="descending"
             ),
-            _spectral_tolerance("filter", grid_kind, input_family, None, "T42x10", 0.1),
+            _spectral_tolerance("filter", grid_kind, input_family, "T42x10"),
             f"{grid_kind}-{input_family}-descending-filter",
         )
     elif operation == "gradient":
@@ -563,7 +545,7 @@ def test_ncl_descending_latitude_normalization(
             _assert_close(
                 actual[name],
                 expected_values(arrays, name, grid_kind, latitude_order="descending"),
-                _common_tolerance("gradient", grid_kind, input_family),
+                _common_tolerance("gradient", input_family),
                 f"{grid_kind}-{input_family}-descending-{name}",
             )
     elif operation == "vorticity":
@@ -573,7 +555,7 @@ def test_ncl_descending_latitude_normalization(
             expected_values(
                 arrays, "vorticity", grid_kind, latitude_order="descending"
             ),
-            _common_tolerance("kinematics", grid_kind, input_family),
+            _common_tolerance("kinematics", input_family),
             f"{grid_kind}-{input_family}-descending-vorticity",
         )
     elif operation == "regrid":
@@ -587,16 +569,14 @@ def test_ncl_descending_latitude_normalization(
                 grid_kind,
                 target_grid=target,
             ),
-            _spectral_tolerance(
-                "regrid_scalar", grid_kind, input_family, target, "T42", None
-            ),
+            _spectral_tolerance("regrid_scalar", grid_kind, input_family, "T42"),
             f"{grid_kind}-{input_family}-descending-regrid",
         )
     else:
         target = "cc" if grid_kind == "gl" else "gl"
         actual = sg.regrid_vector(u, v, grid(target, "descending"), sht_threads=1)
         tolerance = _spectral_tolerance(
-            "regrid_vector", grid_kind, input_family, target, "full", None
+            "regrid_vector", grid_kind, input_family, "full"
         )
         for component in ("u", "v"):
             key = f"regrid_vector_{component}_{target}_full_hard"
