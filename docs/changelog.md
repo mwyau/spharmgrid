@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.5.0.dev0 - 20226-10-11
 
 ### Fejér-1 grids
 
