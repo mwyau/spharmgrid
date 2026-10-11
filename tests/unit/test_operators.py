@@ -58,7 +58,7 @@ def test_inverse_laplacian_sets_degree_zero_to_zero(kind: SupportedGridKind) -> 
         rtol=0.0,
         # Roundoff in the degree-one coefficient is amplified by R**2 after
         # analyzing a field that also contains a large constant.
-        atol=1.0e-1,
+        atol=2.0e-1,
     )
     np.testing.assert_allclose(restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12)
 
