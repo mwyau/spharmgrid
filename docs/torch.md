@@ -134,7 +134,8 @@ constructed in float64 for accuracy, then retained in the requested transform dt
 ## Grid and bandwidth capabilities
 
 Supported grids are full rectangular GL grids and pole-including CC grids with equally
-spaced latitudes from -90° to 90°.
+spaced latitudes from -90° to 90°. F1 grids are not supported by the PyTorch API;
+passing an F1 `Grid` to a tensor operation raises `ValueError`.
 
 `spharmgrid.torch` supports triangular coefficient domains. The inclusive limits for an
 explicit triangular request are

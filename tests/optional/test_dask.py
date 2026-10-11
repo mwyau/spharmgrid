@@ -79,6 +79,37 @@ def test_dask_input_stays_lazy_with_rechunked_horizontal_core_dimensions() -> No
     )
 
 
+def test_f1_scalar_vector_and_regrid_operations_stay_lazy() -> None:
+    grid = supported_grid("f1", latitude_order="descending", lon0=37.0)
+    target = supported_grid("cc", latitude_order="ascending", lon0=-180.0)
+    eager_field = scalar_field(grid, leading=True)
+    field = eager_field.chunk({"member": 1, "lat": 8, "lon": 16})
+    filtered = sg.filter(field, "T4")
+    regridded = sg.regrid(field, target, "T4")
+
+    eager_u, eager_v = solid_body_wind(grid)
+    u = eager_u.chunk({"lat": 8, "lon": 16})
+    v = eager_v.chunk({"lat": 8, "lon": 16})
+    analyzed_vector = sg.analyze_vector(u, v, "T4")
+    reconstructed_u, reconstructed_v = analyzed_vector.synthesize()
+
+    assert hasattr(filtered.data, "dask")
+    assert hasattr(regridded.data, "dask")
+    assert hasattr(reconstructed_u.data, "dask")
+    assert hasattr(reconstructed_v.data, "dask")
+    xr.testing.assert_allclose(
+        filtered.compute(), sg.filter(eager_field, "T4"), rtol=0.0, atol=0.0
+    )
+    xr.testing.assert_allclose(
+        regridded.compute(),
+        sg.regrid(eager_field, target, "T4"),
+        rtol=0.0,
+        atol=0.0,
+    )
+    xr.testing.assert_allclose(reconstructed_u.compute(), eager_u, rtol=0.0, atol=2e-14)
+    xr.testing.assert_allclose(reconstructed_v.compute(), eager_v, rtol=0.0, atol=2e-14)
+
+
 def test_analyzed_representations_keep_scalar_and_vector_synthesis_lazy() -> None:
     grid = supported_grid("cc")
     field = scalar_field(grid, leading=True).chunk({"member": 1, "lat": 8, "lon": 12})

@@ -41,6 +41,11 @@ class _JaxTransform:
 def _validate_grid(grid: Grid, name: str = "grid") -> None:
     if not isinstance(grid, Grid):
         raise TypeError(f"{name} must be a spharmgrid.Grid")
+    if grid.kind == "f1":
+        raise ValueError(
+            "spharmgrid.jax does not support F1 grids; "
+            "use the Xarray/DUCC API for this grid geometry"
+        )
     bandlimit = _native_bandlimit(grid)
     if grid.kind == "cc" and grid.nlon != 2 * bandlimit:
         raise ValueError(
@@ -51,11 +56,19 @@ def _validate_grid(grid: Grid, name: str = "grid") -> None:
 
 
 def _native_bandlimit(grid: Grid) -> int:
-    return grid.nlat if grid.kind == "gl" else grid.nlat - 1
+    if grid.kind == "gl":
+        return grid.nlat
+    if grid.kind == "cc":
+        return grid.nlat - 1
+    raise ValueError(f"spharmgrid.jax does not support {grid.kind.upper()} grids")
 
 
 def _sampling(grid: Grid) -> str:
-    return "gl" if grid.kind == "gl" else "mwss"
+    if grid.kind == "gl":
+        return "gl"
+    if grid.kind == "cc":
+        return "mwss"
+    raise ValueError(f"spharmgrid.jax does not support {grid.kind.upper()} grids")
 
 
 def _make_transform(

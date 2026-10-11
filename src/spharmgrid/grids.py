@@ -5,7 +5,7 @@
 """Supported global spherical grids and coordinate discovery.
 
 The public grid descriptor is small.  ``ducc0`` performs the
-actual spherical-harmonic transforms; this module validates the two sampling
+actual spherical harmonic transforms; this module validates the three sampling
 geometries that spharmgrid passes to it.
 """
 
@@ -18,7 +18,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
-GridKind = Literal["gl", "cc"]
+GridKind = Literal["gl", "cc", "f1"]
 
 _LATITUDE_NAMES = ("lat", "latitude")
 _LONGITUDE_NAMES = ("lon", "longitude")
@@ -71,13 +71,13 @@ class GridCapabilities:
 
 @dataclass(frozen=True, slots=True)
 class Grid:
-    """A rectangular global Gauss--Legendre or Clenshaw--Curtis grid.
+    """A rectangular global GL, CC, or F1 grid.
 
     Parameters
     ----------
     kind:
-        ``"gl"`` for Gauss--Legendre nodes or ``"cc"`` for a pole-including
-        Clenshaw--Curtis grid.
+        ``"gl"`` for Gauss--Legendre nodes, ``"cc"`` for a pole-including
+        Clenshaw--Curtis grid, or ``"f1"`` for Fejér-1 nodes.
     latitude, longitude:
         One-dimensional coordinates in degrees.  Latitude may be ascending or
         descending.  Longitude must contain one complete, non-duplicated
@@ -90,8 +90,8 @@ class Grid:
 
     def __post_init__(self) -> None:
         kind = self.kind.lower()
-        if kind not in {"gl", "cc"}:
-            raise ValueError("grid kind must be 'gl' or 'cc'")
+        if kind not in {"gl", "cc", "f1"}:
+            raise ValueError("grid kind must be 'gl', 'cc', or 'f1'")
         latitude = np.array(self.latitude, dtype=np.float64, copy=True)
         longitude = np.array(self.longitude, dtype=np.float64, copy=True)
         _validate_grid_arrays(kind, latitude, longitude)
@@ -152,13 +152,35 @@ def clenshaw_curtis_grid(
     return Grid("cc", latitude, longitude)
 
 
+def fejer1_grid(
+    nlat: int,
+    nlon: int,
+    *,
+    lon0: float = 0.0,
+    latitude_order: Literal["ascending", "descending"] = "ascending",
+) -> Grid:
+    """Construct a Fejér-1 (F1) grid without either geographic pole.
+
+    For north-to-south ring index ``j``, the colatitudes are
+    ``pi * (j + 0.5) / nlat``. Longitudes are equally spaced, east-positive
+    degrees beginning at ``lon0``.
+    """
+    _validate_shape_arguments(nlat, nlon)
+    _validate_latitude_order(latitude_order)
+    theta = np.pi * (np.arange(nlat, dtype=np.float64) + 0.5) / nlat
+    latitude = 90.0 - np.rad2deg(theta)
+    if latitude_order == "ascending":
+        latitude = latitude[::-1]
+    longitude = _longitudes(nlon, lon0)
+    return Grid("f1", latitude, longitude)
+
+
 def detect_grid(field: xr.DataArray | xr.Dataset) -> Grid:
     """Return the supported global grid described by an xarray object.
 
-    A regular latitude--longitude field is accepted as CC only when it has
-    both poles, equally spaced latitude values, and a complete cyclic
-    longitude coordinate.  Other regular grids are rejected rather than
-    being reinterpreted as CC.
+    Regular latitude--longitude fields are accepted only when their nodes
+    match CC or F1 exactly within coordinate storage tolerance. Other
+    regular grids are rejected rather than reinterpreted as a supported grid.
     """
     coordinates = find_horizontal_coordinates(field)
     latitude = _coordinate_values(field, coordinates.latitude_name)
@@ -169,9 +191,11 @@ def detect_grid(field: xr.DataArray | xr.Dataset) -> Grid:
         return Grid("gl", latitude, longitude)
     if _matches_cc_latitudes(latitude):
         return Grid("cc", latitude, longitude)
+    if _matches_f1_latitudes(latitude):
+        return Grid("f1", latitude, longitude)
     raise ValueError(
-        "unsupported latitude coordinate: expected DUCC Gauss--Legendre "
-        "nodes or a pole-including equally spaced Clenshaw--Curtis grid"
+        "unsupported latitude coordinate: expected DUCC Gauss--Legendre, "
+        "pole-including Clenshaw--Curtis, or Fejér-1 nodes"
     )
 
 
@@ -229,8 +253,8 @@ def grid_layout(grid: Grid) -> GridLayout:
 def grid_capabilities(grid: Grid) -> GridCapabilities:
     """Return the scalar analysis limits for the installed DUCC geometry.
 
-    DUCC documents ``ntheta - 2`` as the CC latitude limit and ``ntheta - 1``
-    for GL.  The azimuthal limit is ``(nphi - 1) // 2`` for both geometries.
+    DUCC documents ``ntheta - 2`` for CC and ``ntheta - 1`` for GL and F1.
+    The azimuthal limit is ``(nphi - 1) // 2``.
     """
     latitude_lmax = grid.nlat - 2 if grid.kind == "cc" else grid.nlat - 1
     longitude_mmax = (grid.nlon - 1) // 2
@@ -375,12 +399,18 @@ def _validate_grid_arrays(
     _validate_shape_arguments(int(latitude.size), int(longitude.size))
     if not np.isfinite(latitude).all():
         raise ValueError("latitude values must be finite")
-    if kind == "gl":
-        valid_latitude = _matches_gl_latitudes(latitude)
-    else:
-        valid_latitude = _matches_cc_latitudes(latitude)
+    matchers = {
+        "gl": _matches_gl_latitudes,
+        "cc": _matches_cc_latitudes,
+        "f1": _matches_f1_latitudes,
+    }
+    valid_latitude = matchers[kind](latitude)
     if not valid_latitude:
-        label = "Gauss--Legendre" if kind == "gl" else "pole-including CC"
+        label = {
+            "gl": "Gauss--Legendre",
+            "cc": "pole-including CC",
+            "f1": "Fejer-1",
+        }[kind]
         raise ValueError(f"latitude values do not define a {label} grid")
     _validate_longitude(longitude)
 
@@ -388,12 +418,29 @@ def _validate_grid_arrays(
 def _matches_cc_latitudes(latitude: NDArray[np.float64]) -> bool:
     if latitude.size < 2 or not np.isfinite(latitude).all():
         return False
-    ascending = _ascending_latitudes(latitude)
     expected = np.linspace(-90.0, 90.0, latitude.size, dtype=np.float64)
+    return _matches_latitude_nodes(latitude, expected)
+
+
+def _matches_f1_latitudes(latitude: NDArray[np.float64]) -> bool:
+    if latitude.size < 2 or not np.isfinite(latitude).all():
+        return False
+    theta = np.pi * (np.arange(latitude.size, dtype=np.float64) + 0.5) / latitude.size
+    expected = (90.0 - np.rad2deg(theta))[::-1]
+    return _matches_latitude_nodes(latitude, expected)
+
+
+def _matches_latitude_nodes(
+    latitude: NDArray[np.float64], expected_ascending: NDArray[np.float64]
+) -> bool:
+    try:
+        ascending = _ascending_latitudes(latitude)
+    except ValueError:
+        return False
     return bool(
         np.allclose(
             ascending,
-            expected,
+            expected_ascending,
             rtol=0.0,
             atol=_coordinate_tolerance(latitude),
         )
@@ -403,22 +450,11 @@ def _matches_cc_latitudes(latitude: NDArray[np.float64]) -> bool:
 def _matches_gl_latitudes(latitude: NDArray[np.float64]) -> bool:
     if latitude.size < 2 or not np.isfinite(latitude).all():
         return False
-    try:
-        ascending = _ascending_latitudes(latitude)
-    except ValueError:
-        return False
     import ducc0
 
     expected_descending = 90.0 - np.rad2deg(ducc0.misc.GL_thetas(latitude.size))
     expected = expected_descending[::-1]
-    return bool(
-        np.allclose(
-            ascending,
-            expected,
-            rtol=0.0,
-            atol=_coordinate_tolerance(latitude),
-        )
-    )
+    return _matches_latitude_nodes(latitude, expected)
 
 
 def _ascending_latitudes(latitude: NDArray[np.float64]) -> NDArray[np.float64]:

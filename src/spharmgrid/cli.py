@@ -21,7 +21,12 @@ from typing import Literal
 
 import xarray as xr
 
-from .grids import clenshaw_curtis_grid, detect_grid, gaussian_grid
+from .grids import (
+    clenshaw_curtis_grid,
+    detect_grid,
+    fejer1_grid,
+    gaussian_grid,
+)
 from .kinematics import kinematics, potentials, wind
 from .metadata import Quantity, find_variable
 from .regrid import regrid
@@ -104,7 +109,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    info = subparsers.add_parser("info", help="show detected GL/CC grid information")
+    info = subparsers.add_parser("info", help="show detected global grid information")
     info.add_argument("input", help="input readable by an installed xarray backend")
 
     filtered = subparsers.add_parser("filter", help="spectrally filter one variable")
@@ -122,7 +127,7 @@ def _parser() -> argparse.ArgumentParser:
     regridded.add_argument(
         "--var", help="variable to regrid; required for multi-variable input"
     )
-    regridded.add_argument("--grid", choices=("gl", "cc"), required=True)
+    regridded.add_argument("--grid", choices=("gl", "cc", "f1"), required=True)
     regridded.add_argument("--nlat", type=int, required=True)
     regridded.add_argument("--nlon", type=int, required=True)
     regridded.add_argument("--lon0", type=float, default=0.0)
@@ -345,7 +350,11 @@ def _regrid(
     policy: _ExecutionPolicy,
 ) -> int:
     field = _select_variable(dataset, arguments.var)
-    constructor = gaussian_grid if arguments.grid == "gl" else clenshaw_curtis_grid
+    constructor = {
+        "gl": gaussian_grid,
+        "cc": clenshaw_curtis_grid,
+        "f1": fejer1_grid,
+    }[arguments.grid]
     target = constructor(
         arguments.nlat,
         arguments.nlon,

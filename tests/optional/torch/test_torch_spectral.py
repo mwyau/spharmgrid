@@ -199,6 +199,16 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
         sgt.filter(make_fields(gl_grid)[0], "T99", grid=gl_grid)
 
 
+def test_f1_grid_is_rejected_by_torch_operations() -> None:
+    grid = sg.fejer1_grid(16, 32)
+    field = torch.zeros((grid.nlat, grid.nlon), dtype=torch.float64)
+
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgt.filter(field, grid=grid)
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgt.analyze(field, grid=grid)
+
+
 @pytest.mark.parametrize(
     ("notation", "shape"),
     [("T42x10", "trapezoidal"), ("R42", "rhomboidal")],

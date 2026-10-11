@@ -1,11 +1,12 @@
 # Spectral regridding
 
-`regrid()` supports all source-target combinations of Gauss–Legendre (GL) and
-Clenshaw–Curtis (CC) grids:
+`regrid()` supports all source-target combinations of Gauss–Legendre (GL),
+Clenshaw–Curtis (CC), and Fejér-1 (F1) grids:
 
 ```text
-GL -> GL    GL -> CC
-CC -> GL    CC -> CC
+GL -> GL    GL -> CC    GL -> F1
+CC -> GL    CC -> CC    CC -> F1
+F1 -> GL    F1 -> CC    F1 -> F1
 ```
 
 ```python
@@ -38,7 +39,7 @@ representable on both grids.
 
 ## Vector regridding
 
-`regrid_vector()` uses the same GL/CC combinations and the same `truncation`, `lmin`,
+`regrid_vector()` uses the same GL/CC/F1 combinations and the same `truncation`, `lmin`,
 `lmax`, and `taper` arguments as scalar `regrid()`:
 
 ```python

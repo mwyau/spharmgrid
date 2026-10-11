@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import pytest
@@ -14,13 +14,13 @@ import xarray as xr
 from numpy.typing import NDArray
 
 import spharmgrid as sg
-from tests.conftest import scalar_field, supported_grid
+from tests.conftest import SupportedGridKind, scalar_field, supported_grid
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 @pytest.mark.parametrize("latitude_order", ["ascending", "descending"])
 def test_constructed_grid_is_detected(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
     latitude_order: Literal["ascending", "descending"],
 ) -> None:
     grid = supported_grid(kind, latitude_order=latitude_order)
@@ -33,10 +33,10 @@ def test_constructed_grid_is_detected(
     np.testing.assert_array_equal(detected.longitude, grid.longitude)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 @pytest.mark.parametrize("longitude_origin", [0.0, -180.0])
 def test_cyclic_longitude_conventions_preserve_the_physical_field(
-    kind: Literal["cc", "gl"], longitude_origin: float
+    kind: SupportedGridKind, longitude_origin: float
 ) -> None:
     grid = supported_grid(kind, lon0=longitude_origin)
     field = scalar_field(grid)
@@ -45,6 +45,26 @@ def test_cyclic_longitude_conventions_preserve_the_physical_field(
 
     np.testing.assert_allclose(result, field, rtol=0.0, atol=1.0e-14)
     np.testing.assert_array_equal(result.lon, field.lon)
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_cyclic_longitude_roll_preserves_phase_and_restores_coordinates(
+    kind: SupportedGridKind,
+) -> None:
+    grid = supported_grid(kind)
+    rolled_grid = sg.Grid(
+        grid.kind,
+        grid.latitude,
+        np.roll(grid.longitude, 5),
+    )
+    rolled_field = scalar_field(rolled_grid)
+
+    result = sg.regrid(rolled_field, grid, "T3")
+
+    expected = scalar_field(grid)
+    np.testing.assert_array_equal(result.lat, expected.lat)
+    np.testing.assert_array_equal(result.lon, expected.lon)
+    np.testing.assert_allclose(result, expected, rtol=0.0, atol=2.0e-13)
 
 
 def test_cf_coordinate_metadata_precedes_canonical_name() -> None:
@@ -113,7 +133,7 @@ def test_unsupported_grid_coordinates_raise(
 
 def test_generated_target_coordinates_carry_cf_axis_metadata() -> None:
     source = scalar_field(supported_grid("cc"))
-    target = sg.gaussian_grid(12, 24)
+    target = sg.fejer1_grid(12, 24)
 
     result = sg.regrid(source, target)
 
@@ -127,3 +147,61 @@ def test_generated_target_coordinates_carry_cf_axis_metadata() -> None:
         "units": "degrees_east",
         "axis": "X",
     }
+
+
+@pytest.mark.parametrize("latitude_order", ["descending", "ascending"])
+def test_fejer1_nodes_match_definition(
+    latitude_order: Literal["ascending", "descending"],
+) -> None:
+    grid = sg.fejer1_grid(
+        8,
+        16,
+        lon0=37.5,
+        latitude_order=latitude_order,
+    )
+    north_to_south = 90.0 - np.rad2deg(
+        np.pi * (np.arange(8, dtype=np.float64) + 0.5) / 8
+    )
+    expected = (
+        north_to_south if latitude_order == "descending" else north_to_south[::-1]
+    )
+
+    assert grid.kind == "f1"
+    np.testing.assert_allclose(grid.latitude, expected, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_array_equal(grid.longitude, 37.5 + np.arange(16) * 22.5)
+
+
+@pytest.mark.parametrize(
+    ("nlat", "nlon", "latitude_order", "message"),
+    [
+        (1, 16, "ascending", "nlat"),
+        (8, 1, "ascending", "nlon"),
+        (8, 16, "sideways", "latitude_order"),
+    ],
+)
+def test_fejer1_constructor_rejects_invalid_sampling(
+    nlat: int,
+    nlon: int,
+    latitude_order: str,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        sg.fejer1_grid(
+            nlat,
+            nlon,
+            latitude_order=cast(Literal["ascending", "descending"], latitude_order),
+        )
+
+
+def test_fejer1_detection_rejects_near_miss_and_partial_latitudes() -> None:
+    grid = sg.fejer1_grid(8, 16)
+    near_miss = grid.latitude.copy()
+    near_miss[2] += 0.01
+    for latitude in (near_miss, grid.latitude[1:]):
+        field = xr.DataArray(
+            np.zeros((latitude.size, grid.nlon)),
+            dims=("lat", "lon"),
+            coords={"lat": latitude, "lon": grid.longitude},
+        )
+        with pytest.raises(ValueError, match="unsupported latitude"):
+            sg.detect_grid(field)

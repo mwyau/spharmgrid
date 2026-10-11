@@ -6,18 +6,16 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 import pytest
 
 import spharmgrid as sg
-from tests.conftest import degree_one_field, supported_grid
+from tests.conftest import SupportedGridKind, degree_one_field, supported_grid
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_gradient_laplacian_and_inverse_laplacian_of_degree_one(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     field = degree_one_field(grid)
@@ -46,8 +44,8 @@ def test_gradient_laplacian_and_inverse_laplacian_of_degree_one(
     )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_inverse_laplacian_sets_degree_zero_to_zero(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_inverse_laplacian_sets_degree_zero_to_zero(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     field = degree_one_field(grid) + 7.0
 

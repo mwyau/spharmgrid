@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fejér-1 grids
+
+- Added Fejér-1 grid construction and detection to the Xarray/DUCC API, including scalar
+  and spin-1 operations, spectral fields, regridding, accessors, and CLI grid selection.
+  DUCC's inclusive latitude limit is `lmax = nlat - 1`; the longitude-order limit is
+  determined independently by `(nlon - 1) // 2`. JAX and PyTorch reject F1 grids.
+- Added optional SciPy harmonic checks through T179 and SHTns scalar parity at T35 on
+  72×144 F1 sampling. These checks run in the separate validation workflow.
+
 ## v0.4.1 - 2026-10-10
 
 ### Backend compatibility

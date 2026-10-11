@@ -32,6 +32,8 @@ or rhomboidal coefficient domain.
 
 .. autofunction:: spharmgrid.clenshaw_curtis_grid
 
+.. autofunction:: spharmgrid.fejer1_grid
+
 .. autofunction:: spharmgrid.detect_grid
 
 .. autofunction:: spharmgrid.parse_spectral
