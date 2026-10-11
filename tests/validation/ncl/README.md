@@ -97,7 +97,7 @@ Generate the input fields and NCL outputs, then run the tests:
 work=$(mktemp -d /tmp/spharmgrid-ncl.XXXXXX)
 mkdir -p "$work/inputs" "$work/outputs" "$work/normalized"
 
-uv run --no-sync python tests/ncl/generate_inputs.py --output-dir "$work/inputs"
+uv run --no-sync python tests/validation/ncl/generate_inputs.py --output-dir "$work/inputs"
 
 for grid in gl cc; do
     for family in analytic random; do
@@ -106,17 +106,17 @@ for grid in gl cc; do
             SPHARMGRID_NCL_GRID="$grid" \
             SPHARMGRID_NCL_FAMILY="$family" \
             conda run --no-capture-output --name spharmgrid-ncl \
-            ncl -Q tests/ncl/generate_references.ncl
+            ncl -Q tests/validation/ncl/generate_references.ncl
     done
 done
 
-uv run --no-sync python tests/ncl/normalize_references.py \
+uv run --no-sync python tests/validation/ncl/normalize_references.py \
     --input-dir "$work/inputs" \
     --ncl-output-dir "$work/outputs" \
     --output-dir "$work/normalized"
 
 SPHARMGRID_NCL_OUTPUT_DIR="$work/normalized" \
-    uv run --no-sync pytest tests/ncl/test_ncl.py
+    uv run --no-sync pytest tests/validation/ncl/test_ncl.py
 ```
 
 The workflow uploads the inputs, NCL outputs, normalized arrays, and logs as GitHub

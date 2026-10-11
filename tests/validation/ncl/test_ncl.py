@@ -15,7 +15,7 @@ import pytest
 import xarray as xr
 
 import spharmgrid as sg
-from tests.ncl.reference import (
+from tests.validation.ncl.reference import (
     DOMAINS,
     GRID_KINDS,
     INPUT_FAMILIES,

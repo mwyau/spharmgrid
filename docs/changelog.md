@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fejér-1 grids
+
+- Added Fejér-1 grid construction, detection, scalar and vector spherical harmonic
+  operations, and spectral regridding to the Xarray/DUCC API. The maximum latitude
+  degree is `nlat - 1`, with longitude order limited separately by `(nlon - 1) // 2`.
+  JAX and PyTorch do not support F1.
+- Added SciPy harmonic checks at T71 and T179 and SHTns vector comparisons.
+
 ## v0.4.1 - 2026-10-10
 
 ### Backend compatibility

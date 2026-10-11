@@ -13,7 +13,13 @@ spherical harmonic transforms for the Xarray API. The optional
 
 from ._spectral_field import SpectralField, SpectralVectorField, analyze, analyze_vector
 from ._transform import TransformSpec
-from .grids import Grid, clenshaw_curtis_grid, detect_grid, gaussian_grid
+from .grids import (
+    Grid,
+    clenshaw_curtis_grid,
+    detect_grid,
+    fejer1_grid,
+    gaussian_grid,
+)
 from .kinematics import (
     divergence,
     divergent_wind,
@@ -50,6 +56,7 @@ __all__ = [
     "detect_grid",
     "divergent_wind",
     "divergence",
+    "fejer1_grid",
     "filter",
     "gaussian_grid",
     "gradient",

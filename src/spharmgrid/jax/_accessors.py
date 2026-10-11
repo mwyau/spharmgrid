@@ -406,11 +406,11 @@ class DataArrayAccessor:
 
     @property
     def grid(self) -> Grid:
-        """The detected supported GL or CC horizontal grid."""
+        """The detected GL, CC, or F1 horizontal grid."""
         return detect_grid(self._obj)
 
     @property
-    def grid_type(self) -> Literal["gl", "cc"]:
+    def grid_type(self) -> Literal["gl", "cc", "f1"]:
         """The lowercase detected grid family."""
         return self.grid.kind
 
@@ -771,7 +771,7 @@ class DatasetAccessor:
         return detect_grid(self._obj)
 
     @property
-    def grid_type(self) -> Literal["gl", "cc"]:
+    def grid_type(self) -> Literal["gl", "cc", "f1"]:
         """The lowercase detected grid family."""
         return self.grid.kind
 

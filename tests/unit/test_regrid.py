@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 import pytest
 import xarray as xr
@@ -22,7 +20,7 @@ from spharmgrid._ducc import (
 )
 from spharmgrid._transform import TransformSpec
 from spharmgrid.grids import grid_layout
-from tests.conftest import scalar_field, supported_grid
+from tests.conftest import SupportedGridKind, scalar_field, supported_grid
 
 
 def _axisymmetric_vector_field(grid: sg.Grid) -> tuple[xr.DataArray, xr.DataArray]:
@@ -158,12 +156,10 @@ def test_rhomboidal_vector_regridding_uses_the_same_domain_mask() -> None:
     np.testing.assert_allclose(boundary.v, expected_v, rtol=0.0, atol=3.0e-13)
 
 
-@pytest.mark.parametrize(
-    ("source_kind", "target_kind"),
-    [("cc", "gl"), ("gl", "cc"), ("cc", "cc"), ("gl", "gl")],
-)
+@pytest.mark.parametrize("source_kind", ["cc", "gl", "f1"])
+@pytest.mark.parametrize("target_kind", ["cc", "gl", "f1"])
 def test_regridding_low_degree_field_all_supported_pairs(
-    source_kind: Literal["cc", "gl"], target_kind: Literal["cc", "gl"]
+    source_kind: SupportedGridKind, target_kind: SupportedGridKind
 ) -> None:
     source = supported_grid(source_kind)
     target = supported_grid(target_kind)
@@ -177,12 +173,10 @@ def test_regridding_low_degree_field_all_supported_pairs(
     np.testing.assert_array_equal(result.lon, target.longitude)
 
 
-@pytest.mark.parametrize(
-    ("source_kind", "target_kind"),
-    [("cc", "gl"), ("gl", "cc"), ("cc", "cc"), ("gl", "gl")],
-)
+@pytest.mark.parametrize("source_kind", ["cc", "gl", "f1"])
+@pytest.mark.parametrize("target_kind", ["cc", "gl", "f1"])
 def test_vector_regridding_low_degree_field_all_supported_pairs(
-    source_kind: Literal["cc", "gl"], target_kind: Literal["cc", "gl"]
+    source_kind: SupportedGridKind, target_kind: SupportedGridKind
 ) -> None:
     source = supported_grid(source_kind)
     target = supported_grid(target_kind)
@@ -197,9 +191,9 @@ def test_vector_regridding_low_degree_field_all_supported_pairs(
     assert result.v.attrs == v.attrs
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_same_grid_vector_filter_removes_degree_two(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     u, v = _axisymmetric_vector_field(grid)
@@ -215,9 +209,9 @@ def test_same_grid_vector_filter_removes_degree_two(
     np.testing.assert_array_equal(result.lon, grid.longitude)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_same_grid_vector_taper_has_expected_upper_degree_response(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     mixed_u, mixed_v = _axisymmetric_vector_field(grid)

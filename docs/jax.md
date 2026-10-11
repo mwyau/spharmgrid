@@ -40,6 +40,9 @@ longitude; all preceding dimensions are preserved.
 | Gauss–Legendre (GL)  | `(L, nlon)`, `nlon ≥ 2` |
 | Clenshaw–Curtis (CC) | `(L + 1, 2L)`           |
 
+F1 grids are not supported by the JAX API. Passing an F1 `Grid` to a JAX operation
+raises `ValueError`; use the Xarray/DUCC API for F1 transforms.
+
 For GL grids, `L = nlat` sets the maximum spherical degree `L - 1`. Longitude sampling
 sets `longitude_mmax = floor((nlon - 1) / 2)`, so the transform uses
 `mmax = min(L - 1, longitude_mmax)`. The centered JAX coefficient array has shape

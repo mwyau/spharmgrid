@@ -9,7 +9,7 @@ import xarray as xr
 import spharmgrid as sg
 
 field = xr.open_dataarray("msl.nc")
-print(field.sg.grid_type)  # "gl" or "cc"
+print(field.sg.grid_type)  # "gl", "cc", or "f1"
 
 filtered = field.sg.filter("T6-42")
 tapered = field.sg.filter("T6-42", taper=0.1)

@@ -30,7 +30,12 @@ from spharmgrid.metadata import (
     vector_operator_metadata,
     wind_component_metadata,
 )
-from tests.conftest import scalar_field, solid_body_wind, supported_grid
+from tests.conftest import (
+    SupportedGridKind,
+    scalar_field,
+    solid_body_wind,
+    supported_grid,
+)
 
 
 def _scalar_mode(
@@ -73,9 +78,9 @@ def test_core_reusable_spectral_api_is_public() -> None:
     assert callable(sg.analyze_vector)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_scalar_analysis_synthesis_preserves_layout_and_metadata(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
     field = scalar_field(grid, leading=True, name="air_temperature")
@@ -94,9 +99,9 @@ def test_scalar_analysis_synthesis_preserves_layout_and_metadata(
     assert reconstructed.attrs == field.attrs
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_scalar_spectral_methods_match_one_shot_operations(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     target = supported_grid("gl" if kind == "cc" else "cc")
@@ -135,8 +140,8 @@ def test_scalar_spectral_methods_match_one_shot_operations(
     )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_reusable_filter_skips_true_no_op(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_reusable_filter_skips_true_no_op(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     scalar = sg.analyze(scalar_field(grid))
     u, v = solid_body_wind(grid)
@@ -148,8 +153,8 @@ def test_reusable_filter_skips_true_no_op(kind: Literal["cc", "gl"]) -> None:
     assert vector.filter(vector.spec) is vector
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_vector_domains_reject_t0(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_vector_domains_reject_t0(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     u, v = solid_body_wind(grid)
 
@@ -161,9 +166,9 @@ def test_vector_domains_reject_t0(kind: Literal["cc", "gl"]) -> None:
         vector.filter("T0")
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_filter_updates_available_scalar_domain_and_rejects_expansion(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     field = scalar_field(grid)
@@ -279,9 +284,9 @@ def test_cumulative_vector_tapers_match_one_shot_regrid() -> None:
     np.testing.assert_allclose(actual[1], expected.v, rtol=0.0, atol=3.0e-14)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_vector_spectral_methods_match_one_shot_operations(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     target = supported_grid("gl" if kind == "cc" else "cc")
@@ -396,9 +401,9 @@ def test_reusable_vector_methods_do_not_reanalyze(
     assert analysis.call_count == 1
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_restricted_scalar_domain_is_preserved_on_synthesis_and_regrid(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     source = supported_grid(kind)
     target = supported_grid("gl" if kind == "cc" else "cc")
@@ -452,9 +457,9 @@ def test_unrestricted_domain_intersects_a_smaller_target_grid() -> None:
     np.testing.assert_allclose(result_v, expected.v, rtol=0.0, atol=3.0e-14)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_restricted_vector_domain_is_preserved_on_regrid(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     source = supported_grid(kind)
     target = supported_grid("gl" if kind == "cc" else "cc")
@@ -514,9 +519,9 @@ def test_reusable_shaped_domains_match_one_shot_operations(
     )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_reusable_domain_cannot_be_expanded(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     source = supported_grid(kind)
     target = supported_grid("gl" if kind == "cc" else "cc")

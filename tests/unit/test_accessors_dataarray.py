@@ -6,14 +6,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 import pytest
 import xarray as xr
 
 import spharmgrid as sg
 from tests.conftest import (
+    SupportedGridKind,
     degree_one_field,
     scalar_field,
     solid_body_wind,
@@ -32,8 +31,8 @@ def test_root_import_registers_sg() -> None:
     assert hasattr(xr.Dataset(), "sg")
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_dataarray_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_dataarray_grid_accessor_properties(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     field = scalar_field(grid)
     expected = sg.detect_grid(field)
@@ -44,8 +43,9 @@ def test_dataarray_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
     assert field.sg.grid_type == expected.kind
 
 
-def test_dataarray_scalar_accessors() -> None:
-    field = scalar_field(supported_grid("cc"), leading=True)
+@pytest.mark.parametrize("kind", ["cc", "f1"])
+def test_dataarray_scalar_accessors(kind: SupportedGridKind) -> None:
+    field = scalar_field(supported_grid(kind), leading=True)
     target = supported_grid("gl")
     radius = 1.1 * sg.EARTH_RADIUS_M
 
@@ -67,9 +67,9 @@ def test_dataarray_scalar_accessors() -> None:
     )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_dataarray_analyze_vector_accessor_matches_direct(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
     u, v = solid_body_wind(grid)

@@ -14,12 +14,16 @@ import xarray as xr
 
 import spharmgrid as sg
 from spharmgrid.cli import _open_dataset, main
-from tests.conftest import scalar_field, solid_body_wind, supported_grid
+from tests.conftest import (
+    SupportedGridKind,
+    scalar_field,
+    solid_body_wind,
+    supported_grid,
+)
 
 
 def _require_cli_backends() -> None:
     pytest.importorskip("h5netcdf")
-    pytest.importorskip("zarr")
     pytest.importorskip("dask")
 
 
@@ -48,18 +52,21 @@ def _write_netcdf(dataset: xr.Dataset, path: Path) -> None:
     dataset.to_netcdf(path, engine="h5netcdf")
 
 
+@pytest.mark.parametrize("kind", ["cc", "f1"])
 def test_info_and_filter_commands(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    kind: SupportedGridKind,
 ) -> None:
     _require_cli_backends()
-    grid = supported_grid("cc")
+    grid = supported_grid(kind)
     field = scalar_field(grid, name="msl")
     input_path = tmp_path / "input.nc"
     output_path = tmp_path / "filtered.nc"
     _write_netcdf(field.to_dataset(), input_path)
 
     assert main(["info", str(input_path)]) == 0
-    assert "grid_type: cc" in capsys.readouterr().out
+    assert f"grid_type: {kind}" in capsys.readouterr().out
     assert (
         main(
             [
@@ -84,6 +91,7 @@ def test_info_and_filter_commands(
     "specification.*:UserWarning"
 )
 def test_filter_reads_and_writes_zarr(tmp_path: Path) -> None:
+    pytest.importorskip("zarr")
     _require_cli_backends()
     grid = supported_grid("cc")
     field = scalar_field(grid, name="msl")
@@ -132,7 +140,7 @@ def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
     scalar_input = tmp_path / "scalar.nc"
     regridded_output = tmp_path / "regridded.nc"
     field = scalar_field(grid, name="msl")
-    target_grid = sg.gaussian_grid(12, 24)
+    target_grid = sg.fejer1_grid(12, 24)
     expected_regridded = sg.regrid(field, target_grid, truncation="T3")
     _write_netcdf(field.to_dataset(), scalar_input)
 
@@ -145,7 +153,7 @@ def test_regrid_potentials_and_wind_commands(tmp_path: Path) -> None:
                 "--var",
                 "msl",
                 "--grid",
-                "gl",
+                "f1",
                 "--nlat",
                 "12",
                 "--nlon",

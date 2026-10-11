@@ -14,6 +14,7 @@ import xarray as xr
 
 import spharmgrid as sg
 from tests.conftest import (
+    SupportedGridKind,
     degree_one_field,
     scalar_field,
     solid_body_wind,
@@ -27,8 +28,8 @@ def _assert_dataset_identical(actual: xr.Dataset, expected: xr.Dataset) -> None:
     xr.testing.assert_identical(actual, expected)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_dataset_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_dataset_grid_accessor_properties(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     dataset = xr.Dataset({"field": scalar_field(grid)})
     expected = sg.detect_grid(dataset)
@@ -40,7 +41,7 @@ def test_dataset_grid_accessor_properties(kind: Literal["cc", "gl"]) -> None:
 
 
 def test_dataset_regrid_vector_accessor() -> None:
-    source = supported_grid("cc")
+    source = supported_grid("f1")
     target = supported_grid("gl")
     u, v = solid_body_wind(source)
     dataset = xr.Dataset({"eastward_input": u, "northward_input": v})
@@ -67,9 +68,9 @@ def test_dataset_regrid_vector_accessor() -> None:
     _assert_dataset_identical(actual, expected)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_dataset_analyze_vector_accessor_discovers_and_overrides_components(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     u, v = solid_body_wind(grid)

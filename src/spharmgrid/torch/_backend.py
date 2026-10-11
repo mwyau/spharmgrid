@@ -31,6 +31,11 @@ from ._cc_sht import _ExtendedCCRealSHT, _ExtendedCCRealVectorSHT
 def _validate_grid(grid: Grid, name: str = "grid") -> None:
     if not isinstance(grid, Grid):
         raise TypeError(f"{name} must be a spharmgrid.Grid")
+    if grid.kind == "f1":
+        raise ValueError(
+            "spharmgrid.torch does not support F1 grids; "
+            "use the Xarray/DUCC API for this grid geometry"
+        )
 
 
 def _resolve_transform_spec(
@@ -64,7 +69,11 @@ def _intersect_transform_spec(
 
 
 def _torch_grid_name(grid: Grid) -> str:
-    return "legendre-gauss" if grid.kind == "gl" else "equiangular"
+    if grid.kind == "gl":
+        return "legendre-gauss"
+    if grid.kind == "cc":
+        return "equiangular"
+    raise ValueError(f"spharmgrid.torch does not support {grid.kind.upper()} grids")
 
 
 def _make_analysis_module(

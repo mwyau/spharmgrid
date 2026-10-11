@@ -13,9 +13,11 @@ import xarray as xr
 
 import spharmgrid as sg
 
+SupportedGridKind = Literal["cc", "gl", "f1"]
+
 
 def supported_grid(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
     *,
     latitude_order: Literal["ascending", "descending"] = "ascending",
     lon0: float = 0.0,
@@ -25,6 +27,13 @@ def supported_grid(
         return sg.clenshaw_curtis_grid(
             17,
             36,
+            latitude_order=latitude_order,
+            lon0=lon0,
+        )
+    if kind == "f1":
+        return sg.fejer1_grid(
+            16,
+            32,
             latitude_order=latitude_order,
             lon0=lon0,
         )

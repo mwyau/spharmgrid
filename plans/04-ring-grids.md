@@ -1,9 +1,14 @@
 # Phase 4: additional global SHT grids
 
+## Status
+
+**Planned.** HEALPix and reduced Gaussian grids are not implemented. Fejér-1 support for
+Xarray/DUCC is described in [Phase 3.5](03a-fejer-grids.md).
+
 ## Goal
 
-Extend spharmgrid beyond full rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC)
-fields after the Phase-3 backend boundary is established.
+Extend spharmgrid beyond full rectangular global grids to HEALPix and reduced Gaussian
+grids.
 
 Add the two highest-value non-rectangular global grid families separately:
 
@@ -20,7 +25,8 @@ The expected initial backend capability direction is:
 
 ```text
 GL                DUCC0 + torch-harmonics + S2FFT where validated
-CC                DUCC0 + torch-harmonics where validated
+CC                DUCC0 + torch-harmonics + S2FFT where validated
+F1                DUCC0
 HEALPix           DUCC0 + S2FFT
 reduced Gaussian  DUCC0 initially
 ```

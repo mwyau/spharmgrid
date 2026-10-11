@@ -34,9 +34,10 @@ conventions, units, coordinates, and API names when editing scientific text.
   Xarray/NumPy and optional JAX and PyTorch APIs. DUCC0, S2FFT, and torch-harmonics are
   the respective transform engines. Do not describe spharmgrid as a new transform
   implementation.
-- Supported horizontal grids are full Gauss–Legendre (GL) and Clenshaw–Curtis (CC)
-  grids. CC uses equally spaced latitudes from -90 to 90 degrees. Do not reinterpret
-  another latitude-longitude grid as CC.
+- The Xarray/DUCC API supports full Gauss–Legendre (GL), Clenshaw–Curtis (CC), and
+  Fejér-1 (F1) grids. CC uses equally spaced latitudes from -90 to 90 degrees. JAX and
+  PyTorch currently support GL and CC only. Do not reinterpret another
+  latitude-longitude grid as CC.
 - Preserve cyclic-longitude equivalence by moving coordinates and data together.
   Coordinate order and longitude convention must not change the physical field.
 - Direct functions and their corresponding Xarray accessors must use the same numerical

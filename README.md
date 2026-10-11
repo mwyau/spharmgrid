@@ -21,7 +21,8 @@ wind transforms. The Xarray API uses [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc
 [S2FFT](https://github.com/astro-informatics/s2fft), and the optional PyTorch API uses
 [torch-harmonics](https://github.com/NVIDIA/torch-harmonics).
 
-Supported grids are full rectangular Gauss–Legendre (GL) and Clenshaw–Curtis (CC) grids.
+The Xarray/DUCC API supports full rectangular Gauss–Legendre (GL), Clenshaw–Curtis (CC),
+and Fejér-1 (F1) grids. The JAX and PyTorch APIs support GL and CC grids.
 
 ## Install
 

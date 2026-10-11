@@ -38,4 +38,5 @@ operation; lower-level pyspharm functionality is outside this comparison.
 
 Grid terminology differs between the packages. spharmgrid's CC grid uses equally spaced
 latitudes from −90° to 90°; NCL and windspharm call this a fixed or regular grid.
-spharmgrid's GL grid uses Gaussian latitudes, corresponding to their Gaussian grid.
+spharmgrid's GL grid uses Gaussian latitudes, corresponding to their Gaussian grid. The
+listed NCL fixed-grid routines correspond to CC sampling, not Fejér-1.

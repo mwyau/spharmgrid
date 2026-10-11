@@ -115,13 +115,15 @@ def _grid_from_key(key: tuple[Any, ...]) -> Grid:
             lon0=longitude_origin,
             latitude_order=latitude_order,
         )
-    else:
+    elif kind == "cc":
         generated = clenshaw_curtis_grid(
             nlat,
             nlon,
             lon0=longitude_origin,
             latitude_order=latitude_order,
         )
+    else:
+        raise ValueError(f"spharmgrid.jax does not support {str(kind).upper()} grids")
     order_kind = longitude_order[0]
     identity = np.arange(nlon, dtype=np.intp)
     if order_kind == "identity":

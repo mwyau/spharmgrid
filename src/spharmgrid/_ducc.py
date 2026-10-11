@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 from ._transform import TransformSpec
 from .grids import Grid
 
-Geometry = Literal["CC", "GL"]
+Geometry = Literal["CC", "F1", "GL"]
 
 DEFAULT_DASK_SHT_THREADS = 1
 _ALM_INDEX_CACHE_SIZE = 8
@@ -43,7 +43,7 @@ def resolve_sht_threads(sht_threads: int | None, *, dask: bool) -> int:
 
 def geometry_for(grid: Grid) -> Geometry:
     """Map the public lowercase grid label to DUCC's geometry label."""
-    return "GL" if grid.kind == "gl" else "CC"
+    return cast(Geometry, grid.kind.upper())
 
 
 def _alm_size(lmax: int, mmax: int) -> int:

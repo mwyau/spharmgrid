@@ -16,7 +16,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 import spharmgrid as sg
-from tests.ncl.generate_inputs import RANDOM_SEED
+from tests.validation.ncl.generate_inputs import RANDOM_SEED
 
 GridKind: TypeAlias = Literal["gl", "cc"]
 InputFamily: TypeAlias = Literal["analytic", "random"]

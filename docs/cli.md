@@ -28,6 +28,8 @@ The CLI reads and writes Zarr through Xarray's Zarr methods. Other input paths u
 NetCDF and GRIB input. Non-Zarr outputs are written as NetCDF with `h5netcdf`. GRIB
 output is not supported.
 
+`info` detects GL, CC, and F1 grids. `regrid --grid` accepts `gl`, `cc`, or `f1`.
+
 Transform commands use Dask-backed Xarray inputs. `--workers` sets Dask task concurrency
 and `--sht-threads` sets DUCC threads per spherical harmonic transform. When values are
 omitted, the CLI resolves them from the available CPU count.
@@ -56,7 +58,7 @@ spharmgrid filter input.zarr output.zarr \
 
 spharmgrid regrid input.grib output.zarr \
     --var msl \
-    --grid gl --nlat 64 --nlon 128
+    --grid f1 --nlat 64 --nlon 128
 
 spharmgrid kinematics wind.nc kinematics.nc
 spharmgrid potentials wind.zarr potentials.zarr

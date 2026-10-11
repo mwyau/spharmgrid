@@ -1,5 +1,13 @@
 # Phase 3: multi-backend SHT execution
 
+## Status
+
+**Complete for GL and CC grids.** The optional `spharmgrid.torch` API was introduced in
+v0.2.0 and `spharmgrid.jax` in v0.3.0. Both implement scalar and vector operations on
+their supported grids. The JAX API also includes the labeled `.sgj` accessor and
+host/device transfer functions. F1 grids are supported by Xarray/DUCC, not these tensor
+APIs.
+
 ## Goal
 
 Complete the rectangular-grid accelerator support by adding a JAX API backed by S2FFT

@@ -12,6 +12,41 @@ env:
   UV_VERSION: "0.12.17"
 
 jobs:
+  fejer1-validation:
+    name: Fejér-1 numerical validation
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install FFTW development files
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libfftw3-dev
+
+      - name: Set up Python environment
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python test environment
+        run: uv sync --no-default-groups --group test --frozen
+
+      - name: Install numerical comparison dependencies
+        run: uv pip install scipy==1.18.1 shtns==3.7.5
+
+      - name: Run Fejér-1 numerical comparisons
+        env:
+          SPHARMGRID_RUN_VALIDATION: "1"
+        run: >-
+          uv run --no-sync pytest
+          tests/validation/test_scipy.py
+          tests/validation/test_shtns.py
+
   ncl-parity:
     name: NCL/SPHEREPACK parity tests
     runs-on: ubuntu-26.04
@@ -48,7 +83,7 @@ jobs:
             "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
             "$RUNNER_TEMP/spharmgrid-ncl/outputs" \
             "$RUNNER_TEMP/spharmgrid-ncl/normalized"
-          uv run --no-sync python tests/ncl/generate_inputs.py \
+          uv run --no-sync python tests/validation/ncl/generate_inputs.py \
             --output-dir "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/generate-inputs.log"
 
@@ -62,7 +97,7 @@ jobs:
               SPHARMGRID_NCL_GRID="$grid" \
               SPHARMGRID_NCL_FAMILY="$family" \
               conda run --no-capture-output --name spharmgrid-ncl \
-                ncl -Q tests/ncl/generate_references.ncl \
+                ncl -Q tests/validation/ncl/generate_references.ncl \
                 2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/ncl-${grid}-${family}.log"
             done
           done
@@ -70,7 +105,7 @@ jobs:
       - name: Normalize NCL outputs
         run: |
           set -o pipefail
-          uv run --no-sync python tests/ncl/normalize_references.py \
+          uv run --no-sync python tests/validation/ncl/normalize_references.py \
             --input-dir "$RUNNER_TEMP/spharmgrid-ncl/inputs" \
             --ncl-output-dir "$RUNNER_TEMP/spharmgrid-ncl/outputs" \
             --output-dir "$RUNNER_TEMP/spharmgrid-ncl/normalized" \
@@ -80,7 +115,7 @@ jobs:
         run: |
           set -o pipefail
           SPHARMGRID_NCL_OUTPUT_DIR="$RUNNER_TEMP/spharmgrid-ncl/normalized" \
-            uv run --no-sync pytest tests/ncl/test_ncl.py \
+            uv run --no-sync pytest tests/validation/ncl/test_ncl.py \
             2>&1 | tee "$RUNNER_TEMP/spharmgrid-ncl/outputs/pytest-ncl.log"
 
       - name: Upload NCL parity diagnostics

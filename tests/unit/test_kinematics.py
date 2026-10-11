@@ -6,23 +6,22 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 import pytest
 import xarray as xr
 
 import spharmgrid as sg
 from tests.conftest import (
+    SupportedGridKind,
     degree_one_field,
     solid_body_wind,
     supported_grid,
 )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_solid_body_rotation_has_known_vorticity_and_zero_divergence(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     u, v = solid_body_wind(grid)
@@ -45,9 +44,9 @@ def test_solid_body_rotation_has_known_vorticity_and_zero_divergence(
     assert diagnostics.d.attrs["standard_name"] == "divergence_of_wind"
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_meridional_degree_one_flow_has_known_divergence_and_zero_vorticity(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     shape = (grid.nlat, grid.nlon)
@@ -82,8 +81,8 @@ def test_meridional_degree_one_flow_has_known_divergence_and_zero_vorticity(
     )
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_potentials_and_inverse_wind_round_trip(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_potentials_and_inverse_wind_round_trip(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     scalar = degree_one_field(grid)
     streamfunction = scalar * (-3.0 * sg.EARTH_RADIUS_M)
@@ -128,9 +127,9 @@ def test_potentials_and_inverse_wind_round_trip(kind: Literal["cc", "gl"]) -> No
     assert reconstructed.v.attrs["standard_name"] == "northward_wind"
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_non_zonal_potential_round_trip_restores_cyclic_coordinates(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
     latitude = np.deg2rad(grid.latitude)[:, None]
@@ -158,9 +157,9 @@ def test_non_zonal_potential_round_trip_restores_cyclic_coordinates(
     xr.testing.assert_identical(reconstructed.lon, streamfunction.lon)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     scalar = degree_one_field(grid)
@@ -187,9 +186,9 @@ def test_rotational_and_divergent_parts_satisfy_cross_diagnostic_identities(
     assert "standard_name" not in divergent.v_divergent.attrs
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_helmholtz_separates_known_rotational_and_divergent_degree_one_flows(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     latitude = np.deg2rad(grid.latitude)[:, None]
@@ -244,9 +243,9 @@ def test_helmholtz_separates_known_rotational_and_divergent_degree_one_flows(
     assert result.u_rotational.attrs["long_name"] == "Eastward rotational wind"
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_inverse_gradient_projects_pure_rotation_to_zero(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     latitude = np.deg2rad(grid.latitude)[:, None]
@@ -271,9 +270,9 @@ def test_inverse_gradient_projects_pure_rotation_to_zero(
     np.testing.assert_allclose(recovered, 0.0, rtol=0.0, atol=5.0e-14)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_inverse_gradient_recovers_known_potential_from_mixed_vector_field(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     latitude = np.deg2rad(grid.latitude)[:, None]
@@ -304,9 +303,9 @@ def test_inverse_gradient_recovers_known_potential_from_mixed_vector_field(
     assert "standard_name" not in projected.attrs
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind)
     u, _ = solid_body_wind(grid)
@@ -340,9 +339,9 @@ def test_vector_laplacian_has_spherepack_degree_one_eigenvalue(
     assert inverse_restored.v.attrs["units"] == "m s-1"
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_new_vector_operations_restore_descending_shifted_coordinates(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
     grid = supported_grid(kind, latitude_order="descending", lon0=-180.0)
     latitude = np.deg2rad(grid.latitude)[:, None]

@@ -49,6 +49,7 @@ _XARRAY_ONLY = {
 _ROOT_NON_EXECUTION_NAMES = {
     "clenshaw_curtis_grid",
     "detect_grid",
+    "fejer1_grid",
     "gaussian_grid",
     "parse_spectral",
 }

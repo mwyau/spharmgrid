@@ -2,8 +2,9 @@
 
 ## Status
 
-The initial spharmgrid implementation is in place. This file records the current
-scientific/API contract and the boundaries for follow-up work.
+**Complete.** Phase 1 established the DUCC0/Xarray API for GL and CC grids. The
+requirements below describe that phase. The Xarray API now also supports Fejér-1; see
+[Phase 3.5](03a-fejer-grids.md).
 
 The package is an xarray-first layer around DUCC0 for spherical-harmonic operations on
 full global rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC) grids.

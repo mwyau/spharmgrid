@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
 from unittest.mock import Mock
 
 import numpy as np
@@ -30,7 +29,7 @@ from spharmgrid.spectral import (
     apply_spectral_selection,
     resolve_transform_spec,
 )
-from tests.conftest import scalar_field, supported_grid
+from tests.conftest import SupportedGridKind, scalar_field, supported_grid
 
 
 def _retained_modes(spec: TransformSpec) -> set[tuple[int, int]]:
@@ -375,8 +374,8 @@ def test_t5_42_remains_a_triangular_degree_band() -> None:
     np.testing.assert_allclose(explicit, parsed, rtol=0.0, atol=3.0e-12)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_hard_degree_selection_and_bandpass(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_hard_degree_selection_and_bandpass(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     latitude = np.sin(np.deg2rad(grid.latitude))[:, None]
     degree_zero = np.ones((grid.nlat, grid.nlon))
@@ -399,11 +398,16 @@ def test_hard_degree_selection_and_bandpass(kind: Literal["cc", "gl"]) -> None:
     xr.testing.assert_identical(explicit_band, band)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
 def test_t42_is_accepted_on_a_grid_that_represents_it(
-    kind: Literal["cc", "gl"],
+    kind: SupportedGridKind,
 ) -> None:
-    grid = sg.clenshaw_curtis_grid(44, 85) if kind == "cc" else sg.gaussian_grid(43, 85)
+    if kind == "cc":
+        grid = sg.clenshaw_curtis_grid(44, 85)
+    elif kind == "f1":
+        grid = sg.fejer1_grid(44, 85)
+    else:
+        grid = sg.gaussian_grid(43, 85)
     field = scalar_field(grid)
 
     result = sg.filter(field, "T42")
@@ -411,8 +415,8 @@ def test_t42_is_accepted_on_a_grid_that_represents_it(
     np.testing.assert_allclose(result, field, rtol=0.0, atol=2.0e-13)
 
 
-@pytest.mark.parametrize("kind", ["cc", "gl"])
-def test_taper_response_at_upper_retained_degree(kind: Literal["cc", "gl"]) -> None:
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_taper_response_at_upper_retained_degree(kind: SupportedGridKind) -> None:
     grid = supported_grid(kind)
     latitude = np.sin(np.deg2rad(grid.latitude))[:, None]
     degree_two = (3.0 * latitude**2 - 1.0) / 2.0 * np.ones((1, grid.nlon))
@@ -442,3 +446,20 @@ def test_spectral_error_cases_are_explicit() -> None:
         sg.regrid(field, sg.clenshaw_curtis_grid(9, 18), truncation="T8")
     with pytest.raises(ValueError, match="must be distinct"):
         sg.gradient(field, eastward="gradient", northward="gradient")
+
+
+def test_fejer1_bandwidth_uses_independent_degree_and_order_limits() -> None:
+    grid = sg.fejer1_grid(8, 8)
+
+    assert resolve_transform_spec(grid, grid, None) == TransformSpec(
+        0, 7, 3, "trapezoidal"
+    )
+    assert resolve_transform_spec(grid, grid, sg.parse_spectral("T7x3")) == (
+        TransformSpec(0, 7, 3, "trapezoidal")
+    )
+    with pytest.raises(ValueError, match="triangular bandwidth 3"):
+        resolve_transform_spec(grid, grid, sg.parse_spectral("T4"))
+    with pytest.raises(ValueError, match="source latitude bandwidth 7"):
+        resolve_transform_spec(grid, grid, sg.parse_spectral("T8x3"))
+    with pytest.raises(ValueError, match="source longitude bandwidth 3"):
+        resolve_transform_spec(grid, grid, sg.parse_spectral("T7x4"))

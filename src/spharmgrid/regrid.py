@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Spectral regridding among supported global GL and CC grids."""
+"""Spectral regridding among supported global GL, CC, and F1 grids."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def regrid(
     taper: float | None = None,
     sht_threads: int | None = None,
 ) -> xr.DataArray:
-    """Spectrally regrid a GL or CC field, optionally filtering in one cycle.
+    """Spectrally regrid a GL, CC, or F1 field, optionally filtering in one cycle.
 
     The operation analyzes the source once, applies the optional retained
     range/taper to those coefficients, and synthesizes once on the target.
