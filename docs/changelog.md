@@ -8,8 +8,7 @@
   operations, and spectral regridding to the Xarray/DUCC API. The maximum latitude
   degree is `nlat - 1`, with longitude order limited separately by `(nlon - 1) // 2`.
   JAX and PyTorch do not support F1.
-- Added SciPy harmonic checks at T71 and T179, SHTns scalar and vector comparisons, and
-  an S2FFT comparison at T15 on matching F1/DH nodes.
+- Added SciPy harmonic checks at T71 and T179 and SHTns vector comparisons.
 
 ## v0.4.1 - 2026-10-10
 

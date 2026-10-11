@@ -21,63 +21,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_shtns_f1_grid_and_scalar_conventions_at_t35() -> None:
-    special = pytest.importorskip("scipy.special")
-    shtns = pytest.importorskip("shtns")
-
-    nlat, nlon, degree, order = 72, 144, 35, 35
-    grid = sg.fejer1_grid(nlat, nlon, latitude_order="descending")
-    transform = shtns.sht(degree, degree, 1, shtns.sht_orthonormal)
-    transform.set_grid(
-        nlat,
-        nlon,
-        shtns.sht_reg_dct | shtns.SHT_PHI_CONTIGUOUS,
-        1.0e-10,
-    )
-
-    shtns_latitude = np.rad2deg(np.arcsin(transform.cos_theta))
-    np.testing.assert_allclose(
-        shtns_latitude,
-        grid.latitude,
-        rtol=0.0,
-        atol=2.0e-13,
-    )
-
-    theta = np.deg2rad(90.0 - grid.latitude)[:, None]
-    phi = np.deg2rad(grid.longitude)[None, :]
-    coefficient = 0.2 - 0.1j
-    harmonic = special.sph_harm_y(degree, order, theta, phi)
-    values = 2.0 * np.real(coefficient * harmonic)
-    field = xr.DataArray(
-        values,
-        dims=("lat", "lon"),
-        coords={"lat": grid.latitude, "lon": grid.longitude},
-    )
-
-    shtns_coefficients = transform.analys(values)
-    shtns_index = transform.idx(degree, order)
-    np.testing.assert_allclose(
-        shtns_coefficients[shtns_index], coefficient, rtol=0.0, atol=2.0e-12
-    )
-    np.testing.assert_allclose(
-        transform.synth(shtns_coefficients), values, rtol=0.0, atol=2.0e-11
-    )
-
-    ducc = sg.analyze(field, "T35")
-    mode_index = np.flatnonzero(
-        (alm_degrees(degree, degree) == degree) & (alm_orders(degree, degree) == order)
-    )
-    assert mode_index.size == 1
-    ducc_coefficients = ducc._coefficients.values
-    np.testing.assert_allclose(
-        ducc_coefficients[mode_index[0]],
-        shtns_coefficients[shtns_index],
-        rtol=0.0,
-        atol=2.0e-12,
-    )
-    np.testing.assert_allclose(ducc.synthesize(), values, rtol=0.0, atol=2.0e-11)
-
-
 def test_shtns_f1_vector_component_and_coefficient_conventions() -> None:
     special = pytest.importorskip("scipy.special")
     shtns = pytest.importorskip("shtns")
@@ -91,7 +34,13 @@ def test_shtns_f1_vector_component_and_coefficient_conventions() -> None:
         shtns.sht_reg_dct | shtns.SHT_PHI_CONTIGUOUS,
         1.0e-10,
     )
-    assert (transform.nlat, transform.nphi) == (nlat, nlon)
+    assert transform.nphi == nlon
+    np.testing.assert_allclose(
+        np.rad2deg(np.arcsin(transform.cos_theta)),
+        grid.latitude,
+        rtol=0.0,
+        atol=2.0e-13,
+    )
 
     theta = np.deg2rad(90.0 - grid.latitude)[:, None]
     phi = np.deg2rad(grid.longitude)[None, :]

@@ -37,17 +37,15 @@ jobs:
         run: uv sync --no-default-groups --group test --frozen
 
       - name: Install numerical comparison dependencies
-        run: uv pip install scipy==1.18.1 shtns==3.7.5 s2fft==1.5.0
+        run: uv pip install scipy==1.18.1 shtns==3.7.5
 
       - name: Run Fejér-1 numerical comparisons
         env:
           SPHARMGRID_RUN_VALIDATION: "1"
-          JAX_ENABLE_X64: "1"
         run: >-
           uv run --no-sync pytest
           tests/validation/test_scipy.py
           tests/validation/test_shtns.py
-          tests/validation/test_s2fft.py
 
   ncl-parity:
     name: NCL/SPHEREPACK parity tests

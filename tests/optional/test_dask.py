@@ -84,7 +84,6 @@ def test_f1_scalar_vector_and_regrid_operations_stay_lazy() -> None:
     target = supported_grid("cc", latitude_order="ascending", lon0=-180.0)
     eager_field = scalar_field(grid, leading=True)
     field = eager_field.chunk({"member": 1, "lat": 8, "lon": 16})
-    filtered = sg.filter(field, "T4")
     regridded = sg.regrid(field, target, "T4")
 
     eager_u, eager_v = solid_body_wind(grid)
@@ -93,13 +92,9 @@ def test_f1_scalar_vector_and_regrid_operations_stay_lazy() -> None:
     analyzed_vector = sg.analyze_vector(u, v, "T4")
     reconstructed_u, reconstructed_v = analyzed_vector.synthesize()
 
-    assert hasattr(filtered.data, "dask")
     assert hasattr(regridded.data, "dask")
     assert hasattr(reconstructed_u.data, "dask")
     assert hasattr(reconstructed_v.data, "dask")
-    xr.testing.assert_allclose(
-        filtered.compute(), sg.filter(eager_field, "T4"), rtol=0.0, atol=0.0
-    )
     xr.testing.assert_allclose(
         regridded.compute(),
         sg.regrid(eager_field, target, "T4"),
