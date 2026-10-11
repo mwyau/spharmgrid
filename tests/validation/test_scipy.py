@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -19,6 +20,10 @@ pytestmark = pytest.mark.skipif(
     os.environ.get("SPHARMGRID_RUN_VALIDATION") != "1",
     reason="run only in the optional validation workflow",
 )
+
+
+def _f1_grid(nlat: int, nlon: int) -> sg.Grid:
+    return sg.fejer1_grid(nlat, nlon, latitude_order="descending")
 
 
 def _harmonic_component(
@@ -52,13 +57,29 @@ def _harmonic_component(
     return value, dphi / np.sin(theta), -dtheta
 
 
+def _harmonic_scalar(
+    grid: sg.Grid,
+    degree: int,
+    order: int,
+    coefficient: complex,
+) -> np.ndarray:
+    """Return a real spherical harmonic evaluated independently by SciPy."""
+    special = pytest.importorskip("scipy.special")
+    theta = np.deg2rad(90.0 - grid.latitude)[:, None]
+    phi = np.mod(np.deg2rad(grid.longitude), 2.0 * np.pi)[None, :]
+    harmonic = special.sph_harm_y(degree, order, theta, phi)
+    scaled = coefficient * harmonic
+    return 2.0 * np.real(scaled) if order else np.real(scaled)
+
+
 def _high_degree_fields(
     grid: sg.Grid,
     degree: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     zonal = _harmonic_component(grid, degree, 0, 0.3)
+    tesseral = _harmonic_component(grid, degree, degree // 2, -0.13 + 0.07j)
     sectoral = _harmonic_component(grid, degree, degree, 0.2 - 0.1j)
-    return tuple(a + b for a, b in zip(zonal, sectoral, strict=True))
+    return tuple(a + b + c for a, b, c in zip(zonal, tesseral, sectoral, strict=True))
 
 
 @pytest.mark.parametrize(
@@ -70,7 +91,7 @@ def test_f1_scalar_and_spin1_high_degree_against_scipy(
     nlon: int,
     degree: int,
 ) -> None:
-    grid = sg.fejer1_grid(nlat, nlon, latitude_order="descending")
+    grid = _f1_grid(nlat, nlon)
     scalar_values, expected_east, expected_north = _high_degree_fields(grid, degree)
     field = xr.DataArray(
         scalar_values,
@@ -84,17 +105,34 @@ def test_f1_scalar_and_spin1_high_degree_against_scipy(
     degrees = alm_degrees(degree, degree)
     orders = alm_orders(degree, degree)
     coefficients = spectral._coefficients.values
-    for order, expected in ((0, 0.3), (degree, 0.2 - 0.1j)):
+    for order, expected in (
+        (0, 0.3),
+        (degree // 2, -0.13 + 0.07j),
+        (degree, 0.2 - 0.1j),
+    ):
         mode_index = np.flatnonzero((degrees == degree) & (orders == order))
         assert mode_index.size == 1
         np.testing.assert_allclose(
             coefficients[mode_index[0]], expected, rtol=0.0, atol=3.0e-14
         )
+    scalar_tolerance = 4.0e-11 if degree == 179 else 2.0e-12
     np.testing.assert_allclose(
         spectral.synthesize(),
         scalar_values,
         rtol=0.0,
-        atol=4.0e-11 if degree == 179 else 2.0e-12,
+        atol=scalar_tolerance,
+    )
+    np.testing.assert_allclose(
+        sg.filter(field, f"T{degree}"),
+        scalar_values,
+        rtol=0.0,
+        atol=scalar_tolerance,
+    )
+    np.testing.assert_allclose(
+        sg.filter(field, f"T{degree - 1}"),
+        0.0,
+        rtol=0.0,
+        atol=scalar_tolerance,
     )
 
     gradient = sg.gradient(field, radius=1.0)
@@ -142,21 +180,64 @@ def test_f1_scalar_and_spin1_high_degree_against_scipy(
     )
 
 
-def test_f1_longitude_limit_is_independent_of_latitude_limit() -> None:
-    grid = sg.fejer1_grid(72, 140, latitude_order="descending")
-    scalar_values, _, _ = _harmonic_component(grid, 71, 69, 0.4 + 0.2j)
+@pytest.mark.parametrize(
+    ("nlat", "nlon", "degree", "order"),
+    [(72, 140, 71, 69)],
+)
+def test_f1_longitude_limit_is_independent_of_latitude_limit(
+    nlat: int,
+    nlon: int,
+    degree: int,
+    order: int,
+) -> None:
+    grid = _f1_grid(nlat, nlon)
+    scalar_values, _, _ = _harmonic_component(grid, degree, order, 0.4 + 0.2j)
     field = xr.DataArray(
         scalar_values,
         dims=("lat", "lon"),
         coords={"lat": grid.latitude, "lon": grid.longitude},
     )
 
-    spectral = sg.analyze(field, "T71x69")
-    assert (spectral.spec.lmax, spectral.spec.mmax) == (71, 69)
+    spectral = sg.analyze(field, f"T{degree}x{order}")
+    assert (spectral.spec.lmax, spectral.spec.mmax) == (degree, order)
     np.testing.assert_allclose(
         spectral.synthesize(), scalar_values, rtol=0.0, atol=2.0e-12
     )
-    with pytest.raises(ValueError, match="source longitude bandwidth 69"):
-        sg.analyze(field, "T71x70")
-    with pytest.raises(ValueError, match="source latitude bandwidth 71"):
-        sg.analyze(field, "T72x69")
+    with pytest.raises(ValueError, match=f"source longitude bandwidth {order}"):
+        sg.analyze(field, f"T{degree}x{order + 1}")
+    with pytest.raises(ValueError, match=f"source latitude bandwidth {degree}"):
+        sg.analyze(field, f"T{degree + 1}x{order}")
+
+
+@pytest.mark.parametrize(
+    ("source_kind", "target_kind"),
+    [
+        ("f1", "gl"),
+        ("f1", "cc"),
+        ("gl", "f1"),
+        ("cc", "f1"),
+    ],
+)
+def test_f1_spectral_regridding_matches_scipy_harmonics(
+    source_kind: Literal["f1", "gl", "cc"],
+    target_kind: Literal["f1", "gl", "cc"],
+) -> None:
+    degree, order = 10, 6
+    grid_factories = {
+        "f1": lambda: sg.fejer1_grid(24, 48, latitude_order="descending"),
+        "gl": lambda: sg.gaussian_grid(16, 32, latitude_order="ascending"),
+        "cc": lambda: sg.clenshaw_curtis_grid(18, 36, latitude_order="descending"),
+    }
+    source = grid_factories[source_kind]()
+    target = grid_factories[target_kind]()
+    values = _harmonic_scalar(source, degree, order, 0.31 - 0.17j)
+    field = xr.DataArray(
+        values,
+        dims=("lat", "lon"),
+        coords={"lat": source.latitude, "lon": source.longitude},
+    )
+
+    actual = sg.regrid(field, target, f"T{degree}")
+    expected = _harmonic_scalar(target, degree, order, 0.31 - 0.17j)
+
+    np.testing.assert_allclose(actual, expected, rtol=0.0, atol=3.0e-12)

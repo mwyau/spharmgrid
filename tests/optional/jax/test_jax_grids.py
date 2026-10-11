@@ -98,8 +98,14 @@ def test_scalar_and_vector_leading_dimensions_are_preserved(
 def test_f1_grid_is_rejected_by_jax_operations() -> None:
     grid = sg.fejer1_grid(8, 16)
     values = jnp.zeros((grid.nlat, grid.nlon), dtype=jnp.float64)
+    regular = sg.gaussian_grid(8, 16)
+    regular_values = jnp.zeros((regular.nlat, regular.nlon), dtype=jnp.float64)
 
     with pytest.raises(ValueError, match="does not support F1"):
         sgj.filter(values, grid=grid)
     with pytest.raises(ValueError, match="does not support F1"):
         sgj.analyze(values, grid=grid)
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgj.regrid(regular_values, grid, source_grid=regular)
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgj.regrid(values, regular, source_grid=grid)

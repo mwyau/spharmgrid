@@ -202,11 +202,17 @@ def test_unsupported_bandwidths_raise_instead_of_clamping(
 def test_f1_grid_is_rejected_by_torch_operations() -> None:
     grid = sg.fejer1_grid(16, 32)
     field = torch.zeros((grid.nlat, grid.nlon), dtype=torch.float64)
+    regular = sg.gaussian_grid(8, 16)
+    regular_field = torch.zeros((regular.nlat, regular.nlon), dtype=torch.float64)
 
     with pytest.raises(ValueError, match="does not support F1"):
         sgt.filter(field, grid=grid)
     with pytest.raises(ValueError, match="does not support F1"):
         sgt.analyze(field, grid=grid)
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgt.regrid(regular_field, grid, source_grid=regular)
+    with pytest.raises(ValueError, match="does not support F1"):
+        sgt.regrid(field, regular, source_grid=grid)
 
 
 @pytest.mark.parametrize(
