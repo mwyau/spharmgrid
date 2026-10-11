@@ -2,8 +2,11 @@
 
 ## Status
 
-The initial spharmgrid implementation is in place. This file records the current
-scientific/API contract and the boundaries for follow-up work.
+**Phase 1 complete.** The initial DUCC0/Xarray GL/CC implementation is established.
+This file records the Phase-1 scientific/API contract. Subsequent phases added the
+vector-operator suite and optional Torch/JAX APIs; see [the roadmap](README.md).
+The Phase-1 scope and exclusions below are historical boundaries, not a claim that
+later released capabilities are unavailable.
 
 The package is an xarray-first layer around DUCC0 for spherical-harmonic operations on
 full global rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC) grids.

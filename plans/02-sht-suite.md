@@ -1,4 +1,12 @@
-# Phase 2: complete the SHT operator and vector-transform suite
+# Phase 2: SHT operator and vector-transform suite
+
+## Status
+
+**Complete.** The current public API includes vector spectral regridding, Helmholtz
+decomposition, inverse gradient, and vector Laplacian/inverse vector Laplacian.
+The code and tests are the source of truth. The sections below preserve the
+original implementation requirements and acceptance criteria; their imperative
+language does not describe outstanding work. See [the roadmap](README.md).
 
 ## Goal
 
@@ -23,9 +31,9 @@ the Python API.
 Do not add reduced Gaussian, HEALPix, GPU backends, raw public `alm` objects, or
 non-spectral interpolation in this phase.
 
-## Existing baseline
+## Baseline before Phase 2
 
-The current public API already includes:
+The public API at the start of this phase included:
 
 ```python
 sg.filter
@@ -65,8 +73,7 @@ velocity potential -> divergent wind
 streamfunction + velocity potential -> full wind
 ```
 
-The next phase should fill the remaining high-value gaps rather than adding many
-aliases.
+Phase 2 addressed the remaining high-value gaps without adding broad aliases.
 
 ---
 

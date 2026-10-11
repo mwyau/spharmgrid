@@ -1,5 +1,12 @@
 # Phase 4: additional global SHT grids
 
+## Status
+
+**Planned.** Phases 1–3 are implemented. Pole-excluding full rectangular
+Fejér-1 and Fejér-2 grids are a separate, smaller
+[Phase 3.5](03a-fejer-grids.md), intended before this phase. The HEALPix and
+reduced-Gaussian work described here remains pending.
+
 ## Goal
 
 Extend spharmgrid beyond full rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC)

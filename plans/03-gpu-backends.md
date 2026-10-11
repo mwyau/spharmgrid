@@ -1,5 +1,15 @@
 # Phase 3: multi-backend SHT execution
 
+## Status
+
+**Complete for the planned rectangular GL/CC scope.** The optional
+`spharmgrid.torch` API was introduced in v0.2.0 and the optional
+`spharmgrid.jax` API in v0.3.0. Both expose framework-native scalar and vector
+operations. The later labeled JAX `.sgj` convenience layer and explicit
+host/device helpers are also implemented. The implementation details and limits
+below remain relevant; remaining grid expansion is tracked separately in
+[the roadmap](README.md).
+
 ## Goal
 
 Complete the rectangular-grid accelerator support by adding a JAX API backed by S2FFT
