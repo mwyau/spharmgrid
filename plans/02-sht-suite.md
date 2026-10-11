@@ -2,11 +2,9 @@
 
 ## Status
 
-**Complete.** The current public API includes vector spectral regridding, Helmholtz
-decomposition, inverse gradient, and vector Laplacian/inverse vector Laplacian.
-The code and tests are the source of truth. The sections below preserve the
-original implementation requirements and acceptance criteria; their imperative
-language does not describe outstanding work. See [the roadmap](README.md).
+**Complete.** The public API includes vector spectral regridding, Helmholtz
+decomposition, inverse gradient, vector Laplacian, and inverse vector Laplacian. The
+requirements below describe Phase 2.
 
 ## Goal
 

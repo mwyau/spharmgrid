@@ -13,7 +13,7 @@ env:
 
 jobs:
   fejer1-validation:
-    name: F1 independent scientific validation
+    name: Fejér-1 numerical validation
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -36,10 +36,10 @@ jobs:
       - name: Install Python test environment
         run: uv sync --no-default-groups --group test --frozen
 
-      - name: Install independent harmonic references
+      - name: Install numerical comparison dependencies
         run: uv pip install scipy==1.18.1 shtns==3.7.5 s2fft==1.5.0
 
-      - name: Run independent F1 validation
+      - name: Run Fejér-1 numerical comparisons
         env:
           SPHARMGRID_RUN_VALIDATION: "1"
           JAX_ENABLE_X64: "1"

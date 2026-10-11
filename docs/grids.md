@@ -56,10 +56,11 @@ coordinate order and longitude convention.
 
 DUCC gives the latitude analysis limit as `nlat - 2` for CC and `nlat - 1` for GL and
 F1. The independent longitude-order limit is `(nlon - 1) // 2`, bounded by `lmax`. F1
-accepts any valid longitude count; `nlon = 2 * nlat` is common but not required. An
-explicit truncation must fit the latitude and longitude limits on both source and target
-grids. Thus `Tn` requires both limits through `n`, `Tnxm` uses `lmax=n` and `mmax=m`,
-and `Rn` uses `lmax=2n` and `mmax=n`.
+requires at least two longitude points. The latitude and longitude counts are
+independent, subject to the transform bandwidth limits. An explicit truncation must fit
+the latitude and longitude limits on both source and target grids. Thus `Tn` requires
+both limits through `n`, `Tnxm` uses `lmax=n` and `mmax=m`, and `Rn` uses `lmax=2n` and
+`mmax=n`.
 
 Without an explicit truncation, regridding retains the content represented by both
 source and target sampling.

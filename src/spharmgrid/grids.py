@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Supported global spherical grids and coordinate discovery.
+"""Global grid geometry and coordinate discovery.
 
-The public grid descriptor is small.  ``ducc0`` performs the
-actual spherical harmonic transforms; this module validates the three sampling
-geometries that spharmgrid passes to it.
+DUCC0 computes the spherical harmonic transforms. This module defines and
+validates the grid sampling geometries used by spharmgrid.
 """
 
 from __future__ import annotations
@@ -409,7 +408,7 @@ def _validate_grid_arrays(
         label = {
             "gl": "Gauss--Legendre",
             "cc": "pole-including CC",
-            "f1": "Fejer-1",
+            "f1": "Fejér-1",
         }[kind]
         raise ValueError(f"latitude values do not define a {label} grid")
     _validate_longitude(longitude)

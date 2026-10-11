@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Independent SciPy checks for DUCC0 Fejér-1 transforms."""
+"""SciPy spherical harmonic checks for DUCC0 Fejér-1 transforms."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def _harmonic_scalar(
     order: int,
     coefficient: complex,
 ) -> np.ndarray:
-    """Return a real spherical harmonic evaluated independently by SciPy."""
+    """Return a real spherical harmonic evaluated with SciPy."""
     special = pytest.importorskip("scipy.special")
     theta = np.deg2rad(90.0 - grid.latitude)[:, None]
     phi = np.mod(np.deg2rad(grid.longitude), 2.0 * np.pi)[None, :]

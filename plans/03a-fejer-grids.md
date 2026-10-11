@@ -1,51 +1,37 @@
-# Phase 3.5: Fejér grids
+# Phase 3.5: Fejér-1 grids
 
-## Status and goal
+## Status
 
-**Current implementation scope: Fejér-1 (F1) only.** Add F1 support to spharmgrid's
-existing global rectangular grid API with DUCC0's existing scalar and spin spherical
-harmonic transforms. Fejér-2 (F2) is deferred to a separate change. This phase does not
-require a new transform engine or a non-rectangular grid representation.
-
-The Xarray/DUCC0 path is in scope. JAX and PyTorch reject F1 until their transforms are
-verified.
+**Implemented in Xarray/DUCC0.** Fejér-1 (F1) uses the existing scalar and spin-1
+spherical harmonic transforms and rectangular `Grid` representation. JAX and PyTorch do
+not support F1. Fejér-2 (F2) is not planned.
 
 ## 1. Grid geometry
 
-For `N = nlat` latitude rings, north-to-south index `j = 0, ..., N-1`, and colatitude
-`theta`:
+For `N = nlat` latitude rings and north-to-south index `j = 0, ..., N-1`, the colatitude
+nodes are:
 
 ```text
-F1: theta[j] = pi * (j + 1/2) / N
-F2: theta[j] = pi * (j + 1) / (N + 1)
+theta[j] = pi * (j + 1/2) / N
 ```
 
-Both exclude the geographic poles. They differ from Clenshaw–Curtis (CC), which includes
-both poles.
+F1 excludes both geographic poles. Clenshaw–Curtis (CC) includes both poles.
 
 As with existing GL/CC grids, require full global latitude coverage and one complete,
 uniformly spaced, non-duplicated longitude cycle. Support both latitude orders and
 equivalent cyclic longitude conventions without changing the physical field.
 
-Detect F1 from its actual latitude nodes, not merely uniform latitude spacing or a
-generic regular-grid label. Reject regional, incomplete, or incorrectly sampled grids.
-F2 detection is deferred.
+Detect F1 from its latitude nodes, not merely uniform latitude spacing or a generic
+regular-grid label. Reject regional, incomplete, or incorrectly sampled grids.
 
 ## 2. DUCC0 transforms and bandwidth
 
 DUCC0's `sht.analysis_2d` and `sht.synthesis_2d` accept `geometry="F1"`. Reuse the
 existing spharmgrid DUCC adapters for scalar and spin-1 operations.
 
-DUCC0 documents the following maximum **inclusive** analysis degrees:
-
-| Grid          | Maximum degree    |
-| ------------- | ----------------- |
-| F1            | `nlat - 1`        |
-| F2 (deferred) | `(nlat - 1) // 2` |
-
-The longitude limit is `mmax <= min(lmax, (nlon - 1) // 2)`. F1 uses additional
-meridional upsampling to attain its documented degree limit. F2 numerical support is
-outside this change.
+DUCC0's maximum inclusive F1 analysis degree is `nlat - 1`. The longitude limit is
+`mmax <= min(lmax, (nlon - 1) // 2)`. F1 uses additional meridional upsampling to attain
+this latitude degree limit.
 
 Verify these constraints against the installed DUCC0 release. Explicit spectral
 truncation requests beyond supported limits must raise a clear error, not silently clamp
@@ -81,15 +67,13 @@ network access.
 3. Verify scalar/vector operators and geographic wind conventions using analytic fields
    and identities. SHTns parity is optional when its F1 sampling and conventions match
    the tested geometry.
-4. Test explicit limits, default bandwidth, and unsupported backend errors for F1. F2
-   tests are deferred with its implementation.
+4. Test explicit limits, default bandwidth, and unsupported backend errors for F1.
 5. Check both latitude orders, cyclic longitude representations, coordinate restoration,
    direct/accessor equivalence, leading dimensions, and Dask execution where applicable.
 6. Keep existing GL/CC behavior and precision/error assertions intact.
 
-F1 work in this phase is complete when F1 works through the supported public scientific
-APIs, has validated numerical limits and tests, and remains distinct from CC and
-unsupported tensor-backend geometries. F2 requires a separate change.
+The Xarray/DUCC implementation covers the listed F1 operations and grid limits. F1
+remains distinct from CC and from the geometries supported by JAX and PyTorch.
 
 ## References
 

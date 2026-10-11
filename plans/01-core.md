@@ -2,11 +2,9 @@
 
 ## Status
 
-**Phase 1 complete.** The initial DUCC0/Xarray GL/CC implementation is established.
-This file records the Phase-1 scientific/API contract. Subsequent phases added the
-vector-operator suite and optional Torch/JAX APIs; see [the roadmap](README.md).
-The Phase-1 scope and exclusions below are historical boundaries, not a claim that
-later released capabilities are unavailable.
+**Complete.** Phase 1 established the DUCC0/Xarray API for GL and CC grids. The
+requirements below describe that phase. The Xarray API now also supports Fejér-1; see
+[Phase 3.5](03a-fejer-grids.md).
 
 The package is an xarray-first layer around DUCC0 for spherical-harmonic operations on
 full global rectangular Gauss--Legendre (GL) and Clenshaw--Curtis (CC) grids.

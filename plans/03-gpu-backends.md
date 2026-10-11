@@ -2,13 +2,11 @@
 
 ## Status
 
-**Complete for the planned rectangular GL/CC scope.** The optional
-`spharmgrid.torch` API was introduced in v0.2.0 and the optional
-`spharmgrid.jax` API in v0.3.0. Both expose framework-native scalar and vector
-operations. The later labeled JAX `.sgj` convenience layer and explicit
-host/device helpers are also implemented. The implementation details and limits
-below remain relevant; remaining grid expansion is tracked separately in
-[the roadmap](README.md).
+**Complete for GL and CC grids.** The optional `spharmgrid.torch` API was introduced in
+v0.2.0 and `spharmgrid.jax` in v0.3.0. Both implement scalar and vector operations on
+their supported grids. The JAX API also includes the labeled `.sgj` accessor and
+host/device transfer functions. F1 grids are supported by Xarray/DUCC, not these tensor
+APIs.
 
 ## Goal
 
