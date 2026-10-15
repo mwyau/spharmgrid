@@ -79,6 +79,33 @@ def test_dask_input_stays_lazy_with_rechunked_horizontal_core_dimensions() -> No
     )
 
 
+def test_dask_transform_receives_the_available_leading_block(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    grid = supported_grid("cc")
+    base = scalar_field(grid)
+    values = np.broadcast_to(np.asarray(base), (2, 3, grid.nlat, grid.nlon)).copy()
+    field = xr.DataArray(
+        values,
+        dims=("member", "level", "lat", "lon"),
+        coords={
+            "member": ["first", "second"],
+            "level": [1000, 850, 500],
+            "lat": grid.latitude,
+            "lon": grid.longitude,
+        },
+    ).chunk({"member": 2, "level": 3, "lat": -1, "lon": -1})
+    analysis = Mock(wraps=spectral.scalar_analysis)
+    monkeypatch.setattr(spectral, "scalar_analysis", analysis)
+
+    result = sg.filter(field, "T2")
+
+    assert hasattr(result.data, "dask")
+    result.compute()
+    assert analysis.call_count == 1
+    assert analysis.call_args.args[0].shape == values.shape
+
+
 def test_f1_scalar_vector_and_regrid_operations_stay_lazy() -> None:
     grid = supported_grid("f1", latitude_order="descending", lon0=37.0)
     target = supported_grid("cc", latitude_order="ascending", lon0=-180.0)

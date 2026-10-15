@@ -194,9 +194,11 @@ def helmholtz(
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        zeros = np.zeros_like(vector_alm[0])
+        electric = vector_alm[..., 0, :]
+        magnetic = vector_alm[..., 1, :]
+        zeros = np.zeros_like(electric)
         divergent_u, divergent_v = vector_synthesis(
-            vector_alm[0],
+            electric,
             zeros,
             spec=spec,
             geometry=geometry_for(layout.grid),
@@ -207,7 +209,7 @@ def helmholtz(
         )
         rotational_u, rotational_v = vector_synthesis(
             zeros,
-            vector_alm[1],
+            magnetic,
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -424,10 +426,10 @@ def _kinematic_fields(
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        divergence_alm = -scale * vector_alm[0]
-        vorticity_alm = -scale * vector_alm[1]
+        divergence_alm = -scale * vector_alm[..., 0, :]
+        vorticity_alm = -scale * vector_alm[..., 1, :]
         vorticity_map = scalar_synthesis(
-            vorticity_alm[np.newaxis, :],
+            vorticity_alm[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -436,7 +438,7 @@ def _kinematic_fields(
             nthreads=nthreads,
         )
         divergence_map = scalar_synthesis(
-            divergence_alm[np.newaxis, :],
+            divergence_alm[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -483,12 +485,12 @@ def _potential_fields(
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        divergence_alm = -scale * vector_alm[0]
-        vorticity_alm = -scale * vector_alm[1]
+        divergence_alm = -scale * vector_alm[..., 0, :]
+        vorticity_alm = -scale * vector_alm[..., 1, :]
         streamfunction_alm = inverse_laplacian * vorticity_alm
         velocity_potential_alm = inverse_laplacian * divergence_alm
         streamfunction_map = scalar_synthesis(
-            streamfunction_alm[np.newaxis, :],
+            streamfunction_alm[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -497,7 +499,7 @@ def _potential_fields(
             nthreads=nthreads,
         )
         velocity_potential_map = scalar_synthesis(
-            velocity_potential_alm[np.newaxis, :],
+            velocity_potential_alm[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -542,7 +544,7 @@ def _single_source_wind(
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
-        )[0]
+        )[..., 0, :]
         e_alm = np.zeros_like(scalar_alm)
         b_alm = np.zeros_like(scalar_alm)
         nonzero = scale > 0.0
@@ -550,12 +552,12 @@ def _single_source_wind(
             vorticity_alm = (
                 scalar_alm if source == "vorticity" else laplacian * scalar_alm
             )
-            b_alm[nonzero] = -vorticity_alm[nonzero] / scale[nonzero]
+            b_alm[..., nonzero] = -vorticity_alm[..., nonzero] / scale[nonzero]
         else:
             divergence_alm = (
                 scalar_alm if source == "divergence" else laplacian * scalar_alm
             )
-            e_alm[nonzero] = -divergence_alm[nonzero] / scale[nonzero]
+            e_alm[..., nonzero] = -divergence_alm[..., nonzero] / scale[nonzero]
         return vector_synthesis(
             e_alm,
             b_alm,
@@ -602,8 +604,8 @@ def _vector_laplacian_fields(
         )
         transformed_alm = vector_alm * multiplier[np.newaxis, :]
         return vector_synthesis(
-            transformed_alm[0],
-            transformed_alm[1],
+            transformed_alm[..., 0, :],
+            transformed_alm[..., 1, :],
             spec=spec,
             geometry=geometry_for(layout.grid),
             ntheta=layout.grid.nlat,
@@ -649,14 +651,14 @@ def _two_source_wind(
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
-        )[0]
+        )[..., 0, :]
         second_alm = scalar_analysis(
             frame_second,
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
-        )[0]
+        )[..., 0, :]
         if source == "vorticity_divergence":
             vorticity_alm, divergence_alm = first_alm, second_alm
         else:
@@ -665,8 +667,8 @@ def _two_source_wind(
         e_alm = np.zeros_like(divergence_alm)
         b_alm = np.zeros_like(vorticity_alm)
         nonzero = scale > 0.0
-        e_alm[nonzero] = -divergence_alm[nonzero] / scale[nonzero]
-        b_alm[nonzero] = -vorticity_alm[nonzero] / scale[nonzero]
+        e_alm[..., nonzero] = -divergence_alm[..., nonzero] / scale[nonzero]
+        b_alm[..., nonzero] = -vorticity_alm[..., nonzero] / scale[nonzero]
         return vector_synthesis(
             e_alm,
             b_alm,
@@ -749,7 +751,7 @@ def _single_scalar_to_wind(
             [layout.latitude_dim, layout.longitude_dim],
             [layout.latitude_dim, layout.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64],
         **apply_ufunc_options(canonical),
     )
@@ -791,7 +793,7 @@ def _two_scalar_to_wind(
             [layout.latitude_dim, layout.longitude_dim],
             [layout.latitude_dim, layout.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64],
         **apply_ufunc_options(dask_field),
     )

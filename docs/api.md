@@ -10,6 +10,18 @@ and {doc}`torch_api`.
 The public `spharmgrid` API is fully type annotated and the package ships a `py.typed`
 marker for downstream static type checking.
 
+## Leading dimensions
+
+Xarray operations identify latitude and longitude from the field coordinates. Every
+other dimension is an independent field dimension, and its name, coordinates, and
+position are preserved. Latitude and longitude may appear anywhere in the input
+dimension order. The `.sg` accessor uses the same operations and shape behavior as the
+direct functions.
+
+The PyTorch and JAX APIs use the last two array axes for latitude and longitude; all
+preceding axes are preserved as independent fields. Their grid and precision limits are
+documented in {doc}`torch_api` and {doc}`jax_api`.
+
 ## Constants and descriptors
 
 ```{eval-rst}

@@ -163,6 +163,65 @@ def test_leading_dimensions_are_preserved(gl_grid: sg.Grid) -> None:
     assert output_v.shape == vector_v.shape
 
 
+def test_multiple_leading_dimensions_and_noncontiguous_inputs(
+    gl_grid: sg.Grid,
+) -> None:
+    field, base_u, base_v = make_fields(gl_grid)
+    factors = torch.tensor([[1.0, -0.5, 2.0], [0.25, 1.5, -1.0]])
+
+    def batch(component: torch.Tensor) -> torch.Tensor:
+        level_major = torch.stack(
+            [
+                torch.stack(
+                    [component * factors[member, level] for member in range(2)],
+                    dim=0,
+                )
+                for level in range(3)
+            ],
+            dim=0,
+        )
+        return level_major.transpose(0, 1)
+
+    scalar_batch = batch(field)
+    eastward_batch = batch(base_u)
+    northward_batch = batch(base_v)
+    assert scalar_batch.shape == (2, 3, gl_grid.nlat, gl_grid.nlon)
+    assert not scalar_batch.is_contiguous()
+    assert not eastward_batch.is_contiguous()
+    assert not northward_batch.is_contiguous()
+
+    filtered = sgt.filter(scalar_batch, "T2", grid=gl_grid)
+    reconstructed = sgt.analyze(scalar_batch, grid=gl_grid).filter("T2").synthesize()
+    vorticity, divergence = sgt.kinematics(
+        eastward_batch, northward_batch, grid=gl_grid
+    )
+    regridded_u, regridded_v = sgt.regrid_vector(
+        eastward_batch,
+        northward_batch,
+        gl_grid,
+        "T2",
+        source_grid=gl_grid,
+    )
+
+    assert filtered.shape == scalar_batch.shape
+    assert reconstructed.shape == scalar_batch.shape
+    assert vorticity.shape == eastward_batch.shape
+    assert divergence.shape == northward_batch.shape
+    assert regridded_u.shape == eastward_batch.shape
+    assert regridded_v.shape == northward_batch.shape
+    torch.testing.assert_close(reconstructed, filtered)
+    for member in range(2):
+        for level in range(3):
+            factor = factors[member, level]
+            expected_scalar = sgt.filter(field * factor, "T2", grid=gl_grid)
+            expected_vorticity, expected_divergence = sgt.kinematics(
+                base_u * factor, base_v * factor, grid=gl_grid
+            )
+            torch.testing.assert_close(filtered[member, level], expected_scalar)
+            torch.testing.assert_close(vorticity[member, level], expected_vorticity)
+            torch.testing.assert_close(divergence[member, level], expected_divergence)
+
+
 def test_unsupported_bandwidths_raise_instead_of_clamping(
     cc_grid: sg.Grid,
     gl_grid: sg.Grid,

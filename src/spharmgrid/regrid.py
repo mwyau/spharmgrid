@@ -125,8 +125,8 @@ def regrid_vector(
         if selection is not None or taper is not None:
             alm = apply_spectral_selection(alm, spec, taper)
         return vector_synthesis(
-            alm[0],
-            alm[1],
+            alm[..., 0, :],
+            alm[..., 1, :],
             spec=spec,
             geometry=geometry_for(target.grid),
             ntheta=target.grid.nlat,
