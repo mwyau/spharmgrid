@@ -64,35 +64,23 @@ def test_scalar_and_vector_operations_pass_gradcheck() -> None:
     )
 
 
-def test_multiple_leading_dimensions_preserve_autograd() -> None:
-    grid = sg.gaussian_grid(4, 8)
-    scalar = torch.randn(
-        (2, 3, grid.nlat, grid.nlon), dtype=torch.float64, requires_grad=True
-    )
-    eastward = torch.randn_like(scalar, requires_grad=True)
-    northward = torch.randn_like(scalar, requires_grad=True)
-
-    filtered = sgt.filter(scalar, "T2", grid=grid)
-    vorticity, divergence = sgt.kinematics(eastward, northward, grid=grid)
-    loss = (
-        filtered.square().mean()
-        + vorticity.square().mean()
-        + divergence.square().mean()
-    )
-    loss.backward()
-
-    for field in (scalar, eastward, northward):
-        assert field.grad is not None
-        assert field.grad.shape == field.shape
-        assert torch.isfinite(field.grad).all()
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA unavailable")
-def test_multiple_leading_dimensions_preserve_cuda_execution_and_autograd() -> None:
+@pytest.mark.parametrize(
+    "device",
+    [
+        "cpu",
+        pytest.param(
+            "cuda",
+            marks=pytest.mark.skipif(
+                not torch.cuda.is_available(), reason="CUDA unavailable"
+            ),
+        ),
+    ],
+)
+def test_multiple_leading_dimensions_preserve_autograd(device: str) -> None:
     grid = sg.gaussian_grid(4, 8)
     scalar = torch.randn(
         (2, 3, grid.nlat, grid.nlon),
-        device="cuda",
+        device=device,
         dtype=torch.float64,
         requires_grad=True,
     )
@@ -100,6 +88,7 @@ def test_multiple_leading_dimensions_preserve_cuda_execution_and_autograd() -> N
     northward = torch.randn_like(scalar, requires_grad=True)
 
     filtered = sgt.filter(scalar, "T2", grid=grid)
+    vorticity, divergence = sgt.kinematics(eastward, northward, grid=grid)
     output_u, output_v = sgt.regrid_vector(
         eastward,
         northward,
@@ -108,16 +97,21 @@ def test_multiple_leading_dimensions_preserve_cuda_execution_and_autograd() -> N
         source_grid=grid,
     )
     loss = (
-        filtered.square().mean() + output_u.square().mean() + output_v.square().mean()
+        filtered.square().mean()
+        + vorticity.square().mean()
+        + divergence.square().mean()
+        + output_u.square().mean()
+        + output_v.square().mean()
     )
     loss.backward()
 
-    for result in (filtered, output_u, output_v):
+    for result in (filtered, vorticity, divergence, output_u, output_v):
         assert result.shape == scalar.shape
-        assert result.device.type == "cuda"
+        assert result.device.type == device
     for field in (scalar, eastward, northward):
         assert field.grad is not None
-        assert field.grad.device.type == "cuda"
+        assert field.grad.shape == field.shape
+        assert field.grad.device.type == device
         assert torch.isfinite(field.grad).all()
 
 

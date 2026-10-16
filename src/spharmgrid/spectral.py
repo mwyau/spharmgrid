@@ -316,15 +316,12 @@ def scalar_transform(
         else None
     )
 
-    def kernel(field_block: NDArray[np.generic]) -> NDArray[np.float64]:
-        return transform(field_block)
-
     options = apply_ufunc_options(canonical, output_sizes=output_sizes)
     excluded_dimensions = (
         {source.latitude_dim, source.longitude_dim} if output_changes_shape else set()
     )
     result = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical,
         input_core_dims=[[source.latitude_dim, source.longitude_dim]],
         output_core_dims=[[target.latitude_dim, target.longitude_dim]],

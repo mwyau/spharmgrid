@@ -65,13 +65,8 @@ def vector_scalar_transform(
     """Apply a paired-vector kernel to complete spatial blocks."""
     dask_field = _dask_input(canonical_u, canonical_v)
 
-    def kernel(
-        block_u: NDArray[np.generic], block_v: NDArray[np.generic]
-    ) -> NDArray[np.float64]:
-        return transform(block_u, block_v)
-
     output = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[
@@ -108,13 +103,8 @@ def vector_pair_transform(
         else None
     )
 
-    def kernel(
-        block_u: NDArray[np.generic], block_v: NDArray[np.generic]
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        return transform(block_u, block_v)
-
     outputs = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[
@@ -161,18 +151,8 @@ def vector_quad_transform(
     """Apply a paired-vector kernel to complete spatial blocks."""
     dask_field = _dask_input(canonical_u, canonical_v)
 
-    def kernel(
-        block_u: NDArray[np.generic], block_v: NDArray[np.generic]
-    ) -> tuple[
-        NDArray[np.float64],
-        NDArray[np.float64],
-        NDArray[np.float64],
-        NDArray[np.float64],
-    ]:
-        return transform(block_u, block_v)
-
     outputs = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[

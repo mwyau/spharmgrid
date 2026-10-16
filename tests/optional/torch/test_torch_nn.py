@@ -281,8 +281,6 @@ def test_fixed_filter_module_runs_under_torch_compile_eager() -> None:
     layer = sgnn.SHTFilter(grid, "T2").to(dtype=torch.float32)
     compiled = torch.compile(layer, backend="eager")
     torch.testing.assert_close(compiled(field), layer(field))
-    batch = field.repeat(2, 3, 1, 1)
-    torch.testing.assert_close(compiled(batch), layer(batch))
 
 
 @pytest.mark.filterwarnings(

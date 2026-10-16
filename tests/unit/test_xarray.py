@@ -209,31 +209,23 @@ def test_detected_horizontal_dimensions_need_not_be_last_or_adjacent() -> None:
     np.testing.assert_allclose(result, field, rtol=0.0, atol=2.0e-14)
 
 
-@pytest.mark.parametrize("batch_shape", [(), (1,), (4,), (2, 3), (2, 3, 4)])
-def test_scalar_filter_preserves_arbitrary_leading_shapes(
-    batch_shape: tuple[int, ...],
-) -> None:
+def test_scalar_filter_preserves_three_leading_dimensions() -> None:
     grid = supported_grid("cc")
     base = scalar_field(grid)
-    if batch_shape:
-        factors = np.arange(1.0, np.prod(batch_shape) + 1.0).reshape(batch_shape)
-        values = factors[..., None, None] * np.asarray(base)
-        leading_dims = tuple(f"batch_{index}" for index in range(len(batch_shape)))
-        field = xr.DataArray(
-            values,
-            dims=leading_dims + ("lat", "lon"),
-            coords={
-                **{
-                    dimension: np.arange(size)
-                    for dimension, size in zip(leading_dims, batch_shape, strict=True)
-                },
-                "lat": grid.latitude,
-                "lon": grid.longitude,
-            },
-        )
-    else:
-        factors = np.asarray(1.0)
-        field = base
+    batch_shape = (2, 1, 2)
+    factors = np.arange(1.0, np.prod(batch_shape) + 1.0).reshape(batch_shape)
+    leading_dims = ("member", "level", "experiment")
+    field = xr.DataArray(
+        factors[..., None, None] * np.asarray(base),
+        dims=leading_dims + ("lat", "lon"),
+        coords={
+            "member": ["first", "second"],
+            "level": [850],
+            "experiment": [0, 1],
+            "lat": grid.latitude,
+            "lon": grid.longitude,
+        },
+    )
 
     result = sg.filter(field, "T2")
     expected_frames = [

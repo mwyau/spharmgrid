@@ -7,13 +7,14 @@ PyTorch, and JAX APIs while making arbitrary leading dimensions a consistent inp
 contract. Xarray output must retain its original named dimensions, coordinates,
 metadata, and `.sg` behavior.
 
-## Current execution paths
+## Execution paths
 
-- DUCC adapters in `src/spharmgrid/_ducc.py` accept one 2-D map (or the two components
-  of one spin-1 map). Scalar/vector Xarray adapters in `_spectral_field.py`,
-  `_vector.py`, `spectral.py`, `operators.py`, and `kinematics.py` use
-  `xr.apply_ufunc(..., vectorize=True)` to dispatch one frame per callback.
-- `regrid.py` routes scalar and vector transforms through those scalar/vector helpers.
+- DUCC adapters in `src/spharmgrid/_ducc.py` accept arbitrary leading map and
+  coefficient dimensions and run one transform per field. Spin-component axes remain
+  separate from leading dimensions.
+- Xarray adapters use `xr.apply_ufunc(..., vectorize=False)` so each numerical callback
+  receives its complete eager or Dask block. `regrid.py` routes scalar and vector
+  transforms through the scalar/vector helpers.
 - Torch accepts leading dimensions through torch-harmonics and spharmgrid's native Torch
   operations. JAX flattens leading dimensions and maps S2FFT over frames with
   `jax.vmap`.
@@ -43,11 +44,10 @@ metadata, and `.sg` behavior.
 
 ## Dask handling
 
-Retain the existing complete-spatial-core requirement. First measure the current
-`allow_rechunk=True` behavior with split spatial chunks and multiple leading chunk
-layouts. Avoid changing rechunk policy unless tests show a safe way to reduce memory
-costs without rejecting workflows that currently work. Do not add a DUCC worker pool or
-nest transform threads inside Dask tasks.
+Dask callbacks receive complete spatial core dimensions. `apply_ufunc` uses
+`allow_rechunk=True` when spatial dimensions are split, and tests cover lazy outputs and
+multiple leading chunks. Dask task concurrency remains separate from DUCC threading,
+with one DUCC thread per task by default.
 
 ## Acceptance
 

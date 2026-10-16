@@ -94,7 +94,7 @@ def test_dask_transform_receives_the_available_leading_block(
             "lat": grid.latitude,
             "lon": grid.longitude,
         },
-    ).chunk({"member": 2, "level": 3, "lat": -1, "lon": -1})
+    ).chunk({"member": 1, "level": 2, "lat": -1, "lon": -1})
     analysis = Mock(wraps=spectral.scalar_analysis)
     monkeypatch.setattr(spectral, "scalar_analysis", analysis)
 
@@ -102,8 +102,12 @@ def test_dask_transform_receives_the_available_leading_block(
 
     assert hasattr(result.data, "dask")
     result.compute()
-    assert analysis.call_count == 1
-    assert analysis.call_args.args[0].shape == values.shape
+    assert sorted(call.args[0].shape for call in analysis.call_args_list) == [
+        (1, 1, grid.nlat, grid.nlon),
+        (1, 1, grid.nlat, grid.nlon),
+        (1, 2, grid.nlat, grid.nlon),
+        (1, 2, grid.nlat, grid.nlon),
+    ]
 
 
 def test_f1_scalar_vector_and_regrid_operations_stay_lazy() -> None:

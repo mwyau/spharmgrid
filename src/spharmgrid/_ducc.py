@@ -248,17 +248,12 @@ def vector_analysis(
     maps the components as ``(-v, u)``. Inputs have shape
     ``(..., ntheta, nphi)`` and output has shape ``(..., 2, nalm)``.
     """
-    leading_shape, eastward_frames = _flatten_map_batch(u)
-    other_leading_shape, northward_frames = _flatten_map_batch(v)
-    if leading_shape != other_leading_shape:
-        raise ValueError(
-            f"wind batches have incompatible leading shapes: "
-            f"{leading_shape} and {other_leading_shape}"
-        )
     if u.shape != v.shape:
         raise ValueError(
             f"wind batches have incompatible shapes: {u.shape} and {v.shape}"
         )
+    leading_shape, eastward_frames = _flatten_map_batch(u)
+    _, northward_frames = _flatten_map_batch(v)
     import ducc0
 
     mode_size = _alm_size(spec.lmax, spec.mmax)
@@ -268,7 +263,7 @@ def vector_analysis(
         northward = northward_frames[index]
         vector_map = np.stack((-northward, eastward), axis=0)
         coefficients = ducc0.sht.analysis_2d(
-            map=np.ascontiguousarray(vector_map),
+            map=vector_map,
             spin=1,
             lmax=spec.lmax,
             mmax=spec.mmax,
@@ -292,25 +287,21 @@ def vector_synthesis(
     nthreads: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Synthesize DUCC E/B coefficient batches into geographic wind."""
-    import ducc0
-
     if alm_e.shape != alm_b.shape or alm_e.ndim < 1:
         raise ValueError(
             "eastward and northward wind coefficients must have matching "
             f"shapes, got {alm_e.shape} and {alm_b.shape}"
         )
+    import ducc0
+
     leading_shape = alm_e.shape[:-1]
     batch_size = prod(leading_shape) if leading_shape else 1
-    electric = np.ascontiguousarray(alm_e).reshape(batch_size, alm_e.shape[-1])
-    magnetic = np.ascontiguousarray(alm_b).reshape(batch_size, alm_b.shape[-1])
     eastward = np.empty((batch_size, ntheta, nphi), dtype=np.float64)
     northward = np.empty_like(eastward)
-    for index in range(batch_size):
-        e_coefficients = electric[index]
-        b_coefficients = magnetic[index]
-        coefficients = np.stack((e_coefficients, b_coefficients), axis=0)
+    for index, batch_index in enumerate(np.ndindex(leading_shape)):
+        coefficients = np.stack((alm_e[batch_index], alm_b[batch_index]), axis=0)
         values = ducc0.sht.synthesis_2d(
-            alm=np.ascontiguousarray(coefficients),
+            alm=coefficients,
             spin=1,
             lmax=spec.lmax,
             mmax=spec.mmax,
@@ -334,15 +325,14 @@ def _flatten_map_batch(
     field: NDArray[np.generic],
 ) -> tuple[tuple[int, ...], NDArray[np.float64]]:
     """Flatten leading map axes while retaining the input leading shape."""
-    values = np.asarray(field)
-    if values.ndim < 2:
+    if field.ndim < 2:
         raise ValueError(
-            f"DUCC maps must have at least two dimensions, got {values.shape}"
+            f"DUCC maps must have at least two dimensions, got {field.shape}"
         )
-    leading_shape = values.shape[:-2]
+    leading_shape = field.shape[:-2]
     batch_size = prod(leading_shape) if leading_shape else 1
-    frames = np.ascontiguousarray(
-        values.reshape((batch_size,) + values.shape[-2:]), dtype=np.float64
+    frames = np.ascontiguousarray(field, dtype=np.float64).reshape(
+        (batch_size,) + field.shape[-2:]
     )
     return leading_shape, frames
 
@@ -351,15 +341,13 @@ def _flatten_scalar_coefficients(
     alm: NDArray[np.complexfloating],
 ) -> tuple[tuple[int, ...], NDArray[np.complex128]]:
     """Flatten scalar coefficient batches with the DUCC component axis intact."""
-    values = np.asarray(alm)
-    if values.ndim < 2 or values.shape[-2] != 1:
+    if alm.ndim < 2 or alm.shape[-2] != 1:
         raise ValueError(
-            "scalar DUCC coefficients must have shape (..., 1, nalm), "
-            f"got {values.shape}"
+            f"scalar DUCC coefficients must have shape (..., 1, nalm), got {alm.shape}"
         )
-    leading_shape = values.shape[:-2]
+    leading_shape = alm.shape[:-2]
     batch_size = prod(leading_shape) if leading_shape else 1
-    frames = np.ascontiguousarray(values, dtype=np.complex128).reshape(
-        batch_size, 1, values.shape[-1]
+    frames = np.ascontiguousarray(alm, dtype=np.complex128).reshape(
+        batch_size, 1, alm.shape[-1]
     )
     return leading_shape, frames
