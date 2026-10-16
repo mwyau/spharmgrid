@@ -112,6 +112,65 @@ def test_vector_kinematics_and_wind_support_jit_vmap_and_grad(
     assert bool(jnp.isfinite(wind_gradient).all())
 
 
+def test_multiple_leading_dimensions_support_jit_and_autodiff(
+    gl_grid: sg.Grid,
+) -> None:
+    scalar_values_array = jnp.asarray(scalar_values(gl_grid), dtype=jnp.float64)
+    eastward_values, northward_values = vector_values(gl_grid)
+    eastward = jnp.asarray(eastward_values, dtype=jnp.float64)
+    northward = jnp.asarray(northward_values, dtype=jnp.float64)
+    factors = jnp.asarray([[1.0, -0.5, 2.0], [0.25, 1.5, -1.0]])
+    scalar_batch = factors[..., None, None] * scalar_values_array
+    eastward_batch = factors[..., None, None] * eastward
+    northward_batch = factors[..., None, None] * northward
+
+    compiled_filter = jit(lambda values: sgj.filter(values, "T4", grid=gl_grid))
+    compiled_kinematics = jit(lambda u, v: sgj.kinematics(u, v, grid=gl_grid))
+    filtered = compiled_filter(scalar_batch)
+    vorticity, divergence = compiled_kinematics(eastward_batch, northward_batch)
+    filter_gradient = grad(lambda values: jnp.sum(compiled_filter(values) ** 2))(
+        scalar_batch
+    )
+    vector_gradient = grad(
+        lambda values: jnp.sum(compiled_kinematics(values, northward_batch)[0] ** 2)
+    )(eastward_batch)
+
+    assert filtered.shape == scalar_batch.shape
+    assert vorticity.shape == eastward_batch.shape
+    assert divergence.shape == northward_batch.shape
+    assert filter_gradient.shape == scalar_batch.shape
+    assert vector_gradient.shape == eastward_batch.shape
+    assert bool(jnp.isfinite(filter_gradient).all())
+    assert bool(jnp.isfinite(vector_gradient).all())
+
+    for member in range(2):
+        for level in range(3):
+            factor = factors[member, level]
+            np.testing.assert_allclose(
+                filtered[member, level],
+                sgj.filter(scalar_values_array * factor, "T4", grid=gl_grid),
+                rtol=0.0,
+                atol=3.0e-13,
+            )
+            expected_vorticity, expected_divergence = sgj.kinematics(
+                eastward * factor,
+                northward * factor,
+                grid=gl_grid,
+            )
+            np.testing.assert_allclose(
+                vorticity[member, level],
+                expected_vorticity,
+                rtol=0.0,
+                atol=3.0e-13,
+            )
+            np.testing.assert_allclose(
+                divergence[member, level],
+                expected_divergence,
+                rtol=0.0,
+                atol=3.0e-13,
+            )
+
+
 def test_scalar_filter_directional_derivative_matches_finite_difference(
     gl_grid: sg.Grid,
 ) -> None:

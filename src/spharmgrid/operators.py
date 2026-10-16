@@ -81,7 +81,7 @@ def gradient(
             phi0=source.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        return derivatives[1] / radius, -derivatives[0] / radius
+        return derivatives[..., 1, :, :] / radius, -derivatives[..., 0, :, :] / radius
 
     east, north = _two_scalar_outputs(field, source, transform)
     east.name = eastward
@@ -131,11 +131,12 @@ def inverse_gradient(
             phi0=source.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        potential_alm = np.zeros_like(vector_alm[0])
+        electric = vector_alm[..., 0, :]
+        potential_alm = np.zeros_like(electric)
         nonzero = scale > 0.0
-        potential_alm[nonzero] = vector_alm[0, nonzero] / scale[nonzero]
+        potential_alm[..., nonzero] = electric[..., nonzero] / scale[nonzero]
         return scalar_synthesis(
-            potential_alm[np.newaxis, :],
+            potential_alm[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(source.grid),
             ntheta=source.grid.nlat,
@@ -262,7 +263,7 @@ def _two_scalar_outputs(
             [source.latitude_dim, source.longitude_dim],
             [source.latitude_dim, source.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64],
         **apply_ufunc_options(canonical),
     )

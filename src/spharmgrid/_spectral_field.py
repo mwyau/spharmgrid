@@ -559,22 +559,22 @@ def _analyze_scalar(
     mode_dim = _new_dimension(_MODE_DIM_BASE, canonical.dims)
     mode_size = alm_degrees(spec.lmax, spec.mmax).size
 
-    def kernel(frame: NDArray[np.generic]) -> NDArray[np.complex128]:
+    def kernel(field_block: NDArray[np.generic]) -> NDArray[np.complex128]:
         coefficients = analysis(
-            frame,
+            field_block,
             spec=spec,
             geometry=geometry_for(layout.grid),
             phi0=layout.transform_layout.phi0_radians,
             nthreads=nthreads,
         )
-        return coefficients[0]
+        return coefficients[..., 0, :]
 
     coefficients = xr.apply_ufunc(
         kernel,
         canonical,
         input_core_dims=[[layout.latitude_dim, layout.longitude_dim]],
         output_core_dims=[[mode_dim]],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.complex128],
         **apply_ufunc_options(canonical, output_sizes={mode_dim: mode_size}),
     )
@@ -634,7 +634,7 @@ def _analyze_vector(
             [layout.latitude_dim, layout.longitude_dim],
         ],
         output_core_dims=[[component_dim, mode_dim]],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.complex128],
         **apply_ufunc_options(
             dask_field,
@@ -675,9 +675,9 @@ def _synthesize_scalar(
     nthreads: int,
     synthesis: Callable[..., Any] = scalar_synthesis,
 ) -> xr.DataArray:
-    def kernel(frame: NDArray[np.generic]) -> NDArray[np.float64]:
+    def kernel(coefficients_block: NDArray[np.generic]) -> NDArray[np.float64]:
         return synthesis(
-            frame[np.newaxis, :],
+            coefficients_block[..., np.newaxis, :],
             spec=spec,
             geometry=geometry_for(target.grid),
             ntheta=target.grid.nlat,
@@ -695,7 +695,7 @@ def _synthesize_scalar(
         coefficients,
         input_core_dims=[[mode_dim]],
         output_core_dims=[[target.latitude_dim, target.longitude_dim]],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64],
         **apply_ufunc_options(coefficients, output_sizes=output_sizes),
     )
@@ -724,8 +724,8 @@ def _synthesize_vector(
         frame: NDArray[np.generic],
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return synthesis(
-            frame[0],
-            frame[1],
+            frame[..., 0, :],
+            frame[..., 1, :],
             spec=spec,
             geometry=geometry_for(target.grid),
             ntheta=target.grid.nlat,
@@ -746,7 +746,7 @@ def _synthesize_vector(
             [target.latitude_dim, target.longitude_dim],
             [target.latitude_dim, target.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64],
         **apply_ufunc_options(coefficients, output_sizes=output_sizes),
     )

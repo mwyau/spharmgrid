@@ -67,6 +67,32 @@ def _small_transform_specs() -> tuple[TransformSpec, ...]:
     return tuple(specs)
 
 
+def test_xarray_transform_receives_complete_leading_dimension_block(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    grid = supported_grid("cc")
+    base = scalar_field(grid)
+    values = np.broadcast_to(np.asarray(base), (2, 3, grid.nlat, grid.nlon)).copy()
+    field = xr.DataArray(
+        values,
+        dims=("member", "level", "lat", "lon"),
+        coords={
+            "member": ["first", "second"],
+            "level": [1000, 850, 500],
+            "lat": grid.latitude,
+            "lon": grid.longitude,
+        },
+    )
+    analysis = Mock(wraps=spectral_module.scalar_analysis)
+    monkeypatch.setattr(spectral_module, "scalar_analysis", analysis)
+
+    result = sg.filter(field, "T2")
+
+    assert result.shape == values.shape
+    assert analysis.call_count == 1
+    assert analysis.call_args.args[0].shape == values.shape
+
+
 def _scalar_mode(
     grid: sg.Grid,
     degree: int,

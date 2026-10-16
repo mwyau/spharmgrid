@@ -302,7 +302,7 @@ def scalar_transform(
     target: FieldLayout,
     transform: Callable[[NDArray[np.generic]], NDArray[np.float64]],
 ) -> xr.DataArray:
-    """Apply a two-dimensional scalar kernel over all xarray leading dimensions."""
+    """Apply a block scalar kernel while preserving all leading dimensions."""
     canonical = source.canonicalize(field)
     output_changes_shape = (
         source.latitude_dim != target.latitude_dim
@@ -316,19 +316,16 @@ def scalar_transform(
         else None
     )
 
-    def kernel(frame: NDArray[np.generic]) -> NDArray[np.float64]:
-        return transform(frame)
-
     options = apply_ufunc_options(canonical, output_sizes=output_sizes)
     excluded_dimensions = (
         {source.latitude_dim, source.longitude_dim} if output_changes_shape else set()
     )
     result = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical,
         input_core_dims=[[source.latitude_dim, source.longitude_dim]],
         output_core_dims=[[target.latitude_dim, target.longitude_dim]],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64],
         exclude_dims=excluded_dimensions,
         **options,

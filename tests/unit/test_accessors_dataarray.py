@@ -45,7 +45,11 @@ def test_dataarray_grid_accessor_properties(kind: SupportedGridKind) -> None:
 
 @pytest.mark.parametrize("kind", ["cc", "f1"])
 def test_dataarray_scalar_accessors(kind: SupportedGridKind) -> None:
-    field = scalar_field(supported_grid(kind), leading=True)
+    field = (
+        scalar_field(supported_grid(kind), leading=True)
+        .expand_dims(level=[1000, 850, 500])
+        .transpose("lat", "member", "lon", "level")
+    )
     target = supported_grid("gl")
     radius = 1.1 * sg.EARTH_RADIUS_M
 

@@ -62,16 +62,11 @@ def vector_scalar_transform(
     canonical_v: xr.DataArray,
     transform: VectorScalarKernel,
 ) -> xr.DataArray:
-    """Apply one paired-vector kernel that returns a scalar map."""
+    """Apply a paired-vector kernel to complete spatial blocks."""
     dask_field = _dask_input(canonical_u, canonical_v)
 
-    def kernel(
-        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
-    ) -> NDArray[np.float64]:
-        return transform(frame_u, frame_v)
-
     output = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[
@@ -79,7 +74,7 @@ def vector_scalar_transform(
             [source.latitude_dim, source.longitude_dim],
         ],
         output_core_dims=[[source.latitude_dim, source.longitude_dim]],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64],
         **apply_ufunc_options(dask_field),
     )
@@ -99,7 +94,7 @@ def vector_pair_transform(
     canonical_v: xr.DataArray,
     transform: VectorPairKernel,
 ) -> tuple[xr.DataArray, xr.DataArray]:
-    """Apply one paired-vector kernel that returns two target-grid maps."""
+    """Apply a paired-vector kernel to complete spatial blocks."""
     dask_field = _dask_input(canonical_u, canonical_v)
     output_changes_shape = _output_changes_shape(source, target)
     output_sizes = (
@@ -108,13 +103,8 @@ def vector_pair_transform(
         else None
     )
 
-    def kernel(
-        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        return transform(frame_u, frame_v)
-
     outputs = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[
@@ -125,7 +115,7 @@ def vector_pair_transform(
             [target.latitude_dim, target.longitude_dim],
             [target.latitude_dim, target.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64],
         exclude_dims=(
             {source.latitude_dim, source.longitude_dim}
@@ -158,21 +148,11 @@ def vector_quad_transform(
     canonical_v: xr.DataArray,
     transform: VectorQuadKernel,
 ) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray, xr.DataArray]:
-    """Apply one paired-vector kernel that returns four source-grid maps."""
+    """Apply a paired-vector kernel to complete spatial blocks."""
     dask_field = _dask_input(canonical_u, canonical_v)
 
-    def kernel(
-        frame_u: NDArray[np.generic], frame_v: NDArray[np.generic]
-    ) -> tuple[
-        NDArray[np.float64],
-        NDArray[np.float64],
-        NDArray[np.float64],
-        NDArray[np.float64],
-    ]:
-        return transform(frame_u, frame_v)
-
     outputs = xr.apply_ufunc(
-        kernel,
+        transform,
         canonical_u,
         canonical_v,
         input_core_dims=[
@@ -185,7 +165,7 @@ def vector_quad_transform(
             [source.latitude_dim, source.longitude_dim],
             [source.latitude_dim, source.longitude_dim],
         ],
-        vectorize=True,
+        vectorize=False,
         output_dtypes=[np.float64, np.float64, np.float64, np.float64],
         **apply_ufunc_options(dask_field),
     )

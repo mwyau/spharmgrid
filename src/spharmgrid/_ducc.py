@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from math import prod
 from numbers import Integral
 from typing import Literal, cast
 
@@ -134,28 +135,32 @@ def alm_subselection(
 
 
 def scalar_analysis(
-    frame: NDArray[np.generic],
+    field: NDArray[np.generic],
     *,
     spec: TransformSpec,
     geometry: Geometry,
     phi0: float,
     nthreads: int,
 ) -> NDArray[np.complex128]:
-    """Analyze one north-to-south, cyclic-eastward scalar map."""
-    _require_frame(frame)
+    """Analyze scalar maps with shape ``(..., ntheta, nphi)``."""
     import ducc0
 
-    values = np.ascontiguousarray(frame, dtype=np.float64)
-    result = ducc0.sht.analysis_2d(
-        map=values[np.newaxis, :, :],
-        spin=0,
-        lmax=spec.lmax,
-        mmax=spec.mmax,
-        geometry=geometry,
-        phi0=phi0,
-        nthreads=nthreads,
-    )
-    return cast(NDArray[np.complex128], result)
+    leading_shape, frames = _flatten_map_batch(field)
+    mode_size = _alm_size(spec.lmax, spec.mmax)
+    result = np.empty((frames.shape[0], 1, mode_size), dtype=np.complex128)
+    for index in range(frames.shape[0]):
+        frame = frames[index]
+        coefficients = ducc0.sht.analysis_2d(
+            map=frame[np.newaxis, :, :],
+            spin=0,
+            lmax=spec.lmax,
+            mmax=spec.mmax,
+            geometry=geometry,
+            phi0=phi0,
+            nthreads=nthreads,
+        )
+        result[index] = coefficients
+    return result.reshape(leading_shape + (1, mode_size))
 
 
 def scalar_synthesis(
@@ -168,22 +173,25 @@ def scalar_synthesis(
     phi0: float,
     nthreads: int,
 ) -> NDArray[np.float64]:
-    """Synthesize one scalar map on a north-to-south DUCC geometry."""
+    """Synthesize scalar coefficient batches on a DUCC geometry."""
     import ducc0
 
-    values = np.ascontiguousarray(alm)
-    result = ducc0.sht.synthesis_2d(
-        alm=values,
-        spin=0,
-        lmax=spec.lmax,
-        mmax=spec.mmax,
-        geometry=geometry,
-        ntheta=ntheta,
-        nphi=nphi,
-        phi0=phi0,
-        nthreads=nthreads,
-    )
-    return cast(NDArray[np.float64], result[0])
+    leading_shape, frames = _flatten_scalar_coefficients(alm)
+    result = np.empty((frames.shape[0], ntheta, nphi), dtype=np.float64)
+    for index, coefficients in enumerate(frames):
+        values = ducc0.sht.synthesis_2d(
+            alm=coefficients,
+            spin=0,
+            lmax=spec.lmax,
+            mmax=spec.mmax,
+            geometry=geometry,
+            ntheta=ntheta,
+            nphi=nphi,
+            phi0=phi0,
+            nthreads=nthreads,
+        )
+        result[index] = values[0]
+    return result.reshape(leading_shape + (ntheta, nphi))
 
 
 def scalar_derivative_synthesis(
@@ -196,27 +204,32 @@ def scalar_derivative_synthesis(
     phi0: float,
     nthreads: int,
 ) -> NDArray[np.float64]:
-    """Synthesize theta and eastward angular derivatives of a scalar field.
+    """Synthesize derivatives from scalar coefficient batches.
 
     DUCC's ``DERIV1`` mode returns ``(d/dtheta, (1/sin(theta)) d/dphi)``.
     The caller maps the first component from southward theta to northward
-    latitude and applies the physical-radius factor.
+    latitude and applies the physical-radius factor. The result has shape
+    ``(..., 2, ntheta, nphi)``.
     """
     import ducc0
 
-    result = ducc0.sht.synthesis_2d(
-        alm=np.ascontiguousarray(alm),
-        spin=1,
-        lmax=spec.lmax,
-        mmax=spec.mmax,
-        geometry=geometry,
-        ntheta=ntheta,
-        nphi=nphi,
-        phi0=phi0,
-        nthreads=nthreads,
-        mode="DERIV1",
-    )
-    return cast(NDArray[np.float64], result)
+    leading_shape, frames = _flatten_scalar_coefficients(alm)
+    result = np.empty((frames.shape[0], 2, ntheta, nphi), dtype=np.float64)
+    for index, coefficients in enumerate(frames):
+        values = ducc0.sht.synthesis_2d(
+            alm=coefficients,
+            spin=1,
+            lmax=spec.lmax,
+            mmax=spec.mmax,
+            geometry=geometry,
+            ntheta=ntheta,
+            nphi=nphi,
+            phi0=phi0,
+            nthreads=nthreads,
+            mode="DERIV1",
+        )
+        result[index] = values
+    return result.reshape(leading_shape + (2, ntheta, nphi))
 
 
 def vector_analysis(
@@ -228,33 +241,38 @@ def vector_analysis(
     phi0: float,
     nthreads: int,
 ) -> NDArray[np.complex128]:
-    """Analyze geographic eastward/northward wind into DUCC E/B coefficients.
+    """Analyze batched geographic wind into DUCC E/B coefficients.
 
     DUCC's spin-1 map components are ``(v_theta, v_phi)``.  Geographic wind
     uses northward ``v``, while increasing theta points south, so spharmgrid
-    maps the components as ``(-v, u)``.
+    maps the components as ``(-v, u)``. Inputs have shape
+    ``(..., ntheta, nphi)`` and output has shape ``(..., 2, nalm)``.
     """
-    _require_frame(u)
-    _require_frame(v)
     if u.shape != v.shape:
         raise ValueError(
-            f"wind frames have incompatible shapes: {u.shape} and {v.shape}"
+            f"wind batches have incompatible shapes: {u.shape} and {v.shape}"
         )
+    leading_shape, eastward_frames = _flatten_map_batch(u)
+    _, northward_frames = _flatten_map_batch(v)
     import ducc0
 
-    eastward = np.asarray(u, dtype=np.float64)
-    northward = np.asarray(v, dtype=np.float64)
-    vector_map = np.stack((-northward, eastward), axis=0)
-    result = ducc0.sht.analysis_2d(
-        map=np.ascontiguousarray(vector_map),
-        spin=1,
-        lmax=spec.lmax,
-        mmax=spec.mmax,
-        geometry=geometry,
-        phi0=phi0,
-        nthreads=nthreads,
-    )
-    return cast(NDArray[np.complex128], result)
+    mode_size = _alm_size(spec.lmax, spec.mmax)
+    result = np.empty((eastward_frames.shape[0], 2, mode_size), dtype=np.complex128)
+    for index in range(eastward_frames.shape[0]):
+        eastward = eastward_frames[index]
+        northward = northward_frames[index]
+        vector_map = np.stack((-northward, eastward), axis=0)
+        coefficients = ducc0.sht.analysis_2d(
+            map=vector_map,
+            spin=1,
+            lmax=spec.lmax,
+            mmax=spec.mmax,
+            geometry=geometry,
+            phi0=phi0,
+            nthreads=nthreads,
+        )
+        result[index] = coefficients
+    return result.reshape(leading_shape + (2, mode_size))
 
 
 def vector_synthesis(
@@ -268,30 +286,68 @@ def vector_synthesis(
     phi0: float,
     nthreads: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Synthesize DUCC E/B coefficients into geographic eastward/northward wind."""
+    """Synthesize DUCC E/B coefficient batches into geographic wind."""
+    if alm_e.shape != alm_b.shape or alm_e.ndim < 1:
+        raise ValueError(
+            "eastward and northward wind coefficients must have matching "
+            f"shapes, got {alm_e.shape} and {alm_b.shape}"
+        )
     import ducc0
 
-    coefficients = np.stack((alm_e, alm_b), axis=0)
-    result = ducc0.sht.synthesis_2d(
-        alm=np.ascontiguousarray(coefficients),
-        spin=1,
-        lmax=spec.lmax,
-        mmax=spec.mmax,
-        geometry=geometry,
-        ntheta=ntheta,
-        nphi=nphi,
-        phi0=phi0,
-        nthreads=nthreads,
-    )
-    # This is the inverse of ``(-v, u)`` in ``vector_analysis``.
-    return (
-        cast(NDArray[np.float64], result[1]),
-        cast(NDArray[np.float64], -result[0]),
-    )
-
-
-def _require_frame(frame: NDArray[np.generic]) -> None:
-    if frame.ndim != 2:
-        raise ValueError(
-            f"DUCC kernel requires a two-dimensional frame, got {frame.shape}"
+    leading_shape = alm_e.shape[:-1]
+    batch_size = prod(leading_shape) if leading_shape else 1
+    eastward = np.empty((batch_size, ntheta, nphi), dtype=np.float64)
+    northward = np.empty_like(eastward)
+    for index, batch_index in enumerate(np.ndindex(leading_shape)):
+        coefficients = np.stack((alm_e[batch_index], alm_b[batch_index]), axis=0)
+        values = ducc0.sht.synthesis_2d(
+            alm=coefficients,
+            spin=1,
+            lmax=spec.lmax,
+            mmax=spec.mmax,
+            geometry=geometry,
+            ntheta=ntheta,
+            nphi=nphi,
+            phi0=phi0,
+            nthreads=nthreads,
         )
+        # This is the inverse of ``(-v, u)`` in ``vector_analysis``.
+        eastward[index] = values[1]
+        northward[index] = -values[0]
+    shape = leading_shape + (ntheta, nphi)
+    return (
+        cast(NDArray[np.float64], eastward.reshape(shape)),
+        cast(NDArray[np.float64], northward.reshape(shape)),
+    )
+
+
+def _flatten_map_batch(
+    field: NDArray[np.generic],
+) -> tuple[tuple[int, ...], NDArray[np.float64]]:
+    """Flatten leading map axes while retaining the input leading shape."""
+    if field.ndim < 2:
+        raise ValueError(
+            f"DUCC maps must have at least two dimensions, got {field.shape}"
+        )
+    leading_shape = field.shape[:-2]
+    batch_size = prod(leading_shape) if leading_shape else 1
+    frames = np.ascontiguousarray(field, dtype=np.float64).reshape(
+        (batch_size,) + field.shape[-2:]
+    )
+    return leading_shape, frames
+
+
+def _flatten_scalar_coefficients(
+    alm: NDArray[np.complexfloating],
+) -> tuple[tuple[int, ...], NDArray[np.complex128]]:
+    """Flatten scalar coefficient batches with the DUCC component axis intact."""
+    if alm.ndim < 2 or alm.shape[-2] != 1:
+        raise ValueError(
+            f"scalar DUCC coefficients must have shape (..., 1, nalm), got {alm.shape}"
+        )
+    leading_shape = alm.shape[:-2]
+    batch_size = prod(leading_shape) if leading_shape else 1
+    frames = np.ascontiguousarray(alm, dtype=np.complex128).reshape(
+        batch_size, 1, alm.shape[-1]
+    )
+    return leading_shape, frames
