@@ -1,7 +1,7 @@
 # Development plans
 
-spharmgrid implements spherical harmonic operations on full global Gauss–Legendre
-(GL), Clenshaw–Curtis (CC), and Fejér-1 (F1) grids.
+spharmgrid implements spherical harmonic operations on full global Gauss–Legendre (GL),
+Clenshaw–Curtis (CC), and Fejér-1 (F1) grids.
 
 ## Implemented
 
@@ -12,9 +12,8 @@ spharmgrid implements spherical harmonic operations on full global Gauss–Legen
 - F1 transforms using Xarray/DUCC0. Fejér-2 (F2) is not planned.
 - Execution across non-spatial dimensions, including Dask-backed Xarray arrays.
 
-The [documentation](../docs/index.md) describes the public APIs, numerical
-conventions, and backend limitations. Earlier implementation plans are available in
-the Git history.
+The [documentation](../docs/index.md) describes the public APIs, numerical conventions,
+and backend limitations. Earlier implementation plans are available in the Git history.
 
 ## Planned
 

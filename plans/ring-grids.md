@@ -40,8 +40,8 @@ analysis is unavailable.
 
 Do not change the backend architecture and public grid representation at the same time.
 
-DUCC0, torch-harmonics, and S2FFT use different grid and transform representations.
-New public grid objects should describe the sampling geometry independently of these
+DUCC0, torch-harmonics, and S2FFT use different grid and transform representations. New
+public grid objects should describe the sampling geometry independently of these
 libraries.
 
 This is especially important for HEALPix: both DUCC0 and S2FFT support HEALPix, so its
@@ -98,9 +98,8 @@ iterative/pseudo analysis
 
 ## 3. Public grid model
 
-The current `Grid` descriptor represents rectangular GL, CC, and F1 grids. Do
-not stretch it into a dataclass containing unrelated optional fields for every
-future grid.
+The current `Grid` descriptor represents rectangular GL, CC, and F1 grids. Do not
+stretch it into a dataclass containing unrelated optional fields for every future grid.
 
 At this phase a small explicit grid-type split is justified, but the public objects
 should describe scientific sampling rather than backend call layouts.
