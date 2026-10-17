@@ -362,7 +362,7 @@ class SHTFilter(torch.nn.Module):
             device=torch.device("cpu"),
         )
 
-    def forward(self, field: Tensor) -> Tensor:
+    def forward(self, field: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """Apply the configured spectral filter."""
         _require_tensor(field, self.grid)
         return _filter_impl(
@@ -404,7 +404,7 @@ class SHTRegrid(torch.nn.Module):
             device=torch.device("cpu"),
         )
 
-    def forward(self, field: Tensor) -> Tensor:
+    def forward(self, field: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """Regrid a scalar tensor to the configured target grid."""
         _require_tensor(field, self.source_grid)
         return _regrid_impl(
@@ -448,7 +448,7 @@ class SHTVectorRegrid(torch.nn.Module):
         )
         _require_vector_bandwidth(self._state)
 
-    def forward(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, u: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:  # ty: ignore[invalid-mutable-override]
         """Regrid eastward and northward wind to the target grid."""
         _require_vector_tensors(u, v, self.source_grid)
         return _regrid_vector_impl(
