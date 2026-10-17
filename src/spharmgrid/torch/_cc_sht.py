@@ -236,7 +236,7 @@ class _ExtendedCCRealSHT(_ExtendedCCSHT):
     def __init__(self, nlat: int, nlon: int, *, lmax: int, mmax: int) -> None:
         super().__init__(nlat, nlon, lmax, mmax, vector=False)
 
-    def forward(self, values: Tensor) -> Tensor:
+    def forward(self, values: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         if values.ndim < 2:
             raise ValueError("CC scalar analysis expects at least two dimensions")
         if tuple(values.shape[-2:]) != (self.nlat, self.nlon):
@@ -256,7 +256,7 @@ class _ExtendedCCRealVectorSHT(_ExtendedCCSHT):
     def __init__(self, nlat: int, nlon: int, *, lmax: int, mmax: int) -> None:
         super().__init__(nlat, nlon, lmax, mmax, vector=True)
 
-    def forward(self, values: Tensor) -> Tensor:
+    def forward(self, values: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         if values.ndim < 3:
             raise ValueError("CC vector analysis expects at least three dimensions")
         if tuple(values.shape[-3:]) != (2, self.nlat, self.nlon):

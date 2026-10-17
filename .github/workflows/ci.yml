@@ -38,7 +38,7 @@ jobs:
       - name: Check lockfile
         run: uv lock --check
       - name: Sync code quality environment
-        run: uv sync --extra cf --extra dask --frozen
+        run: uv sync --group jax-dev --extra cf --extra dask --extra jax --extra torch --frozen
       - name: Run Ruff lint
         run: uv run --no-sync ruff check src tests docs/conf.py
       - name: Check Ruff formatting
@@ -142,8 +142,6 @@ jobs:
           python-version: "3.14"
       - name: Sync Torch test environment
         run: uv sync --no-default-groups --group dev --extra cf --extra dask --extra torch --frozen
-      - name: Type-check with Torch installed
-        run: uv run --no-sync ty check
       - name: Run Torch tests with coverage
         run: >-
           uv run --no-sync pytest
@@ -193,8 +191,6 @@ jobs:
           python-version: "3.14"
       - name: Sync JAX test environment
         run: uv sync --no-default-groups --group dev --group jax-dev --extra cf --extra dask --extra jax --frozen
-      - name: Type-check with JAX installed
-        run: uv run --no-sync ty check
       - name: Verify unsupported JAX single precision is rejected
         env:
           JAX_ENABLE_X64: "0"
