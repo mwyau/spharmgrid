@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.5.0 - 2026-10-17
 
 ### Xarray execution
 
@@ -9,14 +9,13 @@
 - Expanded tests for leading dimensions, mixed Xarray dimension order, Dask blocks, and
   multidimensional PyTorch and JAX inputs.
 
-## v0.5.0.dev0 - 2026-10-11
-
 ### Fejér-1 grids
 
 - Added Fejér-1 grid construction, detection, scalar and vector spherical harmonic
   operations, and spectral regridding to the Xarray/DUCC API. The maximum latitude
   degree is `nlat - 1`, with longitude order limited separately by `(nlon - 1) // 2`.
   JAX and PyTorch do not support F1.
+- The CLI also supports F1 grid detection and `regrid --grid f1`.
 - Added SciPy harmonic checks at T71 and T179 and SHTns vector comparisons.
 
 ## v0.4.1 - 2026-10-10
