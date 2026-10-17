@@ -89,6 +89,10 @@ argument. Vector arguments are geographic eastward `u` and northward `v`. `wind(
 the single-source inverse wind functions require an explicit `source=` because tensors
 do not carry CF metadata.
 
+For torch-harmonics, `(v_theta, v_phi) = (-v, u)`. At positive spherical degree `l`, its
+spheroidal and toroidal coefficients `s` and `t` map to spharmgrid's vector coefficients
+as `E = sqrt(l(l+1)) s` and `B = -sqrt(l(l+1)) t`.
+
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators set the
 degree-zero coefficient to zero, and vector inverse operations remove the nonphysical
 degree-zero vector slot. The PyTorch API supports `float32` and `float64` tensors.

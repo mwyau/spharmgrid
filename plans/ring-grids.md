@@ -1,9 +1,9 @@
-# Phase 4: additional global SHT grids
+# HEALPix and reduced Gaussian grids
 
 ## Status
 
 **Planned.** HEALPix and reduced Gaussian grids are not implemented. Fejér-1 support for
-Xarray/DUCC is described in [Phase 3.5](03a-fejer-grids.md).
+Xarray/DUCC is described in the [grid documentation](../docs/grids.md).
 
 ## Goal
 
@@ -36,13 +36,13 @@ analysis is unavailable.
 
 ---
 
-## 1. Why grid expansion follows backend work
+## 1. Grid and backend separation
 
 Do not change the backend architecture and public grid representation at the same time.
 
-Phase 3 first establishes transform/convention boundaries on the existing GL/CC model.
-Phase 4 can then design new grid objects against more than one real SHT engine where
-available.
+DUCC0, torch-harmonics, and S2FFT use different grid and transform representations. New
+public grid objects should describe the sampling geometry independently of these
+libraries.
 
 This is especially important for HEALPix: both DUCC0 and S2FFT support HEALPix, so its
 public spharmgrid representation should describe the scientific grid, not merely mirror
@@ -98,8 +98,8 @@ iterative/pseudo analysis
 
 ## 3. Public grid model
 
-The current `Grid` descriptor is intentionally simple for GL/CC. Do not stretch it into
-a dataclass containing unrelated optional fields for every future grid.
+The current `Grid` descriptor represents rectangular GL, CC, and F1 grids. Do not
+stretch it into a dataclass containing unrelated optional fields for every future grid.
 
 At this phase a small explicit grid-type split is justified, but the public objects
 should describe scientific sampling rather than backend call layouts.
@@ -110,7 +110,7 @@ A possible direction is:
 Grid = RectangularGrid | HealpixGrid | ReducedGaussianGrid
 ```
 
-with the existing GL/CC behavior retained under the rectangular form.
+with existing GL, CC, and F1 behavior kept under the rectangular form.
 
 The exact class names may differ after implementation research.
 
@@ -361,8 +361,8 @@ source analysis
 Potential Phase-4 combinations include:
 
 ```text
-GL/CC <-> HEALPix
-GL/CC <-> reduced Gaussian
+GL/CC/F1 <-> HEALPix
+GL/CC/F1 <-> reduced Gaussian
 HEALPix <-> reduced Gaussian
 HEALPix -> HEALPix
 reduced Gaussian -> reduced Gaussian

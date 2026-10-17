@@ -1,6 +1,15 @@
 # Changelog
 
-## v0.5.0.dev0 - 20226-10-11
+## Unreleased
+
+### Xarray execution
+
+- Updated scalar and vector Xarray operations to process non-spatial dimensions in
+  complete eager or Dask blocks. The DUCC adapter transforms each field separately.
+- Expanded tests for leading dimensions, mixed Xarray dimension order, Dask blocks, and
+  multidimensional PyTorch and JAX inputs.
+
+## v0.5.0.dev0 - 2026-10-11
 
 ### Fejér-1 grids
 

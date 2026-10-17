@@ -18,6 +18,38 @@ position are preserved. Latitude and longitude may appear anywhere in the input
 dimension order. The `.sg` accessor uses the same operations and shape behavior as the
 direct functions.
 
+Xarray passes each available block of fields to the DUCC adapter, which applies one
+spherical harmonic transform per field. Latitude and longitude can appear anywhere in
+the dimension order.
+
+For example, filtering a field with interleaved spatial and non-spatial dimensions
+preserves its dimensions and coordinates:
+
+```python
+import numpy as np
+import xarray as xr
+
+import spharmgrid as sg
+
+grid = sg.gaussian_grid(32, 64)
+field = xr.DataArray(
+    np.random.default_rng(0).standard_normal((3, grid.nlat, 2, grid.nlon)),
+    dims=("time", "lat", "level", "lon"),
+    coords={
+        "time": [0, 1, 2],
+        "lat": grid.latitude,
+        "level": [850, 500],
+        "lon": grid.longitude,
+    },
+)
+
+filtered = field.sg.filter("T15")
+assert filtered.dims == field.dims
+```
+
+Dask-backed inputs execute lazily. Each transform needs complete spatial dimensions
+within its block, so Xarray may rechunk latitude and longitude.
+
 The PyTorch and JAX APIs use the last two array axes for latitude and longitude; all
 preceding axes are preserved as independent fields. Their grid and precision limits are
 documented in {doc}`torch_api` and {doc}`jax_api`.

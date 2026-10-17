@@ -38,7 +38,7 @@ jobs:
       - name: Check lockfile
         run: uv lock --check
       - name: Sync code quality environment
-        run: uv sync --group jax-dev --extra cf --extra dask --extra jax --extra torch --frozen
+        run: uv sync --extra cf --extra dask --extra jax --extra torch --frozen
       - name: Run Ruff lint
         run: uv run --no-sync ruff check src tests docs/conf.py
       - name: Check Ruff formatting

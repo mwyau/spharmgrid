@@ -166,3 +166,12 @@ unsound-assignment = "error"
 unsound-return-statement = "error"
 unsound-yield = "error"
 unsupported-dynamic-base = "warn"
+
+[[tool.ty.overrides]]
+include = [
+    "src/spharmgrid/torch/_cc_sht.py",
+    "src/spharmgrid/torch/nn/_modules.py",
+]
+
+[tool.ty.overrides.rules]
+unused-ignore-comment = "ignore"
