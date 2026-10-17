@@ -46,7 +46,9 @@ raises `ValueError`; use the Xarray/DUCC API for F1 transforms.
 For GL grids, `L = nlat` sets the maximum spherical degree `L - 1`. Longitude sampling
 sets `longitude_mmax = floor((nlon - 1) / 2)`, so the transform uses
 `mmax = min(L - 1, longitude_mmax)`. The centered JAX coefficient array has shape
-`(L, 2L - 1)` for every supported `nlon`.
+`(L, 2L - 1)` for every supported `nlon`. The GL adapter maps representable
+longitude Fourier orders into S2FFT's fixed-width array and excludes the Nyquist bin
+for even `nlon`. During synthesis, unused Fourier bins are zero.
 
 Regular GL transforms currently require `s2fft==1.5.0` because spharmgrid uses that
 release's internal latitude-transform functions. spharmgrid rejects other S2FFT versions

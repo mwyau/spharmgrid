@@ -85,9 +85,13 @@ torch-harmonics coefficient layout.
 
 `Grid` is required explicitly because tensors do not carry named coordinates. Use
 `source_grid=` with `regrid()` and `regrid_vector()`; the target grid is a positional
-argument. Vector arguments are geographic eastward `u` and northward `v`. `wind()` and
-the single-source inverse wind functions require an explicit `source=` because tensors
-do not carry CF metadata.
+argument. Vector arguments are geographic eastward `u` and northward `v`.
+`wind()` and the single-source inverse wind functions require an explicit `source=`
+because tensors do not carry CF metadata.
+
+For torch-harmonics, `(v_theta, v_phi) = (-v, u)`. At positive spherical degree
+`l`, its spheroidal and toroidal coefficients `s` and `t` map to spharmgrid's
+vector coefficients as `E = sqrt(l(l+1)) s` and `B = -sqrt(l(l+1)) t`.
 
 The default radius is `spharmgrid.EARTH_RADIUS_M`. Scalar inverse operators set the
 degree-zero coefficient to zero, and vector inverse operations remove the nonphysical
