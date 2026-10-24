@@ -63,7 +63,11 @@ def _high_degree_fields(
     zonal = _harmonic_component(grid, degree, 0, 0.3)
     tesseral = _harmonic_component(grid, degree, degree // 2, -0.13 + 0.07j)
     sectoral = _harmonic_component(grid, degree, degree, 0.2 - 0.1j)
-    return tuple(a + b + c for a, b, c in zip(zonal, tesseral, sectoral, strict=True))
+    return (
+        zonal[0] + tesseral[0] + sectoral[0],
+        zonal[1] + tesseral[1] + sectoral[1],
+        zonal[2] + tesseral[2] + sectoral[2],
+    )
 
 
 @pytest.mark.parametrize(
