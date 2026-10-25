@@ -101,9 +101,6 @@ cuda-dev = [
     "torch-harmonics>=0.9.3",
     "jax[cuda13]>=0.7.0; sys_platform == 'linux'",
 ]
-parity = [
-    "pyspharm-syl>=1.2.1; python_version == '3.13'",
-]
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "-q"]

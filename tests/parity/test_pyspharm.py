@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Optional GL/CC parity checks against pyspharm-syl/SPHEREPACK."""
+"""Optional GL/CC parity checks against pyspharm/SPHEREPACK."""
 
 from __future__ import annotations
 
@@ -19,13 +19,34 @@ from tests.conftest import degree_one_field, scalar_field, solid_body_wind
 pytestmark = pytest.mark.parity
 spharm = pytest.importorskip(
     "spharm",
-    reason="run with uv --group parity on a supported Python version",
+    reason="install conda-forge pyspharm and run the conda parity CI environment",
 )
-
 _GridArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
 _SpectralArray: TypeAlias = NDArray[np.complex64] | NDArray[np.complex128]
 
-_SCALAR_OPERATOR_NTRUNC = 15
+_OPERATOR_NTRUNC = 15
+
+
+def _spectral_laplacian(
+    coefficients: _SpectralArray, truncation: int, *, inverse: bool = False
+) -> _SpectralArray:
+    """Apply the analytic spherical Laplace--Beltrami eigenvalues.
+
+    Use PySpharm's public coefficient degree indices with the analytic
+    eigenvalues. The degree-zero inverse selects the zero-mean solution.
+    """
+    _, degree = spharm.getspecindx(truncation)
+    degrees = np.asarray(degree, dtype=np.float64)
+    if coefficients.shape[0] != degrees.size:
+        raise ValueError("spectral truncation does not match coefficient count")
+    eigenvalue = degrees * (degrees + 1.0)
+    scale = np.zeros_like(eigenvalue)
+    if inverse:
+        nonzero = eigenvalue != 0.0
+        scale[nonzero] = -(sg.EARTH_RADIUS_M**2) / eigenvalue[nonzero]
+    else:
+        scale = -eigenvalue / (sg.EARTH_RADIUS_M**2)
+    return np.asarray(coefficients * scale, dtype=coefficients.dtype)
 
 
 def _tolerances(family: str) -> tuple[float, float]:
@@ -53,7 +74,7 @@ def _assert_close(actual: _GridArray, expected: _GridArray, family: str) -> None
 
 
 class _SpharmTransform(Protocol):
-    """Subset of pyspharm-syl's SPHEREPACK wrapper used in this suite."""
+    """Subset of pyspharm's SPHEREPACK wrapper used in this suite."""
 
     def grdtospec(
         self, values: _GridArray, ntrunc: int | None = None
@@ -102,7 +123,7 @@ def _north_to_south(values: _GridArray) -> _GridArray:
 def _smooth_vector_field(
     grid: sg.Grid,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Construct low-degree E/B content without spharmgrid transforms."""
+    """Construct an analytic low-degree E/B vector field."""
     latitude = np.deg2rad(grid.latitude)[:, None]
     longitude = np.deg2rad(grid.longitude)[None, :]
     sine = np.sin(latitude)
@@ -253,10 +274,10 @@ def test_regular_cc_scalar_filter_gradient_and_regrid_match_pyspharm() -> None:
 
 
 @pytest.mark.parametrize("kind", ["gl", "cc"])
-def test_scalar_laplacians_match_independent_spherepack(
+def test_scalar_laplacians_match_pyspharm_synthesis(
     kind: Literal["gl", "cc"],
 ) -> None:
-    """Compare scalar Laplacians through independent SPHEREPACK coefficients."""
+    """Compare Laplacians using PySpharm transforms and analytic eigenvalues."""
     grid = (
         _gaussian_grid()
         if kind == "gl"
@@ -282,24 +303,22 @@ def test_scalar_laplacians_match_independent_spherepack(
     inverse_source = degree_one_field(grid)
     laplacian_coefficients = reference.grdtospec(
         _north_to_south(np.asarray(laplacian_source.values, dtype=np.float64)),
-        ntrunc=_SCALAR_OPERATOR_NTRUNC,
+        ntrunc=_OPERATOR_NTRUNC,
     )
     inverse_coefficients = reference.grdtospec(
         _north_to_south(np.asarray(inverse_source.values, dtype=np.float64)),
-        ntrunc=_SCALAR_OPERATOR_NTRUNC,
+        ntrunc=_OPERATOR_NTRUNC,
     )
 
-    # The degree-one input has no degree-zero content.  SPHEREPACK's inverse
-    # scalar Laplacian sets the degree-zero solution to zero, matching
-    # spharmgrid's canonical additive-constant convention.
+    # Set the degree-zero inverse to zero, matching the zero-mean convention.
     reference_laplacian = np.squeeze(
         reference.spectogrd(
-            spharm._spherepack.lap(laplacian_coefficients, sg.EARTH_RADIUS_M)
+            _spectral_laplacian(laplacian_coefficients, _OPERATOR_NTRUNC)
         )
     )
     reference_inverse_laplacian = np.squeeze(
         reference.spectogrd(
-            spharm._spherepack.invlap(inverse_coefficients, sg.EARTH_RADIUS_M)
+            _spectral_laplacian(inverse_coefficients, _OPERATOR_NTRUNC, inverse=True)
         )
     )
 
@@ -410,7 +429,7 @@ def test_wind_kinematics_potentials_and_inverse_match_pyspharm(
         ("cc", "regular"),
     ],
 )
-def test_vector_sht_suite_matches_independent_spherepack(
+def test_vector_sht_suite_matches_pyspharm_synthesis(
     kind: Literal["cc", "gaussian"],
     gridtype: Literal["gaussian", "regular"],
 ) -> None:
@@ -486,19 +505,14 @@ def test_vector_sht_suite_matches_independent_spherepack(
     )
     reference_potential = np.squeeze(
         reference.spectogrd(
-            spharm._spherepack.invlap(
-                inverse_gradient_divergence,
-                sg.EARTH_RADIUS_M,
+            _spectral_laplacian(
+                inverse_gradient_divergence, _OPERATOR_NTRUNC, inverse=True
             )
         )
     )
-    reference_lap_vorticity = spharm._spherepack.lap(
-        reference_vorticity,
-        sg.EARTH_RADIUS_M,
-    )
-    reference_lap_divergence = spharm._spherepack.lap(
-        reference_divergence,
-        sg.EARTH_RADIUS_M,
+    reference_lap_vorticity = _spectral_laplacian(reference_vorticity, _OPERATOR_NTRUNC)
+    reference_lap_divergence = _spectral_laplacian(
+        reference_divergence, _OPERATOR_NTRUNC
     )
     reference_lap_u, reference_lap_v = reference.getuv(
         reference_lap_vorticity,
