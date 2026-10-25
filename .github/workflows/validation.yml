@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  UV_VERSION: "0.12.17"
+  UV_VERSION: "0.13.5"
 
 jobs:
   fejer1-validation:
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install --yes libfftw3-dev
 
       - name: Set up Python environment
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -67,7 +67,7 @@ jobs:
         run: conda create --yes --name spharmgrid-ncl --channel conda-forge ncl=6.6.2
 
       - name: Set up Python environment
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
