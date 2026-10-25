@@ -23,7 +23,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.90
+    rev: v0.0.91
     hooks:
       - id: ty
         args: [--isolated, --python=3.12, --extra=cf, --extra=dask]
@@ -41,15 +41,7 @@ repos:
           - mdformat-simple-breaks
           - mdformat-web
 
-  - repo: local
+  - repo: https://github.com/mwyau/spdx-header-check
+    rev: v0.1.0
     hooks:
-      - id: spdx
-        name: Add SPDX headers
-        entry: uvx reuse==6.2.0 annotate
-        language: system
-        args:
-          - --copyright=Albert M. W. Yau
-          - --license=BSD-3-Clause
-          - --merge-copyrights
-          - --skip-unrecognised
-        files: '^(pyproject\.toml|(?:src|tests)/.*\.(?:py|pyi))$'
+      - id: spdx-header-check
