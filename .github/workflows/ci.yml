@@ -31,10 +31,12 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           python-version: "3.14"
-      - name: Run prek checks
-        env:
-          SKIP: uv-lock,ruff-check,ruff-format,ty
-        run: uvx prek run --all-files
+      - name: Run pre-commit hooks
+        run: >-
+          uvx prek run --all-files
+          check-json check-merge-conflict check-toml check-yaml
+          end-of-file-fixer fix-byte-order-marker mixed-line-ending
+          trailing-whitespace mdformat
       - name: Check lockfile
         run: uv lock --check
       - name: Sync code quality environment
@@ -44,7 +46,12 @@ jobs:
       - name: Check Ruff formatting
         run: uv run --no-sync ruff format --check src tests docs/conf.py
       - name: Run ty type checks
-        run: uv run --no-sync ty check
+        run: >-
+          uv check --quiet --preview-features=check-command
+          --ty-version=0.0.91 --isolated --python=3.12
+          --extra=cf --extra=dask
+      - name: Check SPDX headers
+        uses: mwyau/spdx-header-check@v0.1.0
 
   tests:
     name: Unit tests (${{ matrix.name }}, Python ${{ matrix.python }})
