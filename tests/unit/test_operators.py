@@ -10,7 +10,12 @@ import numpy as np
 import pytest
 
 import spharmgrid as sg
-from tests.conftest import SupportedGridKind, degree_one_field, supported_grid
+from tests.conftest import (
+    SupportedGridKind,
+    degree_one_field,
+    scalar_field,
+    supported_grid,
+)
 
 
 @pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
@@ -61,6 +66,30 @@ def test_inverse_laplacian_sets_degree_zero_to_zero(kind: SupportedGridKind) -> 
         atol=2.0e-1,
     )
     np.testing.assert_allclose(restored, degree_one_field(grid), rtol=0.0, atol=1.0e-12)
+
+
+@pytest.mark.parametrize("kind", ["cc", "gl", "f1"])
+def test_scalar_laplacian_degree_two_harmonics(kind: SupportedGridKind) -> None:
+    """Check degree-one and degree-two eigenvalues in physical space."""
+    grid = supported_grid(kind)
+    source = scalar_field(grid)
+    latitude = np.deg2rad(grid.latitude)[:, None]
+    longitude = np.deg2rad(grid.longitude)[None, :]
+    sine = np.sin(latitude)
+
+    degree_one = 0.5 * sine
+    sectoral = np.cos(latitude) ** 2 * np.cos(2.0 * longitude)
+    degree_two = 0.75 * (3.0 * sine**2 - 1.0) / 2.0 + 0.2 * sectoral
+    radius = sg.EARTH_RADIUS_M
+
+    expected_laplacian = -(2.0 * degree_one + 6.0 * degree_two) / radius**2
+    expected_inverse = -(radius**2) * (degree_one / 2.0 + degree_two / 6.0)
+    np.testing.assert_allclose(
+        sg.laplacian(source), expected_laplacian, rtol=0.0, atol=1.0e-25
+    )
+    np.testing.assert_allclose(
+        sg.inverse_laplacian(source), expected_inverse, rtol=0.0, atol=1.0
+    )
 
 
 def test_scalar_laplacian_units_simplify_operator_chains() -> None:
