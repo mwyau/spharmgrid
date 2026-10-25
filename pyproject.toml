@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 dependencies = [
-    "ducc0>=0.39.0",
+    "ducc0>=0.42.0",
     "numpy>=1.24.0",
     "xarray>=2025.1.1",
 ]
@@ -76,8 +76,8 @@ exclude = [
 dev = [
     { include-group = "docs" },
     { include-group = "test" },
-    "ruff>=0.16.10",
-    "ty==0.0.87",
+    "ruff>=0.17.1",
+    "ty==0.0.90",
 ]
 docs = [
     "myst-parser>=5.1.0",
@@ -102,17 +102,7 @@ cuda-dev = [
     "jax[cuda13]>=0.7.0; sys_platform == 'linux'",
 ]
 parity = [
-    "pyspharm-syl>=1.2.1; python_version < '3.14'",
-    "numpy<2; python_version < '3.13'",
-]
-
-[tool.uv]
-# The NumPy 1.x parity environment cannot coexist with CUDA 13 JAX (NumPy 2.x).
-conflicts = [
-    [
-        { group = "parity" },
-        { group = "cuda-dev" },
-    ],
+    "pyspharm-syl>=1.2.1; python_version == '3.13'",
 ]
 
 [tool.pytest.ini_options]
