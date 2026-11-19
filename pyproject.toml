@@ -47,8 +47,9 @@ dask = ["dask[array]>=2024.1.0"]
 cli = [
     "h5netcdf[h5py]>=1.8.1",
     "zarr>=3.0.0",
-    "cfgrib>=0.9.15",
-    "eccodeslib>=2.48.0; sys_platform != 'win32'",
+    "cfgrib>=0.9.15.1",
+    "eccodes>=2.50.1",
+    "eccodeslib>=2.50.0.34; sys_platform != 'win32'",
 ]
 jax = [
     "jax>=0.5.0",
@@ -56,7 +57,7 @@ jax = [
 ]
 torch = [
     "torch>=2.13.0",
-    "torch-harmonics>=0.9.3",
+    "torch-harmonics>=0.9.4",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -76,8 +77,8 @@ exclude = [
 dev = [
     { include-group = "docs" },
     { include-group = "test" },
-    "ruff>=0.17.1",
-    "ty==0.0.93",
+    "ruff==0.17.6",
+    "ty==0.0.107",
 ]
 docs = [
     "myst-parser>=5.1.0",
@@ -98,7 +99,7 @@ jax-dev = [
 cuda-dev = [
     { include-group = "jax-dev" },
     "torch>=2.13.0",
-    "torch-harmonics>=0.9.3",
+    "torch-harmonics>=0.9.4",
     "jax[cuda13]>=0.7.0; sys_platform == 'linux'",
 ]
 
