@@ -21,7 +21,7 @@ spharm = pytest.importorskip(
     "spharm",
     reason="install conda-forge pyspharm and run the conda parity CI environment",
 )
-_GridArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
+_GridArray: TypeAlias = NDArray[np.float32 | np.float64]
 _SpectralArray: TypeAlias = NDArray[np.complex64] | NDArray[np.complex128]
 
 _OPERATOR_NTRUNC = 15

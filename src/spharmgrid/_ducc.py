@@ -316,8 +316,8 @@ def vector_synthesis(
         northward[index] = -values[0]
     shape = leading_shape + (ntheta, nphi)
     return (
-        cast(NDArray[np.float64], eastward.reshape(shape)),
-        cast(NDArray[np.float64], northward.reshape(shape)),
+        eastward.reshape(shape),
+        northward.reshape(shape),
     )
 
 

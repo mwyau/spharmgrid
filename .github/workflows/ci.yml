@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  UV_VERSION: "0.13.5"
+  UV_VERSION: "0.13.9"
 
 jobs:
   code-quality:
@@ -48,7 +48,7 @@ jobs:
       - name: Run ty type checks
         run: >-
           uv check --quiet --preview-features=check-command
-          --ty-version=0.0.91 --isolated --python=3.12
+          --ty-version=0.0.107 --isolated --python=3.12
           --extra=cf --extra=dask
       - name: Check SPDX headers
         uses: mwyau/spdx-header-check@v0.1.0
